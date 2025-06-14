@@ -6,8 +6,9 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { Download, FileText, Search, Filter, TrendingUp, Users, Target, Clock } from 'lucide-react';
+import { Download, FileText, Search, Filter, TrendingUp, Users, Target, Clock, Eye } from 'lucide-react';
 
 const TestReports = () => {
   const [selectedTest, setSelectedTest] = useState('all');
@@ -23,7 +24,11 @@ const TestReports = () => {
       averageScore: 78.5,
       passRate: 72,
       duration: 90,
-      totalQuestions: 50
+      totalQuestions: 50,
+      maxScore: 195,
+      minScore: 45,
+      course: 'NEET 2024',
+      subject: 'Physics'
     },
     {
       id: 2,
@@ -33,7 +38,11 @@ const TestReports = () => {
       averageScore: 82.3,
       passRate: 84,
       duration: 30,
-      totalQuestions: 20
+      totalQuestions: 20,
+      maxScore: 100,
+      minScore: 35,
+      course: 'NEET 2024',
+      subject: 'Chemistry'
     },
     {
       id: 3,
@@ -43,8 +52,34 @@ const TestReports = () => {
       averageScore: 75.2,
       passRate: 68,
       duration: 120,
-      totalQuestions: 60
+      totalQuestions: 60,
+      maxScore: 285,
+      minScore: 58,
+      course: 'JEE Main 2024',
+      subject: 'Mathematics'
+    },
+    {
+      id: 4,
+      title: 'Biology Mock Test',
+      date: '2024-01-17',
+      participants: 67,
+      averageScore: 69.8,
+      passRate: 65,
+      duration: 75,
+      totalQuestions: 40,
+      maxScore: 158,
+      minScore: 28,
+      course: 'NEET 2024',
+      subject: 'Biology'
     }
+  ];
+
+  const studentResults = [
+    { id: 1, name: 'Amit Sharma', testId: 1, score: 185, percentage: 92.5, rank: 1, timeTaken: 85 },
+    { id: 2, name: 'Priya Patel', testId: 1, score: 178, percentage: 89.0, rank: 2, timeTaken: 88 },
+    { id: 3, name: 'Rohit Kumar', testId: 1, score: 165, percentage: 82.5, rank: 3, timeTaken: 90 },
+    { id: 4, name: 'Sneha Singh', testId: 1, score: 158, percentage: 79.0, rank: 4, timeTaken: 87 },
+    { id: 5, name: 'Arjun Mehta', testId: 1, score: 152, percentage: 76.0, rank: 5, timeTaken: 89 }
   ];
 
   const scoreDistribution = [
@@ -56,21 +91,27 @@ const TestReports = () => {
   ];
 
   const questionAnalysis = [
-    { question: 'Q1', correct: 85, incorrect: 15, difficulty: 'Easy' },
-    { question: 'Q2', correct: 72, incorrect: 28, difficulty: 'Medium' },
-    { question: 'Q3', correct: 45, incorrect: 55, difficulty: 'Hard' },
-    { question: 'Q4', correct: 78, incorrect: 22, difficulty: 'Medium' },
-    { question: 'Q5', correct: 92, incorrect: 8, difficulty: 'Easy' }
+    { question: 'Q1', correct: 85, incorrect: 15, difficulty: 'Easy', topic: 'Newton\'s First Law' },
+    { question: 'Q2', correct: 72, incorrect: 28, difficulty: 'Medium', topic: 'Force and Acceleration' },
+    { question: 'Q3', correct: 45, incorrect: 55, difficulty: 'Hard', topic: 'Momentum Conservation' },
+    { question: 'Q4', correct: 78, incorrect: 22, difficulty: 'Medium', topic: 'Friction' },
+    { question: 'Q5', correct: 92, incorrect: 8, difficulty: 'Easy', topic: 'Weight and Mass' }
   ];
 
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
+
+  const getStatusBadge = (passRate) => {
+    if (passRate >= 80) return <Badge className="bg-green-100 text-green-800">Excellent</Badge>;
+    if (passRate >= 65) return <Badge className="bg-yellow-100 text-yellow-800">Good</Badge>;
+    return <Badge className="bg-red-100 text-red-800">Needs Improvement</Badge>;
+  };
 
   return (
     <div className="space-y-6 p-4 lg:p-6">
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div>
           <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">Test Reports</h1>
-          <p className="text-gray-600">Analyze test performance and generate reports</p>
+          <p className="text-gray-600">Analyze test performance and generate detailed reports</p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm">
@@ -141,7 +182,7 @@ const TestReports = () => {
                   <Target className="w-6 h-6 text-blue-600" />
                 </div>
                 <div className="text-2xl font-bold text-gray-900">
-                  {completedTests.reduce((sum, test) => sum + test.averageScore, 0) / completedTests.length}%
+                  {Math.round(completedTests.reduce((sum, test) => sum + test.averageScore, 0) / completedTests.length)}%
                 </div>
                 <p className="text-sm text-gray-600">Avg Score</p>
               </CardContent>
@@ -179,34 +220,62 @@ const TestReports = () => {
             </Card>
           </div>
 
-          {/* Test List */}
+          {/* Tests Report Table */}
           <Card>
             <CardHeader>
-              <CardTitle>Recent Completed Tests</CardTitle>
+              <CardTitle>Completed Tests Report</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {completedTests.map((test) => (
-                  <div key={test.id} className="flex flex-col lg:flex-row lg:items-center justify-between p-4 border rounded-lg">
-                    <div className="flex-1">
-                      <h3 className="font-medium text-gray-900">{test.title}</h3>
-                      <p className="text-sm text-gray-600">
-                        {test.date} • {test.participants} participants • {test.totalQuestions} questions
-                      </p>
-                    </div>
-                    <div className="flex items-center space-x-4 mt-2 lg:mt-0">
-                      <div className="text-center">
-                        <div className="text-lg font-bold text-blue-600">{test.averageScore}%</div>
-                        <div className="text-xs text-gray-500">Avg Score</div>
-                      </div>
-                      <div className="text-center">
-                        <div className="text-lg font-bold text-green-600">{test.passRate}%</div>
-                        <div className="text-xs text-gray-500">Pass Rate</div>
-                      </div>
-                      <Button variant="outline" size="sm">View Report</Button>
-                    </div>
-                  </div>
-                ))}
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Test Name</TableHead>
+                      <TableHead>Course</TableHead>
+                      <TableHead>Subject</TableHead>
+                      <TableHead>Date</TableHead>
+                      <TableHead className="text-center">Participants</TableHead>
+                      <TableHead className="text-center">Avg Score</TableHead>
+                      <TableHead className="text-center">Pass Rate</TableHead>
+                      <TableHead className="text-center">Status</TableHead>
+                      <TableHead className="text-center">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {completedTests.map((test) => (
+                      <TableRow key={test.id}>
+                        <TableCell className="font-medium">
+                          <div>
+                            <p className="font-semibold">{test.title}</p>
+                            <p className="text-sm text-gray-500">{test.totalQuestions} questions • {test.duration} min</p>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline">{test.course}</Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline">{test.subject}</Badge>
+                        </TableCell>
+                        <TableCell>{test.date}</TableCell>
+                        <TableCell className="text-center">{test.participants}</TableCell>
+                        <TableCell className="text-center">
+                          <span className="font-semibold text-blue-600">{test.averageScore}%</span>
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <span className="font-semibold text-green-600">{test.passRate}%</span>
+                        </TableCell>
+                        <TableCell className="text-center">
+                          {getStatusBadge(test.passRate)}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <Button variant="ghost" size="sm">
+                            <Eye className="w-4 h-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
               </div>
             </CardContent>
           </Card>
@@ -266,40 +335,49 @@ const TestReports = () => {
               <CardTitle>Question-wise Analysis</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {questionAnalysis.map((question, index) => (
-                  <div key={index} className="p-4 border rounded-lg">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="font-medium">{question.question}</span>
-                      <Badge variant={
-                        question.difficulty === 'Easy' ? 'default' :
-                        question.difficulty === 'Medium' ? 'secondary' : 'destructive'
-                      }>
-                        {question.difficulty}
-                      </Badge>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <div className="text-sm text-gray-600">Correct: {question.correct}%</div>
-                        <div className="w-full bg-gray-200 rounded-full h-2">
-                          <div 
-                            className="bg-green-500 h-2 rounded-full" 
-                            style={{ width: `${question.correct}%` }}
-                          ></div>
-                        </div>
-                      </div>
-                      <div>
-                        <div className="text-sm text-gray-600">Incorrect: {question.incorrect}%</div>
-                        <div className="w-full bg-gray-200 rounded-full h-2">
-                          <div 
-                            className="bg-red-500 h-2 rounded-full" 
-                            style={{ width: `${question.incorrect}%` }}
-                          ></div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Question</TableHead>
+                      <TableHead>Topic</TableHead>
+                      <TableHead>Difficulty</TableHead>
+                      <TableHead className="text-center">Correct %</TableHead>
+                      <TableHead className="text-center">Incorrect %</TableHead>
+                      <TableHead className="text-center">Performance</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {questionAnalysis.map((question, index) => (
+                      <TableRow key={index}>
+                        <TableCell className="font-medium">{question.question}</TableCell>
+                        <TableCell>{question.topic}</TableCell>
+                        <TableCell>
+                          <Badge variant={
+                            question.difficulty === 'Easy' ? 'default' :
+                            question.difficulty === 'Medium' ? 'secondary' : 'destructive'
+                          }>
+                            {question.difficulty}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <span className="font-semibold text-green-600">{question.correct}%</span>
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <span className="font-semibold text-red-600">{question.incorrect}%</span>
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <div className="w-full bg-gray-200 rounded-full h-2">
+                            <div 
+                              className="bg-green-500 h-2 rounded-full" 
+                              style={{ width: `${question.correct}%` }}
+                            ></div>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
               </div>
             </CardContent>
           </Card>
@@ -308,13 +386,53 @@ const TestReports = () => {
         <TabsContent value="students" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Student Performance Summary</CardTitle>
+              <CardTitle>Student Performance Report</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-center py-8">
-                <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-600">Student-wise detailed reports will be available here</p>
-                <Button className="mt-4">Generate Student Reports</Button>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Rank</TableHead>
+                      <TableHead>Student Name</TableHead>
+                      <TableHead className="text-center">Score</TableHead>
+                      <TableHead className="text-center">Percentage</TableHead>
+                      <TableHead className="text-center">Time Taken</TableHead>
+                      <TableHead className="text-center">Performance</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {studentResults.map((student) => (
+                      <TableRow key={student.id}>
+                        <TableCell className="text-center">
+                          <Badge variant={student.rank <= 3 ? 'default' : 'secondary'}>
+                            #{student.rank}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="font-medium">{student.name}</TableCell>
+                        <TableCell className="text-center font-semibold">{student.score}</TableCell>
+                        <TableCell className="text-center">
+                          <span className={`font-semibold ${
+                            student.percentage >= 80 ? 'text-green-600' : 
+                            student.percentage >= 60 ? 'text-yellow-600' : 'text-red-600'
+                          }`}>
+                            {student.percentage}%
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-center">{student.timeTaken} min</TableCell>
+                        <TableCell className="text-center">
+                          {student.percentage >= 80 ? (
+                            <Badge className="bg-green-100 text-green-800">Excellent</Badge>
+                          ) : student.percentage >= 60 ? (
+                            <Badge className="bg-yellow-100 text-yellow-800">Good</Badge>
+                          ) : (
+                            <Badge className="bg-red-100 text-red-800">Poor</Badge>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
               </div>
             </CardContent>
           </Card>

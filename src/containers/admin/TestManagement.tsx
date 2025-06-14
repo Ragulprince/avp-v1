@@ -8,12 +8,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Clock, Users, MoreHorizontal, Calendar, Target, BookOpen, Edit, Trash2, Search } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { Switch } from '@/components/ui/switch';
+import { Separator } from '@/components/ui/separator';
+import { Plus, Clock, Users, MoreHorizontal, Calendar, Target, BookOpen, Edit, Trash2, Search, Settings, Database } from 'lucide-react';
 
 const TestManagement = () => {
-  const { toast } = useToast();
-
   // Mock data
   const courses = [
     { id: 1, name: 'NEET 2024' },
@@ -34,6 +33,12 @@ const TestManagement = () => {
     { id: 3, name: 'Weekend Batch', courseId: 2 }
   ];
 
+  const questionBank = [
+    { id: 1, question: 'What is Newton\'s first law?', subject: 'Physics', difficulty: 'Easy' },
+    { id: 2, question: 'Define photosynthesis', subject: 'Biology', difficulty: 'Medium' },
+    { id: 3, question: 'Calculate the derivative of x²', subject: 'Mathematics', difficulty: 'Hard' }
+  ];
+
   const [tests, setTests] = useState([
     { 
       id: 1, 
@@ -51,7 +56,18 @@ const TestManagement = () => {
       status: 'Active',
       scheduledDate: '2024-01-25',
       maxMarks: 200,
-      isCommon: false
+      isCommon: false,
+      settings: {
+        shuffleQuestions: true,
+        shuffleOptions: true,
+        showImmediateResult: false,
+        negativeMarks: true,
+        negativeMarkValue: 0.25,
+        timeLimit: true,
+        allowRevisit: true,
+        showCorrectAnswers: true,
+        passPercentage: 40
+      }
     },
     { 
       id: 2, 
@@ -69,25 +85,18 @@ const TestManagement = () => {
       status: 'Active',
       scheduledDate: '2024-01-20',
       maxMarks: 80,
-      isCommon: false
-    },
-    { 
-      id: 3, 
-      title: 'Full Syllabus Mock Test', 
-      type: 'Mock Test',
-      courseId: 0,
-      course: 'All Courses',
-      subjectId: 0,
-      subject: 'All Subjects',
-      batchIds: [],
-      batches: [],
-      questions: 180, 
-      duration: 180, 
-      attempts: 89, 
-      status: 'Draft',
-      scheduledDate: '2024-02-01',
-      maxMarks: 720,
-      isCommon: true
+      isCommon: false,
+      settings: {
+        shuffleQuestions: false,
+        shuffleOptions: true,
+        showImmediateResult: true,
+        negativeMarks: false,
+        negativeMarkValue: 0,
+        timeLimit: true,
+        allowRevisit: false,
+        showCorrectAnswers: true,
+        passPercentage: 50
+      }
     }
   ]);
 
@@ -102,7 +111,21 @@ const TestManagement = () => {
     maxMarks: '',
     scheduledDate: '',
     description: '',
-    isCommon: false
+    isCommon: false,
+    questionSource: 'manual', // 'manual' or 'questionBank'
+    selectedQuestions: [],
+    manualQuestions: '',
+    settings: {
+      shuffleQuestions: true,
+      shuffleOptions: true,
+      showImmediateResult: false,
+      negativeMarks: true,
+      negativeMarkValue: 0.25,
+      timeLimit: true,
+      allowRevisit: true,
+      showCorrectAnswers: true,
+      passPercentage: 40
+    }
   });
 
   const [filters, setFilters] = useState({
@@ -115,12 +138,10 @@ const TestManagement = () => {
 
   const handleCreateTest = () => {
     if (!newTest.title || !newTest.questions || !newTest.duration || !newTest.maxMarks) {
-      toast({ title: "Error", description: "Please fill all required fields.", variant: "destructive" });
       return;
     }
 
     if (!newTest.isCommon && (!newTest.courseId || !newTest.subjectId)) {
-      toast({ title: "Error", description: "Please select course and subject for specific tests.", variant: "destructive" });
       return;
     }
 
@@ -144,7 +165,8 @@ const TestManagement = () => {
       attempts: 0,
       status: 'Draft',
       scheduledDate: newTest.scheduledDate,
-      isCommon: newTest.isCommon
+      isCommon: newTest.isCommon,
+      settings: newTest.settings
     };
 
     setTests([...tests, test]);
@@ -159,9 +181,22 @@ const TestManagement = () => {
       maxMarks: '',
       scheduledDate: '',
       description: '',
-      isCommon: false
+      isCommon: false,
+      questionSource: 'manual',
+      selectedQuestions: [],
+      manualQuestions: '',
+      settings: {
+        shuffleQuestions: true,
+        shuffleOptions: true,
+        showImmediateResult: false,
+        negativeMarks: true,
+        negativeMarkValue: 0.25,
+        timeLimit: true,
+        allowRevisit: true,
+        showCorrectAnswers: true,
+        passPercentage: 40
+      }
     });
-    toast({ title: "Success", description: "Test created successfully!" });
   };
 
   const getFilteredSubjects = () => {
@@ -172,6 +207,11 @@ const TestManagement = () => {
   const getFilteredBatches = () => {
     if (!newTest.courseId || newTest.isCommon) return [];
     return batches.filter(b => b.courseId === parseInt(newTest.courseId));
+  };
+
+  const getFilteredQuestions = () => {
+    if (!newTest.subjectId) return [];
+    return questionBank.filter(q => q.subject === subjects.find(s => s.id === parseInt(newTest.subjectId))?.name);
   };
 
   const filteredTests = tests.filter(test => {
@@ -195,27 +235,27 @@ const TestManagement = () => {
   };
 
   return (
-    <div className="space-y-8 bg-gradient-to-br from-indigo-50 to-purple-50 min-h-screen p-6">
-      <div className="bg-white rounded-xl shadow-lg p-6">
+    <div className="space-y-6 p-4 lg:p-6 bg-gradient-to-br from-indigo-50 to-purple-50 min-h-screen">
+      <div className="bg-white rounded-xl shadow-lg p-4 lg:p-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+            <h1 className="text-2xl lg:text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
               Test Management
             </h1>
             <p className="text-gray-600 mt-2">Create and manage quizzes, mock tests, and assessments</p>
           </div>
           <div className="flex gap-3">
-            <div className="bg-blue-100 p-4 rounded-lg text-center">
-              <Target className="w-6 h-6 text-blue-600 mx-auto mb-1" />
-              <p className="text-sm font-medium text-blue-800">{tests.filter(t => t.status === 'Active').length} Active</p>
+            <div className="bg-blue-100 p-3 lg:p-4 rounded-lg text-center">
+              <Target className="w-5 h-5 lg:w-6 lg:h-6 text-blue-600 mx-auto mb-1" />
+              <p className="text-xs lg:text-sm font-medium text-blue-800">{tests.filter(t => t.status === 'Active').length} Active</p>
             </div>
-            <div className="bg-green-100 p-4 rounded-lg text-center">
-              <Users className="w-6 h-6 text-green-600 mx-auto mb-1" />
-              <p className="text-sm font-medium text-green-800">{tests.reduce((sum, t) => sum + t.attempts, 0)} Attempts</p>
+            <div className="bg-green-100 p-3 lg:p-4 rounded-lg text-center">
+              <Users className="w-5 h-5 lg:w-6 lg:h-6 text-green-600 mx-auto mb-1" />
+              <p className="text-xs lg:text-sm font-medium text-green-800">{tests.reduce((sum, t) => sum + t.attempts, 0)} Attempts</p>
             </div>
-            <div className="bg-purple-100 p-4 rounded-lg text-center">
-              <Clock className="w-6 h-6 text-purple-600 mx-auto mb-1" />
-              <p className="text-sm font-medium text-purple-800">{tests.filter(t => t.status === 'Draft').length} Drafts</p>
+            <div className="bg-purple-100 p-3 lg:p-4 rounded-lg text-center">
+              <Clock className="w-5 h-5 lg:w-6 lg:h-6 text-purple-600 mx-auto mb-1" />
+              <p className="text-xs lg:text-sm font-medium text-purple-800">{tests.filter(t => t.status === 'Draft').length} Drafts</p>
             </div>
           </div>
         </div>
@@ -230,34 +270,33 @@ const TestManagement = () => {
         <TabsContent value="create" className="space-y-6">
           <Card className="shadow-lg border-0 bg-gradient-to-r from-indigo-50 to-indigo-100">
             <CardHeader className="bg-indigo-500 text-white rounded-t-lg">
-              <CardTitle className="flex items-center">
+              <CardTitle className="flex items-center text-lg lg:text-xl">
                 <Plus className="w-5 h-5 mr-2" />
                 Create New Test
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-6 space-y-6">
+            <CardContent className="p-4 lg:p-6 space-y-6">
               {/* Common Test Toggle */}
               <div className="flex items-center space-x-3 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
-                <input
-                  type="checkbox"
+                <Switch
                   id="commonTest"
                   checked={newTest.isCommon}
-                  onChange={(e) => setNewTest({
+                  onCheckedChange={(checked) => setNewTest({
                     ...newTest, 
-                    isCommon: e.target.checked,
-                    courseId: e.target.checked ? '' : newTest.courseId,
-                    subjectId: e.target.checked ? '' : newTest.subjectId,
-                    batchIds: e.target.checked ? [] : newTest.batchIds
+                    isCommon: checked,
+                    courseId: checked ? '' : newTest.courseId,
+                    subjectId: checked ? '' : newTest.subjectId,
+                    batchIds: checked ? [] : newTest.batchIds
                   })}
-                  className="rounded border-yellow-300 text-yellow-600 focus:ring-yellow-500"
                 />
                 <label htmlFor="commonTest" className="text-yellow-800 font-medium">
                   Create Common Test (for all batches and courses)
                 </label>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                <div className="md:col-span-2">
+              {/* Basic Test Information */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+                <div className="lg:col-span-2">
                   <Label htmlFor="testTitle" className="text-indigo-700 font-medium">Test Title *</Label>
                   <Input
                     id="testTitle"
@@ -370,10 +409,206 @@ const TestManagement = () => {
                 </div>
               </div>
 
+              {/* Question Source Selection */}
+              <div>
+                <Label className="text-indigo-700 font-medium">Question Source</Label>
+                <div className="flex gap-4 mt-2">
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="radio"
+                      id="manual"
+                      name="questionSource"
+                      value="manual"
+                      checked={newTest.questionSource === 'manual'}
+                      onChange={(e) => setNewTest({...newTest, questionSource: e.target.value})}
+                      className="text-indigo-600 focus:ring-indigo-500"
+                    />
+                    <label htmlFor="manual" className="text-sm text-gray-700">Manual Entry</label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="radio"
+                      id="questionBank"
+                      name="questionSource"
+                      value="questionBank"
+                      checked={newTest.questionSource === 'questionBank'}
+                      onChange={(e) => setNewTest({...newTest, questionSource: e.target.value})}
+                      className="text-indigo-600 focus:ring-indigo-500"
+                    />
+                    <label htmlFor="questionBank" className="text-sm text-gray-700">From Question Bank</label>
+                  </div>
+                </div>
+              </div>
+
+              {/* Question Input Based on Source */}
+              {newTest.questionSource === 'manual' ? (
+                <div>
+                  <Label htmlFor="manualQuestions" className="text-indigo-700 font-medium">Questions</Label>
+                  <Textarea
+                    id="manualQuestions"
+                    value={newTest.manualQuestions}
+                    onChange={(e) => setNewTest({...newTest, manualQuestions: e.target.value})}
+                    placeholder="Type your questions here..."
+                    rows={4}
+                    className="border-indigo-200 focus:border-indigo-500"
+                  />
+                </div>
+              ) : (
+                <div>
+                  <Label className="text-indigo-700 font-medium">Select Questions from Bank</Label>
+                  <div className="mt-2 max-h-40 overflow-y-auto border rounded-lg p-3 bg-gray-50">
+                    {getFilteredQuestions().length > 0 ? (
+                      getFilteredQuestions().map((question) => (
+                        <div key={question.id} className="flex items-center space-x-2 mb-2">
+                          <input
+                            type="checkbox"
+                            id={`question-${question.id}`}
+                            checked={newTest.selectedQuestions.includes(question.id)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setNewTest({...newTest, selectedQuestions: [...newTest.selectedQuestions, question.id]});
+                              } else {
+                                setNewTest({...newTest, selectedQuestions: newTest.selectedQuestions.filter(id => id !== question.id)});
+                              }
+                            }}
+                            className="rounded border-indigo-300 text-indigo-600 focus:ring-indigo-500"
+                          />
+                          <label htmlFor={`question-${question.id}`} className="text-sm text-gray-700 flex-1">
+                            {question.question}
+                            <Badge variant="outline" className="ml-2 text-xs">{question.difficulty}</Badge>
+                          </label>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-gray-500 text-center py-4">
+                        {newTest.subjectId ? 'No questions available for this subject' : 'Select a subject to view questions'}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Test Configuration Settings */}
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <div className="flex items-center mb-4">
+                  <Settings className="w-5 h-5 mr-2 text-gray-600" />
+                  <h3 className="text-lg font-semibold text-gray-900">Test Configuration</h3>
+                </div>
+                
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="shuffleQuestions" className="text-sm font-medium">Shuffle Questions</Label>
+                      <Switch
+                        id="shuffleQuestions"
+                        checked={newTest.settings.shuffleQuestions}
+                        onCheckedChange={(checked) => setNewTest({
+                          ...newTest,
+                          settings: {...newTest.settings, shuffleQuestions: checked}
+                        })}
+                      />
+                    </div>
+                    
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="shuffleOptions" className="text-sm font-medium">Shuffle Answer Options</Label>
+                      <Switch
+                        id="shuffleOptions"
+                        checked={newTest.settings.shuffleOptions}
+                        onCheckedChange={(checked) => setNewTest({
+                          ...newTest,
+                          settings: {...newTest.settings, shuffleOptions: checked}
+                        })}
+                      />
+                    </div>
+                    
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="showImmediateResult" className="text-sm font-medium">Show Immediate Result</Label>
+                      <Switch
+                        id="showImmediateResult"
+                        checked={newTest.settings.showImmediateResult}
+                        onCheckedChange={(checked) => setNewTest({
+                          ...newTest,
+                          settings: {...newTest.settings, showImmediateResult: checked}
+                        })}
+                      />
+                    </div>
+                    
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="allowRevisit" className="text-sm font-medium">Allow Question Revisit</Label>
+                      <Switch
+                        id="allowRevisit"
+                        checked={newTest.settings.allowRevisit}
+                        onCheckedChange={(checked) => setNewTest({
+                          ...newTest,
+                          settings: {...newTest.settings, allowRevisit: checked}
+                        })}
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="negativeMarks" className="text-sm font-medium">Negative Marking</Label>
+                      <Switch
+                        id="negativeMarks"
+                        checked={newTest.settings.negativeMarks}
+                        onCheckedChange={(checked) => setNewTest({
+                          ...newTest,
+                          settings: {...newTest.settings, negativeMarks: checked}
+                        })}
+                      />
+                    </div>
+                    
+                    {newTest.settings.negativeMarks && (
+                      <div>
+                        <Label htmlFor="negativeMarkValue" className="text-sm font-medium">Negative Mark Value</Label>
+                        <Input
+                          id="negativeMarkValue"
+                          type="number"
+                          step="0.1"
+                          value={newTest.settings.negativeMarkValue}
+                          onChange={(e) => setNewTest({
+                            ...newTest,
+                            settings: {...newTest.settings, negativeMarkValue: parseFloat(e.target.value)}
+                          })}
+                          className="mt-1"
+                        />
+                      </div>
+                    )}
+                    
+                    <div>
+                      <Label htmlFor="passPercentage" className="text-sm font-medium">Pass Percentage</Label>
+                      <Input
+                        id="passPercentage"
+                        type="number"
+                        value={newTest.settings.passPercentage}
+                        onChange={(e) => setNewTest({
+                          ...newTest,
+                          settings: {...newTest.settings, passPercentage: parseInt(e.target.value)}
+                        })}
+                        className="mt-1"
+                      />
+                    </div>
+                    
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="showCorrectAnswers" className="text-sm font-medium">Show Correct Answers After Test</Label>
+                      <Switch
+                        id="showCorrectAnswers"
+                        checked={newTest.settings.showCorrectAnswers}
+                        onCheckedChange={(checked) => setNewTest({
+                          ...newTest,
+                          settings: {...newTest.settings, showCorrectAnswers: checked}
+                        })}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               {!newTest.isCommon && (
                 <div>
                   <Label className="text-indigo-700 font-medium">Target Batches</Label>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-2">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 mt-2">
                     {getFilteredBatches().map((batch) => (
                       <div key={batch.id} className="flex items-center space-x-2">
                         <input
@@ -477,12 +712,11 @@ const TestManagement = () => {
             </CardContent>
           </Card>
 
-          {/* Tests List */}
           <div className="grid gap-4">
             {filteredTests.map((test) => (
               <Card key={test.id} className="shadow-lg border-0 overflow-hidden hover:shadow-xl transition-shadow">
-                <CardContent className="p-6">
-                  <div className="flex justify-between items-start mb-4">
+                <CardContent className="p-4 lg:p-6">
+                  <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-4">
                     <div className="flex-1">
                       <div className="flex items-center space-x-3 mb-2">
                         <h3 className="font-bold text-lg text-gray-900">{test.title}</h3>
@@ -510,7 +744,7 @@ const TestManagement = () => {
                         </div>
                       )}
                     </div>
-                    <div className="flex space-x-2">
+                    <div className="flex space-x-2 lg:flex-col lg:space-x-0 lg:space-y-2">
                       <Button variant="ghost" size="sm">
                         <Edit className="w-4 h-4" />
                       </Button>
@@ -523,31 +757,31 @@ const TestManagement = () => {
                     </div>
                   </div>
                   
-                  <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                    <div className="text-center p-3 bg-blue-50 rounded-lg">
-                      <BookOpen className="w-5 h-5 text-blue-600 mx-auto mb-1" />
+                  <div className="grid grid-cols-2 md:grid-cols-5 gap-2 lg:gap-4">
+                    <div className="text-center p-2 lg:p-3 bg-blue-50 rounded-lg">
+                      <BookOpen className="w-4 h-4 lg:w-5 lg:h-5 text-blue-600 mx-auto mb-1" />
                       <p className="text-xs text-gray-600">Questions</p>
-                      <p className="font-bold text-blue-600">{test.questions}</p>
+                      <p className="text-sm lg:text-base font-bold text-blue-600">{test.questions}</p>
                     </div>
-                    <div className="text-center p-3 bg-green-50 rounded-lg">
-                      <Clock className="w-5 h-5 text-green-600 mx-auto mb-1" />
+                    <div className="text-center p-2 lg:p-3 bg-green-50 rounded-lg">
+                      <Clock className="w-4 h-4 lg:w-5 lg:h-5 text-green-600 mx-auto mb-1" />
                       <p className="text-xs text-gray-600">Duration</p>
-                      <p className="font-bold text-green-600">{test.duration}m</p>
+                      <p className="text-sm lg:text-base font-bold text-green-600">{test.duration}m</p>
                     </div>
-                    <div className="text-center p-3 bg-purple-50 rounded-lg">
-                      <Target className="w-5 h-5 text-purple-600 mx-auto mb-1" />
+                    <div className="text-center p-2 lg:p-3 bg-purple-50 rounded-lg">
+                      <Target className="w-4 h-4 lg:w-5 lg:h-5 text-purple-600 mx-auto mb-1" />
                       <p className="text-xs text-gray-600">Max Marks</p>
-                      <p className="font-bold text-purple-600">{test.maxMarks}</p>
+                      <p className="text-sm lg:text-base font-bold text-purple-600">{test.maxMarks}</p>
                     </div>
-                    <div className="text-center p-3 bg-orange-50 rounded-lg">
-                      <Users className="w-5 h-5 text-orange-600 mx-auto mb-1" />
+                    <div className="text-center p-2 lg:p-3 bg-orange-50 rounded-lg">
+                      <Users className="w-4 h-4 lg:w-5 lg:h-5 text-orange-600 mx-auto mb-1" />
                       <p className="text-xs text-gray-600">Attempts</p>
-                      <p className="font-bold text-orange-600">{test.attempts}</p>
+                      <p className="text-sm lg:text-base font-bold text-orange-600">{test.attempts}</p>
                     </div>
-                    <div className="text-center p-3 bg-red-50 rounded-lg">
-                      <Calendar className="w-5 h-5 text-red-600 mx-auto mb-1" />
+                    <div className="text-center p-2 lg:p-3 bg-red-50 rounded-lg">
+                      <Calendar className="w-4 h-4 lg:w-5 lg:h-5 text-red-600 mx-auto mb-1" />
                       <p className="text-xs text-gray-600">Scheduled</p>
-                      <p className="font-bold text-red-600 text-xs">{test.scheduledDate}</p>
+                      <p className="text-xs lg:text-sm font-bold text-red-600">{test.scheduledDate}</p>
                     </div>
                   </div>
                 </CardContent>

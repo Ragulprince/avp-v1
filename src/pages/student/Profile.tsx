@@ -34,6 +34,7 @@ const Profile: React.FC<ProfileProps> = ({ activeTab, onTabChange }) => {
   const [isSubjectsOpen, setIsSubjectsOpen] = useState(false);
   const [isAchievementsOpen, setIsAchievementsOpen] = useState(false);
   const [isPersonalDetailsOpen, setIsPersonalDetailsOpen] = useState(false);
+  const [isEducationOpen, setIsEducationOpen] = useState(false);
 
   const enrolledSubjects = [
     { name: 'Physics', progress: 75, totalChapters: 20, completedChapters: 15 },
@@ -55,6 +56,27 @@ const Profile: React.FC<ProfileProps> = ({ activeTab, onTabChange }) => {
     { label: 'Study Hours', value: 45, total: 100, color: 'bg-purple-500' },
     { label: 'Notes Downloaded', value: 12, total: 20, color: 'bg-orange-500' }
   ];
+
+  const educationDetails = {
+    class10: {
+      school: 'DAV Public School',
+      board: 'CBSE',
+      percentage: '95.2%',
+      year: '2022'
+    },
+    class12: {
+      school: 'St. Xavier Higher Secondary School',
+      board: 'CBSE',
+      percentage: '92.8%',
+      year: '2024',
+      stream: 'PCM+B'
+    },
+    college: {
+      name: 'Not Yet Enrolled',
+      course: 'Preparing for NEET',
+      year: 'Target: 2025'
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 pb-24">
@@ -170,7 +192,7 @@ const Profile: React.FC<ProfileProps> = ({ activeTab, onTabChange }) => {
             </CollapsibleTrigger>
             <CollapsibleContent>
               <CardContent className="pt-0">
-                <div className="grid gap-4 md:grid-cols-2">
+                <div className="grid gap-3 md:grid-cols-2">
                   <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
                     <User className="w-5 h-5 text-gray-500" />
                     <div>
@@ -211,6 +233,104 @@ const Profile: React.FC<ProfileProps> = ({ activeTab, onTabChange }) => {
                     <div>
                       <p className="text-sm font-medium text-gray-900">Join Date</p>
                       <p className="text-sm text-gray-600">June 2024</p>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </CollapsibleContent>
+          </Collapsible>
+        </Card>
+
+        {/* Collapsible Education Details */}
+        <Card className="shadow-sm">
+          <Collapsible open={isEducationOpen} onOpenChange={setIsEducationOpen}>
+            <CollapsibleTrigger asChild>
+              <CardHeader className="cursor-pointer hover:bg-gray-50 transition-colors">
+                <CardTitle className="flex items-center justify-between text-base md:text-lg">
+                  <div className="flex items-center">
+                    <School className="w-5 h-5 mr-2" />
+                    Educational Background
+                  </div>
+                  {isEducationOpen ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                </CardTitle>
+              </CardHeader>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <CardContent className="pt-0 space-y-4">
+                {/* Class 10th */}
+                <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                  <h4 className="font-semibold text-blue-900 mb-3 flex items-center">
+                    <GraduationCap className="w-4 h-4 mr-2" />
+                    Class 10th
+                  </h4>
+                  <div className="grid gap-3 md:grid-cols-2">
+                    <div>
+                      <p className="text-sm font-medium text-gray-700">School</p>
+                      <p className="text-sm text-gray-900">{educationDetails.class10.school}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-700">Board</p>
+                      <p className="text-sm text-gray-900">{educationDetails.class10.board}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-700">Percentage</p>
+                      <p className="text-sm text-gray-900 font-semibold text-blue-600">{educationDetails.class10.percentage}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-700">Year</p>
+                      <p className="text-sm text-gray-900">{educationDetails.class10.year}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Class 12th */}
+                <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+                  <h4 className="font-semibold text-green-900 mb-3 flex items-center">
+                    <GraduationCap className="w-4 h-4 mr-2" />
+                    Class 12th
+                  </h4>
+                  <div className="grid gap-3 md:grid-cols-2">
+                    <div>
+                      <p className="text-sm font-medium text-gray-700">School</p>
+                      <p className="text-sm text-gray-900">{educationDetails.class12.school}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-700">Board</p>
+                      <p className="text-sm text-gray-900">{educationDetails.class12.board}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-700">Stream</p>
+                      <p className="text-sm text-gray-900">{educationDetails.class12.stream}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-700">Percentage</p>
+                      <p className="text-sm text-gray-900 font-semibold text-green-600">{educationDetails.class12.percentage}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-700">Year</p>
+                      <p className="text-sm text-gray-900">{educationDetails.class12.year}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* College */}
+                <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
+                  <h4 className="font-semibold text-purple-900 mb-3 flex items-center">
+                    <School className="w-4 h-4 mr-2" />
+                    Higher Education
+                  </h4>
+                  <div className="grid gap-3 md:grid-cols-2">
+                    <div>
+                      <p className="text-sm font-medium text-gray-700">College/University</p>
+                      <p className="text-sm text-gray-900">{educationDetails.college.name}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-700">Course</p>
+                      <p className="text-sm text-gray-900">{educationDetails.college.course}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-700">Target Year</p>
+                      <p className="text-sm text-gray-900 font-semibold text-purple-600">{educationDetails.college.year}</p>
                     </div>
                   </div>
                 </div>
