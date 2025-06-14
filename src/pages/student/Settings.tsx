@@ -8,7 +8,6 @@ import { Switch } from '@/components/ui/switch';
 import { useStudent } from '@/contexts/StudentContext';
 import { User, Lock, Bell, Save } from 'lucide-react';
 import BottomNavigation from '@/components/common/BottomNavigation';
-import { useToast } from '@/hooks/use-toast';
 
 interface SettingsProps {
   activeTab: string;
@@ -17,7 +16,6 @@ interface SettingsProps {
 
 const Settings: React.FC<SettingsProps> = ({ activeTab, onTabChange }) => {
   const { student } = useStudent();
-  const { toast } = useToast();
   
   // Profile state
   const [profileData, setProfileData] = useState({
@@ -44,33 +42,20 @@ const Settings: React.FC<SettingsProps> = ({ activeTab, onTabChange }) => {
   });
 
   const handleProfileSave = () => {
-    toast({
-      title: "Profile Updated",
-      description: "Your profile has been successfully updated.",
-    });
+    console.log('Profile updated successfully');
   };
 
   const handlePasswordChange = () => {
     if (passwordData.newPassword !== passwordData.confirmPassword) {
-      toast({
-        title: "Error",
-        description: "New passwords do not match.",
-        variant: "destructive"
-      });
+      console.log('New passwords do not match');
       return;
     }
-    toast({
-      title: "Password Changed",
-      description: "Your password has been successfully changed.",
-    });
+    console.log('Password changed successfully');
     setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
   };
 
   const handleNotificationSave = () => {
-    toast({
-      title: "Settings Saved",
-      description: "Your notification preferences have been updated.",
-    });
+    console.log('Notification preferences updated');
   };
 
   return (

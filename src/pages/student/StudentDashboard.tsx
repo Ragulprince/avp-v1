@@ -19,7 +19,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ activeTab, onTabCha
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 pb-20">
       <div className="px-4 py-6 space-y-6">
-        <StudentHeader student={student} />
+        <StudentHeader />
         <MotivationalVideo />
         <LatestVideos videos={videos} />
         <QuickStats />

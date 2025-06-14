@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -74,7 +75,6 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ onMenuClick, onProfileClick }
   };
 
   const markAsRead = (notificationId: number) => {
-    // In a real app, this would update the backend
     console.log(`Marking notification ${notificationId} as read`);
   };
 

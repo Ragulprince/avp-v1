@@ -11,13 +11,12 @@ import CourseManagement from '@/containers/admin/CourseManagement';
 import QuestionBank from '@/containers/admin/QuestionBank';
 import NotificationCenter from '@/containers/admin/NotificationCenter';
 import StaffManagement from '@/containers/admin/StaffManagement';
+import AdminSettings from '@/containers/admin/AdminSettings';
 import ProfileSection from '@/components/common/ProfileSection';
-import { useToast } from '@/hooks/use-toast';
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const { toast } = useToast();
 
   // Sample admin user data
   const adminUser = {
@@ -34,28 +33,9 @@ const AdminDashboard = () => {
   };
 
   const handleTabChange = (tab: string) => {
-    console.log('AdminDashboard: Tab change requested to:', tab); // Debug log
+    console.log('AdminDashboard: Tab change requested to:', tab);
     setActiveTab(tab);
-    setSidebarOpen(false); // Close sidebar on mobile after selection
-    
-    // Show toast for navigation feedback
-    const tabNames: { [key: string]: string } = {
-      dashboard: 'Dashboard',
-      students: 'Student Management',
-      staff: 'Staff Management',
-      courses: 'Course Management',
-      content: 'Content Management',
-      tests: 'Test Management',
-      questions: 'Question Bank',
-      notifications: 'Notification Center',
-      analytics: 'Analytics',
-      profile: 'Profile'
-    };
-
-    toast({
-      title: "Navigation",
-      description: `Switched to ${tabNames[tab] || tab}`,
-    });
+    setSidebarOpen(false);
   };
 
   const handleProfileClick = () => {
@@ -63,7 +43,7 @@ const AdminDashboard = () => {
   };
 
   const renderContent = () => {
-    console.log('AdminDashboard: Rendering content for tab:', activeTab); // Debug log
+    console.log('AdminDashboard: Rendering content for tab:', activeTab);
     
     switch (activeTab) {
       case 'dashboard':
@@ -82,6 +62,8 @@ const AdminDashboard = () => {
         return <QuestionBank />;
       case 'notifications':
         return <NotificationCenter />;
+      case 'settings':
+        return <AdminSettings />;
       case 'profile':
         return <ProfileSection user={adminUser} showStats={true} />;
       case 'analytics':

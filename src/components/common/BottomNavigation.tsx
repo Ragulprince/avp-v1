@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Home, Target, BookOpen, User, Settings } from 'lucide-react';
+import { Home, Target, BookOpen, User } from 'lucide-react';
 
 interface BottomNavigationProps {
   activeTab: string;
@@ -13,8 +13,7 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({ activeTab, onTabCha
     { id: 'home', label: 'Home', icon: Home },
     { id: 'practice', label: 'Practice', icon: Target },
     { id: 'hub', label: 'Hub', icon: BookOpen },
-    { id: 'profile', label: 'Profile', icon: User },
-    { id: 'settings', label: 'Settings', icon: Settings }
+    { id: 'profile', label: 'Profile', icon: User }
   ];
 
   return (
