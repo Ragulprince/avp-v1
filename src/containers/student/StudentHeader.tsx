@@ -1,10 +1,9 @@
 
 import React, { useState } from 'react';
-import { Bell, Search, Menu } from 'lucide-react';
+import { Bell, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Card, CardContent } from '@/components/ui/card';
 
 const StudentHeader = () => {
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
@@ -16,13 +15,13 @@ const StudentHeader = () => {
   ];
 
   return (
-    <div className="bg-white border-b border-gray-200 p-4">
-      <div className="flex items-center justify-between">
+    <div className="bg-white border-b border-gray-200 p-4 sticky top-0 z-40">
+      <div className="flex items-center justify-between max-w-md mx-auto">
         <div className="flex items-center space-x-4">
-          <h1 className="text-xl font-bold text-gray-900">Student Portal</h1>
+          <h1 className="text-lg font-bold text-gray-900">Student Portal</h1>
         </div>
         
-        <div className="flex items-center space-x-3">
+        <div className="flex items-center space-x-2">
           <Popover open={isNotificationOpen} onOpenChange={setIsNotificationOpen}>
             <PopoverTrigger asChild>
               <Button variant="outline" size="sm" className="relative">
@@ -34,13 +33,13 @@ const StudentHeader = () => {
                 )}
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-80 p-0" align="end">
+            <PopoverContent className="w-80 p-0 mr-4" align="end" sideOffset={5}>
               <div className="p-4 border-b">
                 <h3 className="font-semibold">Notifications</h3>
               </div>
               <div className="max-h-64 overflow-y-auto">
                 {notifications.map((notification) => (
-                  <div key={notification.id} className="p-3 border-b last:border-b-0 hover:bg-gray-50">
+                  <div key={notification.id} className="p-3 border-b last:border-b-0 hover:bg-gray-50 cursor-pointer">
                     <p className="text-sm font-medium text-gray-900">{notification.title}</p>
                     <p className="text-xs text-gray-500 mt-1">{notification.time}</p>
                   </div>

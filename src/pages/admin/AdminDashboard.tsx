@@ -12,6 +12,7 @@ import QuestionBank from '@/containers/admin/QuestionBank';
 import NotificationCenter from '@/containers/admin/NotificationCenter';
 import StaffManagement from '@/containers/admin/StaffManagement';
 import AdminSettings from '@/containers/admin/AdminSettings';
+import TestReports from '@/containers/admin/TestReports';
 import ProfileSection from '@/components/common/ProfileSection';
 
 const AdminDashboard = () => {
@@ -60,6 +61,8 @@ const AdminDashboard = () => {
         return <TestManagement />;
       case 'questions':
         return <QuestionBank />;
+      case 'reports':
+        return <TestReports />;
       case 'notifications':
         return <NotificationCenter />;
       case 'settings':

@@ -33,6 +33,7 @@ const Profile: React.FC<ProfileProps> = ({ activeTab, onTabChange }) => {
   const { student } = useStudent();
   const [isSubjectsOpen, setIsSubjectsOpen] = useState(false);
   const [isAchievementsOpen, setIsAchievementsOpen] = useState(false);
+  const [isPersonalDetailsOpen, setIsPersonalDetailsOpen] = useState(false);
 
   const enrolledSubjects = [
     { name: 'Physics', progress: 75, totalChapters: 20, completedChapters: 15 },
@@ -56,7 +57,7 @@ const Profile: React.FC<ProfileProps> = ({ activeTab, onTabChange }) => {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-20">
+    <div className="min-h-screen bg-gray-50 pb-24">
       <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-4 md:p-6">
         <div className="max-w-4xl mx-auto">
           <h1 className="text-2xl md:text-3xl font-bold mb-2">My Profile</h1>
@@ -151,6 +152,71 @@ const Profile: React.FC<ProfileProps> = ({ activeTab, onTabChange }) => {
               </div>
             </div>
           </CardContent>
+        </Card>
+
+        {/* Collapsible Personal Details */}
+        <Card className="shadow-sm">
+          <Collapsible open={isPersonalDetailsOpen} onOpenChange={setIsPersonalDetailsOpen}>
+            <CollapsibleTrigger asChild>
+              <CardHeader className="cursor-pointer hover:bg-gray-50 transition-colors">
+                <CardTitle className="flex items-center justify-between text-base md:text-lg">
+                  <div className="flex items-center">
+                    <User className="w-5 h-5 mr-2" />
+                    Personal Details
+                  </div>
+                  {isPersonalDetailsOpen ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                </CardTitle>
+              </CardHeader>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <CardContent className="pt-0">
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                    <User className="w-5 h-5 text-gray-500" />
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">Full Name</p>
+                      <p className="text-sm text-gray-600">{student.name}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                    <Mail className="w-5 h-5 text-gray-500" />
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">Email</p>
+                      <p className="text-sm text-gray-600">{student.email}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                    <Phone className="w-5 h-5 text-gray-500" />
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">Phone</p>
+                      <p className="text-sm text-gray-600">+91 9876543210</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                    <MapPin className="w-5 h-5 text-gray-500" />
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">Address</p>
+                      <p className="text-sm text-gray-600">123 Main Street, City</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                    <GraduationCap className="w-5 h-5 text-gray-500" />
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">Batch</p>
+                      <p className="text-sm text-gray-600">{student.batch}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                    <Calendar className="w-5 h-5 text-gray-500" />
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">Join Date</p>
+                      <p className="text-sm text-gray-600">June 2024</p>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </CollapsibleContent>
+          </Collapsible>
         </Card>
 
         {/* Collapsible Subjects Enrolled */}

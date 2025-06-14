@@ -12,13 +12,13 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({ activeTab, onTabCha
   const navItems = [
     { id: 'home', label: 'Home', icon: Home },
     { id: 'practice', label: 'Practice', icon: Target },
-    { id: 'hub', label: 'Hub', icon: BookOpen },
+    { id: 'hub', label: 'Learning Hub', icon: BookOpen },
     { id: 'profile', label: 'Profile', icon: User }
   ];
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-4 py-2 z-50">
-      <div className="flex justify-around items-center max-w-sm mx-auto">
+    <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 safe-area-pb">
+      <div className="flex justify-around items-center max-w-md mx-auto px-2 py-3">
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = activeTab === item.id;
@@ -29,12 +29,14 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({ activeTab, onTabCha
               variant="ghost"
               size="sm"
               onClick={() => onTabChange(item.id)}
-              className={`flex flex-col items-center space-y-1 min-w-0 ${
-                isActive ? 'text-blue-600' : 'text-gray-600'
+              className={`flex flex-col items-center justify-center space-y-1 h-auto py-2 px-3 min-w-0 flex-1 ${
+                isActive ? 'text-blue-600 bg-blue-50' : 'text-gray-600 hover:text-gray-900'
               }`}
             >
-              <Icon className="w-5 h-5" />
-              <span className="text-xs truncate">{item.label}</span>
+              <Icon className={`w-5 h-5 ${isActive ? 'text-blue-600' : ''}`} />
+              <span className={`text-xs font-medium truncate ${isActive ? 'text-blue-600' : ''}`}>
+                {item.label}
+              </span>
             </Button>
           );
         })}
