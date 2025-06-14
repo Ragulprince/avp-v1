@@ -12,10 +12,12 @@ import QuestionBank from '@/containers/admin/QuestionBank';
 import NotificationCenter from '@/containers/admin/NotificationCenter';
 import StaffManagement from '@/containers/admin/StaffManagement';
 import ProfileSection from '@/components/common/ProfileSection';
+import { useToast } from '@/hooks/use-toast';
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { toast } = useToast();
 
   // Sample admin user data
   const adminUser = {
@@ -31,7 +33,38 @@ const AdminDashboard = () => {
     emergencyContact: '+91 9876543211'
   };
 
+  const handleTabChange = (tab: string) => {
+    console.log('AdminDashboard: Tab change requested to:', tab); // Debug log
+    setActiveTab(tab);
+    setSidebarOpen(false); // Close sidebar on mobile after selection
+    
+    // Show toast for navigation feedback
+    const tabNames: { [key: string]: string } = {
+      dashboard: 'Dashboard',
+      students: 'Student Management',
+      staff: 'Staff Management',
+      courses: 'Course Management',
+      content: 'Content Management',
+      tests: 'Test Management',
+      questions: 'Question Bank',
+      notifications: 'Notification Center',
+      analytics: 'Analytics',
+      profile: 'Profile'
+    };
+
+    toast({
+      title: "Navigation",
+      description: `Switched to ${tabNames[tab] || tab}`,
+    });
+  };
+
+  const handleProfileClick = () => {
+    handleTabChange('profile');
+  };
+
   const renderContent = () => {
+    console.log('AdminDashboard: Rendering content for tab:', activeTab); // Debug log
+    
     switch (activeTab) {
       case 'dashboard':
         return <DashboardOverview />;
@@ -54,6 +87,7 @@ const AdminDashboard = () => {
       case 'analytics':
         return <Analytics />;
       default:
+        console.warn('AdminDashboard: Unknown tab:', activeTab);
         return <DashboardOverview />;
     }
   };
@@ -62,7 +96,7 @@ const AdminDashboard = () => {
     <div className="min-h-screen bg-gray-50 flex">
       <AdminSidebar
         activeTab={activeTab}
-        onTabChange={setActiveTab}
+        onTabChange={handleTabChange}
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
       />
@@ -70,7 +104,7 @@ const AdminDashboard = () => {
       <div className="flex-1 flex flex-col lg:ml-64">
         <AdminHeader 
           onMenuClick={() => setSidebarOpen(true)} 
-          onProfileClick={() => setActiveTab('profile')}
+          onProfileClick={handleProfileClick}
         />
         <main className="flex-1 p-4 lg:p-6">
           {renderContent()}

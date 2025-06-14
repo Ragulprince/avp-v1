@@ -1,9 +1,11 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { Clock, ChevronLeft, ChevronRight, Flag, BookOpen, Eye, EyeOff } from 'lucide-react';
+import { Clock, ChevronLeft, ChevronRight, Flag, Eye, EyeOff } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 import QuizResults from './QuizResults';
 
 interface Question {
@@ -28,6 +30,7 @@ const EnhancedQuizInterface: React.FC<EnhancedQuizInterfaceProps> = ({ quizId, o
   const [showResults, setShowResults] = useState(false);
   const [showLedger, setShowLedger] = useState(false);
   const [flaggedQuestions, setFlaggedQuestions] = useState<Set<number>>(new Set());
+  const { toast } = useToast();
 
   // Mock questions data
   const questions: Question[] = [
@@ -86,15 +89,27 @@ const EnhancedQuizInterface: React.FC<EnhancedQuizInterfaceProps> = ({ quizId, o
     const timer = setInterval(() => {
       setTimeLeft(prev => {
         if (prev <= 1) {
+          toast({
+            title: "Time's Up!",
+            description: "Your quiz has been automatically submitted.",
+            variant: "destructive"
+          });
           setShowResults(true);
           return 0;
+        }
+        if (prev === 300) { // 5 minutes warning
+          toast({
+            title: "5 Minutes Remaining",
+            description: "Please complete your quiz soon.",
+            variant: "destructive"
+          });
         }
         return prev - 1;
       });
     }, 1000);
 
     return () => clearInterval(timer);
-  }, []);
+  }, [toast]);
 
   const formatTime = (seconds: number) => {
     const minutes = Math.floor(seconds / 60);
@@ -104,12 +119,20 @@ const EnhancedQuizInterface: React.FC<EnhancedQuizInterfaceProps> = ({ quizId, o
 
   const handleAnswer = (answer: any) => {
     setAnswers(prev => ({ ...prev, [currentQuestion]: answer }));
+    toast({
+      title: "Answer Saved",
+      description: `Question ${currentQuestion + 1} answered successfully.`,
+    });
   };
 
   const handleNext = () => {
     if (currentQuestion < questions.length - 1) {
       setCurrentQuestion(prev => prev + 1);
     } else {
+      toast({
+        title: "Quiz Submitted",
+        description: "Your answers have been submitted successfully.",
+      });
       setShowResults(true);
     }
   };
@@ -124,8 +147,16 @@ const EnhancedQuizInterface: React.FC<EnhancedQuizInterfaceProps> = ({ quizId, o
     const newFlagged = new Set(flaggedQuestions);
     if (newFlagged.has(currentQuestion)) {
       newFlagged.delete(currentQuestion);
+      toast({
+        title: "Question Unflagged",
+        description: `Question ${currentQuestion + 1} removed from review.`,
+      });
     } else {
       newFlagged.add(currentQuestion);
+      toast({
+        title: "Question Flagged",
+        description: `Question ${currentQuestion + 1} marked for review.`,
+      });
     }
     setFlaggedQuestions(newFlagged);
   };
@@ -174,7 +205,7 @@ const EnhancedQuizInterface: React.FC<EnhancedQuizInterfaceProps> = ({ quizId, o
 
       case 'true-false':
         return (
-          <div className="flex space-x-4">
+          <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
             <Button
               variant={currentAnswer === 0 ? "default" : "outline"}
               className="flex-1 p-6"
@@ -207,7 +238,7 @@ const EnhancedQuizInterface: React.FC<EnhancedQuizInterfaceProps> = ({ quizId, o
 
       case 'match':
         return (
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <h4 className="font-semibold">Scientists</h4>
               {question.matchPairs?.map((pair, index) => (
@@ -307,34 +338,38 @@ const EnhancedQuizInterface: React.FC<EnhancedQuizInterfaceProps> = ({ quizId, o
   const progress = ((currentQuestion + 1) / questions.length) * 100;
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4">
+    <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <Button variant="outline" onClick={onBack}>
-          <ChevronLeft className="w-4 h-4 mr-2" />
-          Back
-        </Button>
-        <div className="flex items-center space-x-4">
-          <div className="flex items-center space-x-2">
-            <Clock className="w-4 h-4" />
-            <span className="font-mono">{formatTime(timeLeft)}</span>
-          </div>
-          <Badge variant="outline">
-            Question {currentQuestion + 1} of {questions.length}
-          </Badge>
-          <Button
-            variant="outline"
-            onClick={() => setShowLedger(!showLedger)}
-            className="flex items-center space-x-2"
-          >
-            {showLedger ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-            <span>Ledger</span>
+      <div className="bg-white border-b p-4">
+        <div className="flex items-center justify-between">
+          <Button variant="outline" onClick={onBack} size="sm">
+            <ChevronLeft className="w-4 h-4 mr-2" />
+            Back
           </Button>
+          <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2">
+              <Clock className="w-4 h-4" />
+              <span className="font-mono text-sm">{formatTime(timeLeft)}</span>
+            </div>
+            <Badge variant="outline">
+              Question {currentQuestion + 1} of {questions.length}
+            </Badge>
+            {/* Desktop Ledger Toggle */}
+            <Button
+              variant="outline"
+              onClick={() => setShowLedger(!showLedger)}
+              className="hidden lg:flex items-center space-x-2"
+              size="sm"
+            >
+              {showLedger ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              <span>Ledger</span>
+            </Button>
+          </div>
         </div>
       </div>
 
       {/* Progress */}
-      <div className="mb-6">
+      <div className="bg-white border-b p-4">
         <div className="flex justify-between text-sm text-gray-600 mb-2">
           <span>Progress</span>
           <span>{Math.round(progress)}%</span>
@@ -342,15 +377,15 @@ const EnhancedQuizInterface: React.FC<EnhancedQuizInterfaceProps> = ({ quizId, o
         <Progress value={progress} className="h-2" />
       </div>
 
-      <div className="flex gap-6">
+      <div className="flex flex-col lg:flex-row">
         {/* Main Question Area */}
-        <div className="flex-1">
+        <div className="flex-1 p-4 lg:p-6">
           {/* Question Card */}
           <Card className="mb-6">
             <CardHeader>
-              <CardTitle className="flex items-start justify-between">
+              <CardTitle className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                 <span className="flex-1">{question.text}</span>
-                <div className="flex items-center space-x-2 ml-4">
+                <div className="flex items-center space-x-2">
                   <Badge variant="outline">
                     {question.type.replace('-', ' ').toUpperCase()}
                   </Badge>
@@ -371,11 +406,12 @@ const EnhancedQuizInterface: React.FC<EnhancedQuizInterfaceProps> = ({ quizId, o
           </Card>
 
           {/* Navigation */}
-          <div className="flex justify-between">
+          <div className="flex flex-col sm:flex-row justify-between gap-4 mb-6">
             <Button
               variant="outline"
               onClick={handlePrevious}
               disabled={currentQuestion === 0}
+              className="w-full sm:w-auto"
             >
               <ChevronLeft className="w-4 h-4 mr-2" />
               Previous
@@ -383,7 +419,7 @@ const EnhancedQuizInterface: React.FC<EnhancedQuizInterfaceProps> = ({ quizId, o
             
             <Button
               onClick={handleNext}
-              className="bg-blue-600 hover:bg-blue-700"
+              className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto"
             >
               {currentQuestion === questions.length - 1 ? 'Submit' : 'Next'}
               <ChevronRight className="w-4 h-4 ml-2" />
@@ -391,90 +427,172 @@ const EnhancedQuizInterface: React.FC<EnhancedQuizInterfaceProps> = ({ quizId, o
           </div>
         </div>
 
-        {/* Question Ledger */}
+        {/* Desktop Ledger Sidebar */}
         {showLedger && (
-          <div className="w-80">
-            <Card className="sticky top-6">
-              <CardHeader>
-                <CardTitle className="text-lg">Question Ledger</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {/* Status Legend */}
-                  <div className="space-y-2">
-                    <h4 className="font-medium text-sm">Status Legend:</h4>
-                    <div className="flex flex-wrap gap-2 text-xs">
-                      <div className="flex items-center space-x-1">
-                        <div className="w-3 h-3 bg-green-500 rounded"></div>
-                        <span>Answered</span>
+          <div className="hidden lg:block w-80 border-l bg-white">
+            <div className="p-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Question Ledger</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {/* Status Legend */}
+                    <div className="space-y-2">
+                      <h4 className="font-medium text-sm">Status Legend:</h4>
+                      <div className="flex flex-wrap gap-2 text-xs">
+                        <div className="flex items-center space-x-1">
+                          <div className="w-3 h-3 bg-green-500 rounded"></div>
+                          <span>Answered</span>
+                        </div>
+                        <div className="flex items-center space-x-1">
+                          <div className="w-3 h-3 bg-yellow-500 rounded"></div>
+                          <span>Flagged</span>
+                        </div>
+                        <div className="flex items-center space-x-1">
+                          <div className="w-3 h-3 bg-blue-500 rounded"></div>
+                          <span>Current</span>
+                        </div>
+                        <div className="flex items-center space-x-1">
+                          <div className="w-3 h-3 bg-gray-200 rounded"></div>
+                          <span>Unanswered</span>
+                        </div>
                       </div>
-                      <div className="flex items-center space-x-1">
-                        <div className="w-3 h-3 bg-yellow-500 rounded"></div>
-                        <span>Flagged</span>
+                    </div>
+
+                    {/* Question Navigator */}
+                    <div>
+                      <h4 className="font-medium text-sm mb-2">Questions:</h4>
+                      <div className="grid grid-cols-5 gap-2">
+                        {questions.map((_, index) => {
+                          const status = getQuestionStatus(index);
+                          return (
+                            <Button
+                              key={index}
+                              variant="outline"
+                              size="sm"
+                              className={`w-full h-10 ${getStatusColor(status)} border-0`}
+                              onClick={() => setCurrentQuestion(index)}
+                            >
+                              {index + 1}
+                              {flaggedQuestions.has(index) && (
+                                <Flag className="w-3 h-3 ml-1" />
+                              )}
+                            </Button>
+                          );
+                        })}
                       </div>
-                      <div className="flex items-center space-x-1">
-                        <div className="w-3 h-3 bg-blue-500 rounded"></div>
-                        <span>Current</span>
-                      </div>
-                      <div className="flex items-center space-x-1">
-                        <div className="w-3 h-3 bg-gray-200 rounded"></div>
-                        <span>Unanswered</span>
+                    </div>
+
+                    {/* Quick Stats */}
+                    <div className="space-y-2 pt-4 border-t">
+                      <h4 className="font-medium text-sm">Quick Stats:</h4>
+                      <div className="text-sm space-y-1">
+                        <div className="flex justify-between">
+                          <span>Answered:</span>
+                          <span className="font-medium text-green-600">
+                            {Object.keys(answers).length}/{questions.length}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Flagged:</span>
+                          <span className="font-medium text-yellow-600">
+                            {flaggedQuestions.size}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Remaining:</span>
+                          <span className="font-medium text-gray-600">
+                            {questions.length - Object.keys(answers).length}
+                          </span>
+                        </div>
                       </div>
                     </div>
                   </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        )}
+      </div>
 
-                  {/* Question Navigator */}
-                  <div>
-                    <h4 className="font-medium text-sm mb-2">Questions:</h4>
-                    <div className="grid grid-cols-5 gap-2">
-                      {questions.map((_, index) => {
-                        const status = getQuestionStatus(index);
-                        return (
-                          <Button
-                            key={index}
-                            variant="outline"
-                            size="sm"
-                            className={`w-full h-10 ${getStatusColor(status)} border-0`}
-                            onClick={() => setCurrentQuestion(index)}
-                          >
-                            {index + 1}
-                            {flaggedQuestions.has(index) && (
-                              <Flag className="w-3 h-3 ml-1" />
-                            )}
-                          </Button>
-                        );
-                      })}
+      {/* Mobile Ledger at Bottom */}
+      <div className="lg:hidden bg-white border-t p-4">
+        <Button
+          variant="outline"
+          onClick={() => setShowLedger(!showLedger)}
+          className="w-full mb-4 flex items-center justify-center space-x-2"
+        >
+          {showLedger ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+          <span>Question Overview</span>
+        </Button>
+        
+        {showLedger && (
+          <Card>
+            <CardContent className="p-4">
+              <div className="space-y-4">
+                {/* Status Legend */}
+                <div className="space-y-2">
+                  <h4 className="font-medium text-sm">Status:</h4>
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div className="flex items-center space-x-1">
+                      <div className="w-3 h-3 bg-green-500 rounded"></div>
+                      <span>Answered</span>
                     </div>
-                  </div>
-
-                  {/* Quick Stats */}
-                  <div className="space-y-2 pt-4 border-t">
-                    <h4 className="font-medium text-sm">Quick Stats:</h4>
-                    <div className="text-sm space-y-1">
-                      <div className="flex justify-between">
-                        <span>Answered:</span>
-                        <span className="font-medium text-green-600">
-                          {Object.keys(answers).length}/{questions.length}
-                        </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>Flagged:</span>
-                        <span className="font-medium text-yellow-600">
-                          {flaggedQuestions.size}
-                        </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>Remaining:</span>
-                        <span className="font-medium text-gray-600">
-                          {questions.length - Object.keys(answers).length}
-                        </span>
-                      </div>
+                    <div className="flex items-center space-x-1">
+                      <div className="w-3 h-3 bg-yellow-500 rounded"></div>
+                      <span>Flagged</span>
+                    </div>
+                    <div className="flex items-center space-x-1">
+                      <div className="w-3 h-3 bg-blue-500 rounded"></div>
+                      <span>Current</span>
+                    </div>
+                    <div className="flex items-center space-x-1">
+                      <div className="w-3 h-3 bg-gray-200 rounded"></div>
+                      <span>Unanswered</span>
                     </div>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-          </div>
+
+                {/* Question Navigator */}
+                <div>
+                  <h4 className="font-medium text-sm mb-2">Questions:</h4>
+                  <div className="grid grid-cols-6 gap-2">
+                    {questions.map((_, index) => {
+                      const status = getQuestionStatus(index);
+                      return (
+                        <Button
+                          key={index}
+                          variant="outline"
+                          size="sm"
+                          className={`w-full h-10 ${getStatusColor(status)} border-0 text-xs`}
+                          onClick={() => setCurrentQuestion(index)}
+                        >
+                          {index + 1}
+                        </Button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Quick Stats */}
+                <div className="grid grid-cols-3 gap-4 pt-2 border-t text-center">
+                  <div>
+                    <div className="text-lg font-bold text-green-600">{Object.keys(answers).length}</div>
+                    <div className="text-xs text-gray-600">Answered</div>
+                  </div>
+                  <div>
+                    <div className="text-lg font-bold text-yellow-600">{flaggedQuestions.size}</div>
+                    <div className="text-xs text-gray-600">Flagged</div>
+                  </div>
+                  <div>
+                    <div className="text-lg font-bold text-gray-600">{questions.length - Object.keys(answers).length}</div>
+                    <div className="text-xs text-gray-600">Remaining</div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         )}
       </div>
     </div>

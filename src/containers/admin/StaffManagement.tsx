@@ -4,26 +4,28 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { 
-  Users, 
   Plus, 
   Search, 
   Filter, 
-  UserCheck, 
-  Clock, 
+  Eye, 
+  Edit, 
+  Trash2, 
+  Clock,
   Calendar,
-  BookOpen,
-  Award,
+  DollarSign,
+  User,
   Phone,
   Mail,
   MapPin,
-  Edit,
-  Trash2
+  GraduationCap,
+  FileText,
+  Award
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
@@ -32,25 +34,39 @@ interface Staff {
   name: string;
   email: string;
   phone: string;
-  position: string;
-  department: string;
+  role: 'teacher' | 'admin' | 'support';
   subjects: string[];
   joinDate: string;
-  experience: string;
-  qualifications: string;
+  avatar: string;
+  address: string;
+  qualification: string;
+  experience: number;
   hourlyRate: number;
   totalHours: number;
   monthlyHours: number;
-  avatar?: string;
   status: 'active' | 'inactive';
 }
 
+interface HourLog {
+  id: string;
+  staffId: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+  subject: string;
+  batch: string;
+  hours: number;
+  status: 'completed' | 'pending' | 'cancelled';
+}
+
 const StaffManagement = () => {
-  const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState('overview');
-  const [showAddStaff, setShowAddStaff] = useState(false);
+  const [activeTab, setActiveTab] = useState('list');
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterDepartment, setFilterDepartment] = useState('all');
+  const [selectedRole, setSelectedRole] = useState('all');
+  const [showAddStaff, setShowAddStaff] = useState(false);
+  const [showAddHours, setShowAddHours] = useState(false);
+  const [selectedStaff, setSelectedStaff] = useState<Staff | null>(null);
+  const { toast } = useToast();
 
   const [staff, setStaff] = useState<Staff[]>([
     {
@@ -58,48 +74,59 @@ const StaffManagement = () => {
       name: 'Dr. Rajesh Kumar',
       email: 'rajesh.kumar@academy.com',
       phone: '+91 9876543210',
-      position: 'Senior Faculty',
-      department: 'Physics',
+      role: 'teacher',
       subjects: ['Physics', 'Mathematics'],
-      joinDate: '2022-01-15',
-      experience: '8 years',
-      qualifications: 'PhD in Physics, M.Sc Physics',
+      joinDate: '2023-01-15',
+      avatar: '',
+      address: 'Mumbai, Maharashtra',
+      qualification: 'PhD in Physics',
+      experience: 8,
       hourlyRate: 1500,
-      totalHours: 1240,
-      monthlyHours: 84,
+      totalHours: 240,
+      monthlyHours: 45,
       status: 'active'
     },
     {
       id: '2',
-      name: 'Dr. Priya Sharma',
+      name: 'Prof. Priya Sharma',
       email: 'priya.sharma@academy.com',
       phone: '+91 9876543211',
-      position: 'Faculty',
-      department: 'Chemistry',
-      subjects: ['Chemistry', 'Environmental Science'],
-      joinDate: '2022-06-10',
-      experience: '5 years',
-      qualifications: 'PhD in Chemistry, M.Sc Chemistry',
+      role: 'teacher',
+      subjects: ['Chemistry', 'Biology'],
+      joinDate: '2023-03-20',
+      avatar: '',
+      address: 'Delhi, India',
+      qualification: 'MSc Chemistry',
+      experience: 5,
       hourlyRate: 1200,
-      totalHours: 890,
-      monthlyHours: 76,
+      totalHours: 180,
+      monthlyHours: 38,
       status: 'active'
+    }
+  ]);
+
+  const [hourLogs, setHourLogs] = useState<HourLog[]>([
+    {
+      id: '1',
+      staffId: '1',
+      date: '2024-01-15',
+      startTime: '09:00',
+      endTime: '11:00',
+      subject: 'Physics',
+      batch: 'NEET 2024',
+      hours: 2,
+      status: 'completed'
     },
     {
-      id: '3',
-      name: 'Prof. Amit Verma',
-      email: 'amit.verma@academy.com',
-      phone: '+91 9876543212',
-      position: 'HOD',
-      department: 'Biology',
-      subjects: ['Biology', 'Botany', 'Zoology'],
-      joinDate: '2021-08-20',
-      experience: '12 years',
-      qualifications: 'PhD in Biology, M.Sc Botany',
-      hourlyRate: 1800,
-      totalHours: 1560,
-      monthlyHours: 92,
-      status: 'active'
+      id: '2',
+      staffId: '1',
+      date: '2024-01-16',
+      startTime: '14:00',
+      endTime: '16:30',
+      subject: 'Mathematics',
+      batch: 'JEE 2024',
+      hours: 2.5,
+      status: 'completed'
     }
   ]);
 
@@ -107,420 +134,552 @@ const StaffManagement = () => {
     name: '',
     email: '',
     phone: '',
-    position: '',
-    department: '',
+    role: 'teacher',
     subjects: [],
-    experience: '',
-    qualifications: '',
+    address: '',
+    qualification: '',
+    experience: 0,
     hourlyRate: 0
   });
 
-  const departments = ['Physics', 'Chemistry', 'Biology', 'Mathematics', 'English'];
-  const positions = ['Faculty', 'Senior Faculty', 'HOD', 'Assistant Professor', 'Professor'];
+  const [newHourLog, setNewHourLog] = useState({
+    staffId: '',
+    date: '',
+    startTime: '',
+    endTime: '',
+    subject: '',
+    batch: '',
+    status: 'completed'
+  });
+
+  const filteredStaff = staff.filter(member => {
+    const matchesSearch = member.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         member.email.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesRole = selectedRole === 'all' || member.role === selectedRole;
+    return matchesSearch && matchesRole;
+  });
 
   const handleAddStaff = () => {
-    if (!newStaff.name || !newStaff.email || !newStaff.department) {
+    if (!newStaff.name || !newStaff.email || !newStaff.phone) {
       toast({
         title: "Error",
-        description: "Please fill in all required fields",
+        description: "Please fill in all required fields.",
         variant: "destructive"
       });
       return;
     }
 
-    const staffMember: Staff = {
+    const staff_member: Staff = {
       id: Date.now().toString(),
       ...newStaff,
-      subjects: [newStaff.department],
+      subjects: typeof newStaff.subjects === 'string' ? newStaff.subjects.split(',').map(s => s.trim()) : [],
       joinDate: new Date().toISOString().split('T')[0],
+      avatar: '',
       totalHours: 0,
       monthlyHours: 0,
       status: 'active'
     };
 
-    setStaff([...staff, staffMember]);
+    setStaff(prev => [...prev, staff_member]);
     setNewStaff({
       name: '',
       email: '',
       phone: '',
-      position: '',
-      department: '',
+      role: 'teacher',
       subjects: [],
-      experience: '',
-      qualifications: '',
+      address: '',
+      qualification: '',
+      experience: 0,
       hourlyRate: 0
     });
     setShowAddStaff(false);
-
+    
     toast({
       title: "Success",
-      description: "Staff member added successfully"
+      description: "Staff member added successfully.",
     });
   };
 
-  const filteredStaff = staff.filter(member => {
-    const matchesSearch = member.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         member.email.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesDepartment = filterDepartment === 'all' || member.department === filterDepartment;
-    return matchesSearch && matchesDepartment;
-  });
+  const handleAddHours = () => {
+    if (!newHourLog.staffId || !newHourLog.date || !newHourLog.startTime || !newHourLog.endTime) {
+      toast({
+        title: "Error",
+        description: "Please fill in all required fields.",
+        variant: "destructive"
+      });
+      return;
+    }
 
-  const totalStaff = staff.length;
-  const activeStaff = staff.filter(s => s.status === 'active').length;
-  const totalHoursThisMonth = staff.reduce((sum, s) => sum + s.monthlyHours, 0);
-  const avgHourlyRate = staff.reduce((sum, s) => sum + s.hourlyRate, 0) / staff.length;
+    const startTime = new Date(`2000-01-01T${newHourLog.startTime}`);
+    const endTime = new Date(`2000-01-01T${newHourLog.endTime}`);
+    const hours = (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60);
+
+    const hourLog: HourLog = {
+      id: Date.now().toString(),
+      ...newHourLog,
+      hours
+    };
+
+    setHourLogs(prev => [...prev, hourLog]);
+    
+    // Update staff hours
+    setStaff(prev => prev.map(member => 
+      member.id === newHourLog.staffId 
+        ? { ...member, totalHours: member.totalHours + hours, monthlyHours: member.monthlyHours + hours }
+        : member
+    ));
+
+    setNewHourLog({
+      staffId: '',
+      date: '',
+      startTime: '',
+      endTime: '',
+      subject: '',
+      batch: '',
+      status: 'completed'
+    });
+    setShowAddHours(false);
+    
+    toast({
+      title: "Success",
+      description: "Hours logged successfully.",
+    });
+  };
+
+  const getRoleColor = (role: string) => {
+    switch (role) {
+      case 'teacher': return 'bg-blue-100 text-blue-800';
+      case 'admin': return 'bg-purple-100 text-purple-800';
+      case 'support': return 'bg-green-100 text-green-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'completed': return 'bg-green-100 text-green-800';
+      case 'pending': return 'bg-yellow-100 text-yellow-800';
+      case 'cancelled': return 'bg-red-100 text-red-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
 
   return (
-    <div className="space-y-8 bg-gradient-to-br from-green-50 to-blue-50 min-h-screen p-6">
-      {/* Header */}
-      <div className="bg-white rounded-xl shadow-lg p-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent">
-              Staff Management
-            </h1>
-            <p className="text-gray-600 mt-2">Manage faculty and track teaching hours</p>
-          </div>
-          <Button 
-            onClick={() => setShowAddStaff(true)}
-            className="bg-green-600 hover:bg-green-700"
-          >
-            <Plus className="w-5 h-5 mr-2" />
-            Add Staff Member
-          </Button>
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Staff Management</h1>
+          <p className="text-gray-600">Manage teaching staff and track their hours</p>
+        </div>
+        <div className="flex gap-2">
+          <Dialog open={showAddHours} onOpenChange={setShowAddHours}>
+            <DialogTrigger asChild>
+              <Button variant="outline" className="flex items-center gap-2">
+                <Clock className="w-4 h-4" />
+                Log Hours
+              </Button>
+            </DialogTrigger>
+          </Dialog>
+          <Dialog open={showAddStaff} onOpenChange={setShowAddStaff}>
+            <DialogTrigger asChild>
+              <Button className="flex items-center gap-2">
+                <Plus className="w-4 h-4" />
+                Add Staff
+              </Button>
+            </DialogTrigger>
+          </Dialog>
         </div>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card className="border-0 shadow-xl bg-gradient-to-br from-blue-500 to-blue-600 text-white">
-          <CardContent className="p-6 text-center">
-            <Users className="w-12 h-12 mx-auto mb-3 opacity-80" />
-            <p className="text-3xl font-bold mb-1">{totalStaff}</p>
-            <p className="text-blue-100">Total Staff</p>
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Total Staff</p>
+                <p className="text-2xl font-bold">{staff.length}</p>
+              </div>
+              <User className="w-8 h-8 text-blue-500" />
+            </div>
           </CardContent>
         </Card>
-        
-        <Card className="border-0 shadow-xl bg-gradient-to-br from-green-500 to-green-600 text-white">
-          <CardContent className="p-6 text-center">
-            <UserCheck className="w-12 h-12 mx-auto mb-3 opacity-80" />
-            <p className="text-3xl font-bold mb-1">{activeStaff}</p>
-            <p className="text-green-100">Active Staff</p>
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Active Teachers</p>
+                <p className="text-2xl font-bold">{staff.filter(s => s.role === 'teacher' && s.status === 'active').length}</p>
+              </div>
+              <GraduationCap className="w-8 h-8 text-green-500" />
+            </div>
           </CardContent>
         </Card>
-        
-        <Card className="border-0 shadow-xl bg-gradient-to-br from-purple-500 to-purple-600 text-white">
-          <CardContent className="p-6 text-center">
-            <Clock className="w-12 h-12 mx-auto mb-3 opacity-80" />
-            <p className="text-3xl font-bold mb-1">{totalHoursThisMonth}</p>
-            <p className="text-purple-100">Hours This Month</p>
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Total Hours This Month</p>
+                <p className="text-2xl font-bold">{staff.reduce((sum, s) => sum + s.monthlyHours, 0)}</p>
+              </div>
+              <Clock className="w-8 h-8 text-purple-500" />
+            </div>
           </CardContent>
         </Card>
-        
-        <Card className="border-0 shadow-xl bg-gradient-to-br from-orange-500 to-orange-600 text-white">
-          <CardContent className="p-6 text-center">
-            <Award className="w-12 h-12 mx-auto mb-3 opacity-80" />
-            <p className="text-3xl font-bold mb-1">₹{Math.round(avgHourlyRate)}</p>
-            <p className="text-orange-100">Avg Hourly Rate</p>
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Monthly Payroll</p>
+                <p className="text-2xl font-bold">₹{staff.reduce((sum, s) => sum + (s.monthlyHours * s.hourlyRate), 0).toLocaleString()}</p>
+              </div>
+              <DollarSign className="w-8 h-8 text-orange-500" />
+            </div>
           </CardContent>
         </Card>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-3 bg-white shadow-md">
-          <TabsTrigger value="overview" className="data-[state=active]:bg-green-500 data-[state=active]:text-white">
-            Staff Overview
-          </TabsTrigger>
-          <TabsTrigger value="hours" className="data-[state=active]:bg-blue-500 data-[state=active]:text-white">
-            Hours Tracking
-          </TabsTrigger>
-          <TabsTrigger value="payroll" className="data-[state=active]:bg-purple-500 data-[state=active]:text-white">
-            Payroll Summary
-          </TabsTrigger>
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList>
+          <TabsTrigger value="list">Staff List</TabsTrigger>
+          <TabsTrigger value="hours">Hour Logs</TabsTrigger>
+          <TabsTrigger value="payroll">Payroll</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="overview" className="space-y-6">
-          {/* Search and Filter */}
-          <Card className="border-0 shadow-lg">
-            <CardContent className="p-6">
-              <div className="flex flex-col md:flex-row gap-4">
-                <div className="flex-1 relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                  <Input
-                    placeholder="Search staff by name or email..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
-                <Select value={filterDepartment} onValueChange={setFilterDepartment}>
-                  <SelectTrigger className="w-full md:w-48">
-                    <Filter className="w-4 h-4 mr-2" />
-                    <SelectValue placeholder="Filter by department" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Departments</SelectItem>
-                    {departments.map(dept => (
-                      <SelectItem key={dept} value={dept}>{dept}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Staff List */}
-          <div className="grid gap-4">
-            {filteredStaff.map((member) => (
-              <Card key={member.id} className="border-0 shadow-lg hover:shadow-xl transition-shadow">
-                <CardContent className="p-6">
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-start gap-4 flex-1">
-                      <Avatar className="w-16 h-16">
-                        <AvatarImage src={member.avatar} alt={member.name} />
-                        <AvatarFallback className="bg-gradient-to-r from-green-500 to-blue-500 text-white">
-                          {member.name.split(' ').map(n => n[0]).join('')}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <h3 className="text-xl font-semibold text-gray-900">{member.name}</h3>
-                          <Badge className={member.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}>
-                            {member.status}
-                          </Badge>
-                          <Badge variant="outline">{member.position}</Badge>
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600">
-                          <div className="flex items-center gap-2">
-                            <Mail className="w-4 h-4" />
-                            <span>{member.email}</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Phone className="w-4 h-4" />
-                            <span>{member.phone}</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <BookOpen className="w-4 h-4" />
-                            <span>{member.department}</span>
-                          </div>
-                        </div>
-                        <div className="mt-3">
-                          <p className="text-sm text-gray-600 mb-2">
-                            <strong>Subjects:</strong> {member.subjects.join(', ')}
-                          </p>
-                          <p className="text-sm text-gray-600">
-                            <strong>Experience:</strong> {member.experience} | <strong>Rate:</strong> ₹{member.hourlyRate}/hour
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button variant="outline" size="sm">
-                        <Edit className="w-4 h-4" />
-                      </Button>
-                      <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700">
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
+        <TabsContent value="list">
+          <Card>
+            <CardHeader>
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <CardTitle>Staff Members</CardTitle>
+                <div className="flex gap-2 w-full sm:w-auto">
+                  <div className="relative flex-1 sm:flex-none">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                    <Input
+                      placeholder="Search staff..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="pl-10 w-full sm:w-64"
+                    />
                   </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </TabsContent>
-
-        <TabsContent value="hours" className="space-y-6">
-          <div className="grid gap-4">
-            {staff.map((member) => (
-              <Card key={member.id} className="border-0 shadow-lg">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
+                  <Select value={selectedRole} onValueChange={setSelectedRole}>
+                    <SelectTrigger className="w-full sm:w-32">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Roles</SelectItem>
+                      <SelectItem value="teacher">Teacher</SelectItem>
+                      <SelectItem value="admin">Admin</SelectItem>
+                      <SelectItem value="support">Support</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {filteredStaff.map((member) => (
+                  <div key={member.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50">
                     <div className="flex items-center gap-4">
                       <Avatar className="w-12 h-12">
                         <AvatarImage src={member.avatar} alt={member.name} />
-                        <AvatarFallback className="bg-gradient-to-r from-green-500 to-blue-500 text-white">
+                        <AvatarFallback className="bg-gradient-to-r from-blue-500 to-purple-500 text-white">
                           {member.name.split(' ').map(n => n[0]).join('')}
                         </AvatarFallback>
                       </Avatar>
                       <div>
-                        <h3 className="font-semibold text-gray-900">{member.name}</h3>
-                        <p className="text-sm text-gray-600">{member.department}</p>
+                        <h3 className="font-medium text-gray-900">{member.name}</h3>
+                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                          <Mail className="w-4 h-4" />
+                          {member.email}
+                        </div>
+                        <div className="flex items-center gap-2 mt-1">
+                          <Badge className={getRoleColor(member.role)}>
+                            {member.role.charAt(0).toUpperCase() + member.role.slice(1)}
+                          </Badge>
+                          <span className="text-sm text-gray-500">
+                            {member.subjects.join(', ')}
+                          </span>
+                        </div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-6 text-center">
-                      <div>
-                        <p className="text-2xl font-bold text-blue-600">{member.monthlyHours}</p>
-                        <p className="text-sm text-gray-600">This Month</p>
+                    <div className="flex items-center gap-4 text-right">
+                      <div className="text-sm">
+                        <p className="font-medium">{member.monthlyHours}h this month</p>
+                        <p className="text-gray-600">₹{member.hourlyRate}/hour</p>
                       </div>
-                      <div>
-                        <p className="text-2xl font-bold text-green-600">{member.totalHours}</p>
-                        <p className="text-sm text-gray-600">Total Hours</p>
-                      </div>
-                      <div>
-                        <p className="text-2xl font-bold text-purple-600">₹{member.hourlyRate * member.monthlyHours}</p>
-                        <p className="text-sm text-gray-600">Monthly Earning</p>
+                      <div className="flex gap-2">
+                        <Button variant="outline" size="sm" onClick={() => setSelectedStaff(member)}>
+                          <Eye className="w-4 h-4" />
+                        </Button>
+                        <Button variant="outline" size="sm">
+                          <Edit className="w-4 h-4" />
+                        </Button>
                       </div>
                     </div>
                   </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
 
-        <TabsContent value="payroll" className="space-y-6">
-          <Card className="border-0 shadow-lg">
+        <TabsContent value="hours">
+          <Card>
             <CardHeader>
-              <CardTitle>Monthly Payroll Summary</CardTitle>
+              <CardTitle>Hour Logs</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {hourLogs.map((log) => {
+                  const staffMember = staff.find(s => s.id === log.staffId);
+                  return (
+                    <div key={log.id} className="flex items-center justify-between p-4 border rounded-lg">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                          <Clock className="w-6 h-6 text-blue-600" />
+                        </div>
+                        <div>
+                          <h3 className="font-medium">{staffMember?.name}</h3>
+                          <p className="text-sm text-gray-600">{log.subject} - {log.batch}</p>
+                          <p className="text-sm text-gray-500">{log.date}</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-medium">{log.hours} hours</p>
+                        <p className="text-sm text-gray-600">{log.startTime} - {log.endTime}</p>
+                        <Badge className={getStatusColor(log.status)}>
+                          {log.status}
+                        </Badge>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="payroll">
+          <Card>
+            <CardHeader>
+              <CardTitle>Monthly Payroll</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
                 {staff.map((member) => (
-                  <div key={member.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                    <div className="flex items-center gap-3">
+                  <div key={member.id} className="flex items-center justify-between p-4 border rounded-lg">
+                    <div className="flex items-center gap-4">
                       <Avatar className="w-10 h-10">
-                        <AvatarImage src={member.avatar} alt={member.name} />
-                        <AvatarFallback>
+                        <AvatarFallback className="bg-gradient-to-r from-green-500 to-blue-500 text-white">
                           {member.name.split(' ').map(n => n[0]).join('')}
                         </AvatarFallback>
                       </Avatar>
                       <div>
-                        <p className="font-medium">{member.name}</p>
-                        <p className="text-sm text-gray-600">{member.monthlyHours} hours</p>
+                        <h3 className="font-medium">{member.name}</h3>
+                        <p className="text-sm text-gray-600">{member.role}</p>
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className="text-lg font-bold text-green-600">₹{member.hourlyRate * member.monthlyHours}</p>
-                      <p className="text-sm text-gray-600">@₹{member.hourlyRate}/hour</p>
+                      <p className="font-medium">₹{(member.monthlyHours * member.hourlyRate).toLocaleString()}</p>
+                      <p className="text-sm text-gray-600">{member.monthlyHours}h × ₹{member.hourlyRate}</p>
                     </div>
                   </div>
                 ))}
-                <div className="border-t pt-4">
-                  <div className="flex justify-between items-center">
-                    <p className="text-lg font-semibold">Total Monthly Payroll:</p>
-                    <p className="text-2xl font-bold text-green-600">
-                      ₹{staff.reduce((sum, s) => sum + (s.hourlyRate * s.monthlyHours), 0)}
-                    </p>
-                  </div>
-                </div>
               </div>
             </CardContent>
           </Card>
         </TabsContent>
       </Tabs>
 
-      {/* Add Staff Modal */}
-      {showAddStaff && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <CardHeader>
-              <CardTitle>Add New Staff Member</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="name">Full Name *</Label>
-                  <Input
-                    id="name"
-                    value={newStaff.name}
-                    onChange={(e) => setNewStaff({...newStaff, name: e.target.value})}
-                    placeholder="Enter full name"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="email">Email *</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={newStaff.email}
-                    onChange={(e) => setNewStaff({...newStaff, email: e.target.value})}
-                    placeholder="Enter email address"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="phone">Phone</Label>
-                  <Input
-                    id="phone"
-                    value={newStaff.phone}
-                    onChange={(e) => setNewStaff({...newStaff, phone: e.target.value})}
-                    placeholder="Enter phone number"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="position">Position</Label>
-                  <Select value={newStaff.position} onValueChange={(value) => setNewStaff({...newStaff, position: value})}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select position" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {positions.map(pos => (
-                        <SelectItem key={pos} value={pos}>{pos}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="department">Department *</Label>
-                  <Select value={newStaff.department} onValueChange={(value) => setNewStaff({...newStaff, department: value})}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select department" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {departments.map(dept => (
-                        <SelectItem key={dept} value={dept}>{dept}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="hourlyRate">Hourly Rate (₹)</Label>
-                  <Input
-                    id="hourlyRate"
-                    type="number"
-                    value={newStaff.hourlyRate}
-                    onChange={(e) => setNewStaff({...newStaff, hourlyRate: parseInt(e.target.value)})}
-                    placeholder="Enter hourly rate"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="experience">Experience</Label>
-                  <Input
-                    id="experience"
-                    value={newStaff.experience}
-                    onChange={(e) => setNewStaff({...newStaff, experience: e.target.value})}
-                    placeholder="e.g., 5 years"
-                  />
-                </div>
-              </div>
+      {/* Add Staff Dialog */}
+      <Dialog open={showAddStaff} onOpenChange={setShowAddStaff}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Add New Staff Member</DialogTitle>
+          </DialogHeader>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="name">Full Name *</Label>
+              <Input
+                id="name"
+                value={newStaff.name}
+                onChange={(e) => setNewStaff(prev => ({ ...prev, name: e.target.value }))}
+                placeholder="Enter full name"
+              />
+            </div>
+            <div>
+              <Label htmlFor="email">Email *</Label>
+              <Input
+                id="email"
+                type="email"
+                value={newStaff.email}
+                onChange={(e) => setNewStaff(prev => ({ ...prev, email: e.target.value }))}
+                placeholder="Enter email"
+              />
+            </div>
+            <div>
+              <Label htmlFor="phone">Phone *</Label>
+              <Input
+                id="phone"
+                value={newStaff.phone}
+                onChange={(e) => setNewStaff(prev => ({ ...prev, phone: e.target.value }))}
+                placeholder="Enter phone number"
+              />
+            </div>
+            <div>
+              <Label htmlFor="role">Role</Label>
+              <Select value={newStaff.role} onValueChange={(value) => setNewStaff(prev => ({ ...prev, role: value }))}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="teacher">Teacher</SelectItem>
+                  <SelectItem value="admin">Admin</SelectItem>
+                  <SelectItem value="support">Support</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="subjects">Subjects (comma separated)</Label>
+              <Input
+                id="subjects"
+                value={Array.isArray(newStaff.subjects) ? newStaff.subjects.join(', ') : newStaff.subjects}
+                onChange={(e) => setNewStaff(prev => ({ ...prev, subjects: e.target.value }))}
+                placeholder="Physics, Mathematics"
+              />
+            </div>
+            <div>
+              <Label htmlFor="hourlyRate">Hourly Rate (₹)</Label>
+              <Input
+                id="hourlyRate"
+                type="number"
+                value={newStaff.hourlyRate}
+                onChange={(e) => setNewStaff(prev => ({ ...prev, hourlyRate: Number(e.target.value) }))}
+                placeholder="1500"
+              />
+            </div>
+            <div className="col-span-2">
+              <Label htmlFor="qualification">Qualification</Label>
+              <Input
+                id="qualification"
+                value={newStaff.qualification}
+                onChange={(e) => setNewStaff(prev => ({ ...prev, qualification: e.target.value }))}
+                placeholder="PhD in Physics"
+              />
+            </div>
+            <div>
+              <Label htmlFor="experience">Experience (years)</Label>
+              <Input
+                id="experience"
+                type="number"
+                value={newStaff.experience}
+                onChange={(e) => setNewStaff(prev => ({ ...prev, experience: Number(e.target.value) }))}
+                placeholder="5"
+              />
+            </div>
+            <div>
+              <Label htmlFor="address">Address</Label>
+              <Input
+                id="address"
+                value={newStaff.address}
+                onChange={(e) => setNewStaff(prev => ({ ...prev, address: e.target.value }))}
+                placeholder="City, State"
+              />
+            </div>
+          </div>
+          <div className="flex justify-end gap-2 pt-4">
+            <Button variant="outline" onClick={() => setShowAddStaff(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleAddStaff}>
+              Add Staff Member
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Hours Dialog */}
+      <Dialog open={showAddHours} onOpenChange={setShowAddHours}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Log Teaching Hours</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="staff">Staff Member *</Label>
+              <Select value={newHourLog.staffId} onValueChange={(value) => setNewHourLog(prev => ({ ...prev, staffId: value }))}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select staff member" />
+                </SelectTrigger>
+                <SelectContent>
+                  {staff.filter(s => s.role === 'teacher').map((member) => (
+                    <SelectItem key={member.id} value={member.id}>
+                      {member.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="qualifications">Qualifications</Label>
-                <Textarea
-                  id="qualifications"
-                  value={newStaff.qualifications}
-                  onChange={(e) => setNewStaff({...newStaff, qualifications: e.target.value})}
-                  placeholder="Enter qualifications"
-                  rows={3}
+                <Label htmlFor="date">Date *</Label>
+                <Input
+                  id="date"
+                  type="date"
+                  value={newHourLog.date}
+                  onChange={(e) => setNewHourLog(prev => ({ ...prev, date: e.target.value }))}
                 />
               </div>
-              <div className="flex gap-3 pt-4">
-                <Button 
-                  variant="outline" 
-                  onClick={() => setShowAddStaff(false)}
-                  className="flex-1"
-                >
-                  Cancel
-                </Button>
-                <Button 
-                  onClick={handleAddStaff}
-                  className="flex-1 bg-green-600 hover:bg-green-700"
-                >
-                  Add Staff Member
-                </Button>
+              <div>
+                <Label htmlFor="subject">Subject</Label>
+                <Input
+                  id="subject"
+                  value={newHourLog.subject}
+                  onChange={(e) => setNewHourLog(prev => ({ ...prev, subject: e.target.value }))}
+                  placeholder="Physics"
+                />
               </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="startTime">Start Time *</Label>
+                <Input
+                  id="startTime"
+                  type="time"
+                  value={newHourLog.startTime}
+                  onChange={(e) => setNewHourLog(prev => ({ ...prev, startTime: e.target.value }))}
+                />
+              </div>
+              <div>
+                <Label htmlFor="endTime">End Time *</Label>
+                <Input
+                  id="endTime"
+                  type="time"
+                  value={newHourLog.endTime}
+                  onChange={(e) => setNewHourLog(prev => ({ ...prev, endTime: e.target.value }))}
+                />
+              </div>
+            </div>
+            <div>
+              <Label htmlFor="batch">Batch</Label>
+              <Input
+                id="batch"
+                value={newHourLog.batch}
+                onChange={(e) => setNewHourLog(prev => ({ ...prev, batch: e.target.value }))}
+                placeholder="NEET 2024"
+              />
+            </div>
+          </div>
+          <div className="flex justify-end gap-2 pt-4">
+            <Button variant="outline" onClick={() => setShowAddHours(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleAddHours}>
+              Log Hours
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

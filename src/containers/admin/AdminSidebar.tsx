@@ -40,6 +40,12 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
     { id: 'analytics', label: 'Analytics', icon: BarChart3 },
   ];
 
+  const handleTabChange = (tabId: string) => {
+    console.log('Tab clicked:', tabId); // Debug log
+    onTabChange(tabId);
+    onClose();
+  };
+
   return (
     <>
       {/* Mobile overlay */}
@@ -85,10 +91,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
                       ? 'bg-blue-600 text-white hover:bg-blue-700' 
                       : 'hover:bg-gray-100'
                   }`}
-                  onClick={() => {
-                    onTabChange(item.id);
-                    onClose();
-                  }}
+                  onClick={() => handleTabChange(item.id)}
                 >
                   <Icon className="w-4 h-4 mr-3" />
                   {item.label}
