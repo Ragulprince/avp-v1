@@ -2,19 +2,18 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
-import { ArrowLeft, Clock, Flag, ChevronLeft, ChevronRight, Move } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Clock, ChevronLeft, ChevronRight, Flag, BookOpen } from 'lucide-react';
 import QuizResults from './QuizResults';
 
 interface Question {
   id: string;
+  type: 'mcq' | 'true-false' | 'drag-drop' | 'match' | 'fill-blank';
   text: string;
-  type: 'mcq' | 'true-false' | 'drag-drop' | 'match';
   options?: string[];
-  correctAnswer: number | string | string[];
-  dragItems?: string[];
+  correctAnswer: number | string[];
+  explanation?: string;
   matchPairs?: { left: string; right: string }[];
 }
 
@@ -25,58 +24,69 @@ interface EnhancedQuizInterfaceProps {
 
 const EnhancedQuizInterface: React.FC<EnhancedQuizInterfaceProps> = ({ quizId, onBack }) => {
   const [currentQuestion, setCurrentQuestion] = useState(0);
-  const [answers, setAnswers] = useState<{ [key: number]: any }>({});
-  const [markedForReview, setMarkedForReview] = useState<Set<number>>(new Set());
-  const [timeLeft, setTimeLeft] = useState(1800);
-  const [isSubmitted, setIsSubmitted] = useState(false);
-  const [draggedItems, setDraggedItems] = useState<{ [key: number]: string[] }>({});
-  const [matchAnswers, setMatchAnswers] = useState<{ [key: number]: { [key: string]: string } }>({});
+  const [answers, setAnswers] = useState<Record<number, any>>({});
+  const [timeLeft, setTimeLeft] = useState(3600); // 60 minutes
+  const [showResults, setShowResults] = useState(false);
+  const [draggedItems, setDraggedItems] = useState<Record<string, string>>({});
 
+  // Mock questions data
   const questions: Question[] = [
     {
       id: '1',
-      text: 'What is Newton\'s First Law of Motion?',
       type: 'mcq',
+      text: 'What is Newton\'s First Law of Motion?',
       options: [
         'An object at rest stays at rest unless acted upon by a force',
         'Force equals mass times acceleration',
-        'For every action, there is an equal and opposite reaction',
+        'For every action there is an equal and opposite reaction',
         'Energy cannot be created or destroyed'
       ],
-      correctAnswer: 0
+      correctAnswer: 0,
+      explanation: 'Newton\'s First Law states that an object at rest will remain at rest, and an object in motion will remain in motion at constant velocity, unless acted upon by an external force.'
     },
     {
       id: '2',
-      text: 'The Earth revolves around the Sun.',
       type: 'true-false',
+      text: 'The Earth revolves around the Sun.',
       options: ['True', 'False'],
-      correctAnswer: 0
+      correctAnswer: 0,
+      explanation: 'The Earth orbits around the Sun, which takes approximately 365.25 days to complete one revolution.'
     },
     {
       id: '3',
-      text: 'Arrange the following planets in order from the Sun:',
-      type: 'drag-drop',
-      dragItems: ['Mars', 'Venus', 'Earth', 'Mercury'],
-      correctAnswer: ['Mercury', 'Venus', 'Earth', 'Mars']
+      type: 'fill-blank',
+      text: 'The chemical formula for water is ____.',
+      correctAnswer: 'H2O',
+      explanation: 'Water is composed of two hydrogen atoms and one oxygen atom, hence H2O.'
     },
     {
       id: '4',
-      text: 'Match the scientists with their discoveries:',
       type: 'match',
+      text: 'Match the following scientists with their discoveries:',
       matchPairs: [
-        { left: 'Newton', right: 'Laws of Motion' },
         { left: 'Einstein', right: 'Theory of Relativity' },
-        { left: 'Darwin', right: 'Evolution' }
+        { left: 'Newton', right: 'Laws of Motion' },
+        { left: 'Darwin', right: 'Theory of Evolution' },
+        { left: 'Mendel', right: 'Laws of Inheritance' }
       ],
-      correctAnswer: { 'Newton': 'Laws of Motion', 'Einstein': 'Theory of Relativity', 'Darwin': 'Evolution' }
+      correctAnswer: ['Einstein-Theory of Relativity', 'Newton-Laws of Motion', 'Darwin-Theory of Evolution', 'Mendel-Laws of Inheritance'],
+      explanation: 'Each scientist made groundbreaking contributions to their respective fields of study.'
+    },
+    {
+      id: '5',
+      type: 'drag-drop',
+      text: 'Arrange the following planets in order from the Sun:',
+      options: ['Mars', 'Earth', 'Venus', 'Mercury'],
+      correctAnswer: ['Mercury', 'Venus', 'Earth', 'Mars'],
+      explanation: 'The order from the Sun is: Mercury, Venus, Earth, Mars, Jupiter, Saturn, Uranus, Neptune.'
     }
   ];
 
   useEffect(() => {
     const timer = setInterval(() => {
-      setTimeLeft((prev) => {
+      setTimeLeft(prev => {
         if (prev <= 1) {
-          handleSubmit();
+          setShowResults(true);
           return 0;
         }
         return prev - 1;
@@ -87,174 +97,140 @@ const EnhancedQuizInterface: React.FC<EnhancedQuizInterfaceProps> = ({ quizId, o
   }, []);
 
   const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
   };
 
-  const handleAnswerChange = (value: string) => {
-    setAnswers(prev => ({
-      ...prev,
-      [currentQuestion]: value
-    }));
+  const handleAnswer = (answer: any) => {
+    setAnswers(prev => ({ ...prev, [currentQuestion]: answer }));
   };
 
-  const handleDragStart = (e: React.DragEvent, item: string) => {
-    e.dataTransfer.setData('text/plain', item);
+  const handleNext = () => {
+    if (currentQuestion < questions.length - 1) {
+      setCurrentQuestion(prev => prev + 1);
+    } else {
+      setShowResults(true);
+    }
   };
 
-  const handleDrop = (e: React.DragEvent, index: number) => {
-    e.preventDefault();
-    const item = e.dataTransfer.getData('text/plain');
-    const newOrder = [...(draggedItems[currentQuestion] || [])];
-    newOrder[index] = item;
-    setDraggedItems(prev => ({
-      ...prev,
-      [currentQuestion]: newOrder
-    }));
+  const handlePrevious = () => {
+    if (currentQuestion > 0) {
+      setCurrentQuestion(prev => prev - 1);
+    }
   };
-
-  const handleMatchSelect = (left: string, right: string) => {
-    setMatchAnswers(prev => ({
-      ...prev,
-      [currentQuestion]: {
-        ...prev[currentQuestion],
-        [left]: right
-      }
-    }));
-  };
-
-  const handleSubmit = () => {
-    setIsSubmitted(true);
-  };
-
-  const progress = ((currentQuestion + 1) / questions.length) * 100;
-  const currentQ = questions[currentQuestion];
-
-  if (isSubmitted) {
-    const correctAnswers = Math.floor(Math.random() * questions.length) + 1;
-    return (
-      <QuizResults
-        score={Math.round((correctAnswers / questions.length) * 100)}
-        totalQuestions={questions.length}
-        timeSpent={1800 - timeLeft}
-        correctAnswers={correctAnswers}
-        onRetry={() => {
-          setIsSubmitted(false);
-          setCurrentQuestion(0);
-          setAnswers({});
-          setTimeLeft(1800);
-        }}
-        onBackToCenter={onBack}
-      />
-    );
-  }
 
   const renderQuestion = () => {
-    switch (currentQ.type) {
+    const question = questions[currentQuestion];
+    const currentAnswer = answers[currentQuestion];
+
+    switch (question.type) {
       case 'mcq':
         return (
-          <RadioGroup
-            value={answers[currentQuestion] || ''}
-            onValueChange={handleAnswerChange}
-          >
-            {currentQ.options?.map((option, index) => (
-              <div key={index} className="flex items-center space-x-2 p-3 border rounded-lg">
-                <RadioGroupItem value={index.toString()} id={`option-${index}`} />
-                <Label htmlFor={`option-${index}`} className="flex-1 text-sm">
-                  {option}
-                </Label>
-              </div>
+          <div className="space-y-4">
+            {question.options?.map((option, index) => (
+              <Button
+                key={index}
+                variant={currentAnswer === index ? "default" : "outline"}
+                className="w-full text-left justify-start p-4 h-auto"
+                onClick={() => handleAnswer(index)}
+              >
+                <span className="mr-3 font-bold">{String.fromCharCode(65 + index)}.</span>
+                {option}
+              </Button>
             ))}
-          </RadioGroup>
+          </div>
         );
 
       case 'true-false':
         return (
-          <RadioGroup
-            value={answers[currentQuestion] || ''}
-            onValueChange={handleAnswerChange}
-          >
-            {currentQ.options?.map((option, index) => (
-              <div key={index} className="flex items-center space-x-2 p-4 border rounded-lg">
-                <RadioGroupItem value={index.toString()} id={`tf-${index}`} />
-                <Label htmlFor={`tf-${index}`} className="flex-1 text-lg font-medium">
-                  {option}
-                </Label>
-              </div>
-            ))}
-          </RadioGroup>
+          <div className="flex space-x-4">
+            <Button
+              variant={currentAnswer === 0 ? "default" : "outline"}
+              className="flex-1 p-6"
+              onClick={() => handleAnswer(0)}
+            >
+              True
+            </Button>
+            <Button
+              variant={currentAnswer === 1 ? "default" : "outline"}
+              className="flex-1 p-6"
+              onClick={() => handleAnswer(1)}
+            >
+              False
+            </Button>
+          </div>
         );
 
-      case 'drag-drop':
+      case 'fill-blank':
         return (
           <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <h4 className="font-medium mb-2">Items to arrange:</h4>
-                <div className="space-y-2">
-                  {currentQ.dragItems?.map((item, index) => (
-                    <div
-                      key={index}
-                      draggable
-                      onDragStart={(e) => handleDragStart(e, item)}
-                      className="p-3 bg-blue-100 border border-blue-300 rounded-lg cursor-move flex items-center"
-                    >
-                      <Move className="w-4 h-4 mr-2" />
-                      {item}
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <div>
-                <h4 className="font-medium mb-2">Drop in correct order:</h4>
-                <div className="space-y-2">
-                  {[0, 1, 2, 3].map((index) => (
-                    <div
-                      key={index}
-                      onDragOver={(e) => e.preventDefault()}
-                      onDrop={(e) => handleDrop(e, index)}
-                      className="p-3 border-2 border-dashed border-gray-300 rounded-lg min-h-[50px] flex items-center"
-                    >
-                      {draggedItems[currentQuestion]?.[index] || `Position ${index + 1}`}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
+            <input
+              type="text"
+              className="w-full p-4 border border-gray-300 rounded-lg"
+              placeholder="Enter your answer here..."
+              value={currentAnswer || ''}
+              onChange={(e) => handleAnswer(e.target.value)}
+            />
           </div>
         );
 
       case 'match':
         return (
-          <div className="grid grid-cols-2 gap-6">
-            <div>
-              <h4 className="font-medium mb-3">Scientists</h4>
-              <div className="space-y-2">
-                {currentQ.matchPairs?.map((pair, index) => (
-                  <div key={index} className="p-3 bg-gray-100 rounded-lg">
-                    {pair.left}
-                  </div>
-                ))}
-              </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <h4 className="font-semibold">Scientists</h4>
+              {question.matchPairs?.map((pair, index) => (
+                <div key={index} className="p-3 bg-blue-50 rounded border">
+                  {pair.left}
+                </div>
+              ))}
             </div>
-            <div>
-              <h4 className="font-medium mb-3">Discoveries</h4>
-              <div className="space-y-2">
-                {currentQ.matchPairs?.map((pair, index) => (
-                  <Button
-                    key={index}
-                    variant="outline"
-                    className="w-full justify-start p-3"
-                    onClick={() => {
-                      const selectedLeft = currentQ.matchPairs?.[0]?.left || '';
-                      handleMatchSelect(selectedLeft, pair.right);
-                    }}
-                  >
-                    {pair.right}
-                  </Button>
-                ))}
-              </div>
+            <div className="space-y-2">
+              <h4 className="font-semibold">Discoveries</h4>
+              {question.matchPairs?.map((pair, index) => (
+                <Button
+                  key={index}
+                  variant="outline"
+                  className="w-full justify-start"
+                  onClick={() => {
+                    const newMatches = { ...(currentAnswer || {}) };
+                    newMatches[pair.left] = pair.right;
+                    handleAnswer(newMatches);
+                  }}
+                >
+                  {pair.right}
+                </Button>
+              ))}
+            </div>
+          </div>
+        );
+
+      case 'drag-drop':
+        return (
+          <div className="space-y-4">
+            <p className="text-sm text-gray-600">Drag to reorder:</p>
+            <div className="space-y-2">
+              {(currentAnswer || question.options || []).map((item: string, index: number) => (
+                <div
+                  key={index}
+                  className="p-3 bg-gray-50 rounded border cursor-move hover:bg-gray-100"
+                  draggable
+                  onDragStart={(e) => e.dataTransfer.setData('text/plain', index.toString())}
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    const draggedIndex = parseInt(e.dataTransfer.getData('text/plain'));
+                    const newOrder = [...(currentAnswer || question.options || [])];
+                    const draggedItem = newOrder[draggedIndex];
+                    newOrder.splice(draggedIndex, 1);
+                    newOrder.splice(index, 0, draggedItem);
+                    handleAnswer(newOrder);
+                  }}
+                >
+                  {item}
+                </div>
+              ))}
             </div>
           </div>
         );
@@ -264,88 +240,95 @@ const EnhancedQuizInterface: React.FC<EnhancedQuizInterfaceProps> = ({ quizId, o
     }
   };
 
+  if (showResults) {
+    return <QuizResults quizId={quizId} answers={answers} questions={questions} onBack={onBack} />;
+  }
+
+  const question = questions[currentQuestion];
+  const progress = ((currentQuestion + 1) / questions.length) * 100;
+
   return (
-    <div className="min-h-screen bg-gray-50 p-4 pb-20">
+    <div className="min-h-screen bg-gray-50 p-4">
       {/* Header */}
-      <div className="flex justify-between items-center mb-4">
-        <Button variant="outline" onClick={onBack} size="sm">
-          <ArrowLeft className="w-4 h-4 mr-2" />
+      <div className="flex items-center justify-between mb-6">
+        <Button variant="outline" onClick={onBack}>
+          <ChevronLeft className="w-4 h-4 mr-2" />
           Back
         </Button>
-        <div className="flex items-center text-orange-600">
-          <Clock className="w-4 h-4 mr-1" />
-          <span className="text-sm">{formatTime(timeLeft)}</span>
+        <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2">
+            <Clock className="w-4 h-4" />
+            <span className="font-mono">{formatTime(timeLeft)}</span>
+          </div>
+          <Badge variant="outline">
+            Question {currentQuestion + 1} of {questions.length}
+          </Badge>
         </div>
       </div>
 
       {/* Progress */}
-      <Card className="mb-4">
-        <CardContent className="p-4">
-          <div className="flex justify-between items-center mb-2">
-            <span className="text-sm text-gray-600">
-              Question {currentQuestion + 1} of {questions.length}
-            </span>
-            <span className="text-sm text-gray-600">{Math.round(progress)}%</span>
-          </div>
-          <Progress value={progress} className="w-full" />
-        </CardContent>
-      </Card>
+      <div className="mb-6">
+        <div className="flex justify-between text-sm text-gray-600 mb-2">
+          <span>Progress</span>
+          <span>{Math.round(progress)}%</span>
+        </div>
+        <Progress value={progress} className="h-2" />
+      </div>
 
-      {/* Question */}
-      <Card className="mb-4">
+      {/* Question Card */}
+      <Card className="mb-6">
         <CardHeader>
-          <CardTitle className="text-lg">
-            {currentQ.text}
+          <CardTitle className="flex items-start justify-between">
+            <span className="flex-1">{question.text}</span>
+            <Badge variant="outline" className="ml-4">
+              {question.type.replace('-', ' ').toUpperCase()}
+            </Badge>
           </CardTitle>
-          <div className="text-sm text-gray-600 bg-blue-50 px-3 py-1 rounded-full inline-block">
-            {currentQ.type.replace('-', ' ').toUpperCase()}
-          </div>
         </CardHeader>
-        <CardContent className="space-y-3">
+        <CardContent>
           {renderQuestion()}
         </CardContent>
       </Card>
 
-      {/* Navigation */}
-      <div className="flex justify-between items-center mb-4">
-        <Button 
-          variant="outline" 
-          onClick={() => setCurrentQuestion(prev => Math.max(0, prev - 1))}
-          disabled={currentQuestion === 0}
-          size="sm"
-        >
-          <ChevronLeft className="w-4 h-4" />
-        </Button>
-
-        <Button
-          variant="outline"
-          onClick={() => setMarkedForReview(prev => {
-            const newSet = new Set(prev);
-            if (newSet.has(currentQuestion)) {
-              newSet.delete(currentQuestion);
-            } else {
-              newSet.add(currentQuestion);
-            }
-            return newSet;
-          })}
-          size="sm"
-        >
-          <Flag className="w-4 h-4" />
-        </Button>
-
-        <Button 
-          onClick={() => setCurrentQuestion(prev => Math.min(questions.length - 1, prev + 1))}
-          disabled={currentQuestion === questions.length - 1}
-          size="sm"
-        >
-          <ChevronRight className="w-4 h-4" />
-        </Button>
+      {/* Question Navigator */}
+      <div className="grid grid-cols-5 gap-2 mb-6">
+        {questions.map((_, index) => (
+          <Button
+            key={index}
+            variant={index === currentQuestion ? "default" : answers[index] !== undefined ? "secondary" : "outline"}
+            size="sm"
+            onClick={() => setCurrentQuestion(index)}
+          >
+            {index + 1}
+          </Button>
+        ))}
       </div>
 
-      {/* Submit Button */}
-      <Button onClick={handleSubmit} className="w-full bg-green-600 hover:bg-green-700">
-        Submit Quiz
-      </Button>
+      {/* Navigation */}
+      <div className="flex justify-between">
+        <Button
+          variant="outline"
+          onClick={handlePrevious}
+          disabled={currentQuestion === 0}
+        >
+          <ChevronLeft className="w-4 h-4 mr-2" />
+          Previous
+        </Button>
+        
+        <div className="flex space-x-2">
+          <Button variant="outline">
+            <Flag className="w-4 h-4 mr-2" />
+            Flag
+          </Button>
+          <Button
+            onClick={handleNext}
+            className="bg-blue-600 hover:bg-blue-700"
+          >
+            {currentQuestion === questions.length - 1 ? 'Submit' : 'Next'}
+            <ChevronRight className="w-4 h-4 ml-2" />
+          </Button>
+        </div>
+      </div>
     </div>
   );
 };
