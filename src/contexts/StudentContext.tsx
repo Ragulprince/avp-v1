@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 
 interface Student {
@@ -13,12 +12,16 @@ interface Student {
 interface Video {
   id: string;
   title: string;
+  instructor: string;
   subject: string;
   topic: string;
   duration: string;
+  views: number;
   thumbnail: string;
+  level: string;
   uploadDate: string;
   isNew?: boolean;
+  isDownloaded?: boolean;
 }
 
 interface Quiz {
@@ -66,30 +69,42 @@ export const StudentProvider: React.FC<{ children: ReactNode }> = ({ children })
     {
       id: '1',
       title: 'Physics - Newton\'s Laws of Motion',
+      instructor: 'Dr. Rajesh Kumar',
       subject: 'Physics',
       topic: 'Mechanics',
       duration: '45:30',
+      views: 1250,
       thumbnail: 'https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=400&h=225&fit=crop',
+      level: 'Beginner',
       uploadDate: '2024-06-14',
-      isNew: true
+      isNew: true,
+      isDownloaded: false
     },
     {
       id: '2',
       title: 'Chemistry - Organic Compounds',
+      instructor: 'Dr. Priya Sharma',
       subject: 'Chemistry',
       topic: 'Organic Chemistry',
       duration: '38:15',
+      views: 980,
       thumbnail: 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=400&h=225&fit=crop',
-      uploadDate: '2024-06-13'
+      level: 'Intermediate',
+      uploadDate: '2024-06-13',
+      isDownloaded: true
     },
     {
       id: '3',
       title: 'Biology - Cell Structure',
+      instructor: 'Dr. Ankit Verma',
       subject: 'Biology',
       topic: 'Cell Biology',
       duration: '52:20',
+      views: 1650,
       thumbnail: 'https://images.unsplash.com/photo-1488590528505-98d2b5aba04b?w=400&h=225&fit=crop',
-      uploadDate: '2024-06-12'
+      level: 'Advanced',
+      uploadDate: '2024-06-12',
+      isDownloaded: false
     }
   ];
 
