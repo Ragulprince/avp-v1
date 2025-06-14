@@ -10,7 +10,9 @@ import {
   BarChart3, 
   X,
   GraduationCap,
-  HelpCircle
+  HelpCircle,
+  Bell,
+  UserCheck
 } from 'lucide-react';
 
 interface AdminSidebarProps {
@@ -29,10 +31,12 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'students', label: 'Students', icon: Users },
+    { id: 'staff', label: 'Staff Management', icon: UserCheck },
     { id: 'courses', label: 'Courses & Batches', icon: GraduationCap },
     { id: 'content', label: 'Content', icon: BookOpen },
     { id: 'tests', label: 'Tests', icon: ClipboardCheck },
     { id: 'questions', label: 'Question Bank', icon: HelpCircle },
+    { id: 'notifications', label: 'Notifications', icon: Bell },
     { id: 'analytics', label: 'Analytics', icon: BarChart3 },
   ];
 

@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -21,9 +20,10 @@ import {
 
 interface AdminHeaderProps {
   onMenuClick: () => void;
+  onProfileClick?: () => void;
 }
 
-const AdminHeader: React.FC<AdminHeaderProps> = ({ onMenuClick }) => {
+const AdminHeader: React.FC<AdminHeaderProps> = ({ onMenuClick, onProfileClick }) => {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
 
@@ -79,8 +79,9 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ onMenuClick }) => {
   };
 
   const navigateToProfile = () => {
-    // In a real app, this would navigate to the profile page
-    console.log('Navigating to profile page');
+    if (onProfileClick) {
+      onProfileClick();
+    }
     setShowProfile(false);
   };
 

@@ -1,23 +1,24 @@
-
 import React from 'react';
 import { useStudent } from '@/contexts/StudentContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Play, BookOpen, FileText, Download, Clock } from 'lucide-react';
+import { Play, BookOpen, FileText, Download, Clock, File, Presentation, FileImage } from 'lucide-react';
 
 const LearningHub = () => {
   const { videos } = useStudent();
 
-  const studyNotes = [
+  const studyMaterials = [
     {
       id: '1',
       title: 'Physics Formula Sheet - Mechanics',
       subject: 'Physics',
       type: 'PDF',
       size: '2.4 MB',
-      downloadCount: 245
+      downloadCount: 245,
+      icon: FileText,
+      color: 'text-red-600 bg-red-50'
     },
     {
       id: '2',
@@ -25,7 +26,9 @@ const LearningHub = () => {
       subject: 'Chemistry',
       type: 'PDF',
       size: '1.8 MB',
-      downloadCount: 189
+      downloadCount: 189,
+      icon: FileText,
+      color: 'text-red-600 bg-red-50'
     },
     {
       id: '3',
@@ -33,7 +36,39 @@ const LearningHub = () => {
       subject: 'Biology',
       type: 'PPT',
       size: '5.2 MB',
-      downloadCount: 156
+      downloadCount: 156,
+      icon: Presentation,
+      color: 'text-orange-600 bg-orange-50'
+    },
+    {
+      id: '4',
+      title: 'Mathematics Integration Techniques',
+      subject: 'Mathematics',
+      type: 'DOC',
+      size: '1.2 MB',
+      downloadCount: 203,
+      icon: File,
+      color: 'text-blue-600 bg-blue-50'
+    },
+    {
+      id: '5',
+      title: 'Physics Lab Manual',
+      subject: 'Physics',
+      type: 'PDF',
+      size: '8.5 MB',
+      downloadCount: 134,
+      icon: FileText,
+      color: 'text-red-600 bg-red-50'
+    },
+    {
+      id: '6',
+      title: 'Chemistry Periodic Table Chart',
+      subject: 'Chemistry',
+      type: 'IMAGE',
+      size: '3.1 MB',
+      downloadCount: 287,
+      icon: FileImage,
+      color: 'text-green-600 bg-green-50'
     }
   ];
 
@@ -69,8 +104,9 @@ const LearningHub = () => {
       </div>
 
       <Tabs defaultValue="videos" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="videos">Video Lectures</TabsTrigger>
+          <TabsTrigger value="documents">Documents</TabsTrigger>
           <TabsTrigger value="notes">Study Notes</TabsTrigger>
           <TabsTrigger value="practice">Practice Materials</TabsTrigger>
         </TabsList>
@@ -129,9 +165,52 @@ const LearningHub = () => {
           </div>
         </TabsContent>
 
+        <TabsContent value="documents" className="space-y-4">
+          <div className="grid gap-4">
+            {studyMaterials.map((material) => {
+              const IconComponent = material.icon;
+              return (
+                <Card key={material.id} className="hover:shadow-lg transition-shadow">
+                  <CardContent className="p-6">
+                    <div className="flex justify-between items-start">
+                      <div className="flex items-start space-x-4 flex-1">
+                        <div className={`p-3 rounded-lg ${material.color}`}>
+                          <IconComponent className="w-6 h-6" />
+                        </div>
+                        <div className="flex-1">
+                          <h3 className="font-semibold text-lg text-gray-900 mb-2">
+                            {material.title}
+                          </h3>
+                          <div className="flex gap-2 mb-2">
+                            <Badge variant="outline">{material.subject}</Badge>
+                            <Badge variant="outline">{material.type}</Badge>
+                          </div>
+                          <div className="flex items-center gap-4 text-sm text-gray-600">
+                            <span>{material.size}</span>
+                            <span>{material.downloadCount} downloads</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button variant="outline" size="sm">
+                          Preview
+                        </Button>
+                        <Button size="sm">
+                          <Download className="w-4 h-4 mr-2" />
+                          Download
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        </TabsContent>
+
         <TabsContent value="notes" className="space-y-4">
           <div className="grid gap-4">
-            {studyNotes.map((note) => (
+            {studyMaterials.filter(material => material.type === 'PDF').map((note) => (
               <Card key={note.id} className="hover:shadow-lg transition-shadow">
                 <CardContent className="p-6">
                   <div className="flex justify-between items-start">
