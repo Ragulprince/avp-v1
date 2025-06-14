@@ -1,39 +1,47 @@
 
 import React, { useState } from 'react';
-import StudentDashboard from '@/components/StudentDashboard';
-import VideoPlayer from '@/components/VideoPlayer';
-import QuizCenter from '@/components/QuizCenter';
-import LearningHub from '@/components/LearningHub';
-import Profile from '@/components/Profile';
-import BottomNavigation from '@/components/BottomNavigation';
+import Login from './auth/Login';
+import AdminDashboard from './admin/AdminDashboard';
+import StudentDashboard from './student/StudentDashboard';
+import VideoLearning from './student/VideoLearning';
+import QuizCenter from './student/QuizCenter';
+import Profile from './student/Profile';
 import { StudentProvider } from '@/contexts/StudentContext';
 
 const Index = () => {
+  const [userType, setUserType] = useState<'student' | 'admin' | null>(null);
   const [activeTab, setActiveTab] = useState('home');
 
-  const renderActiveComponent = () => {
+  const handleLogin = (type: 'student' | 'admin') => {
+    setUserType(type);
+  };
+
+  if (!userType) {
+    return <Login onLogin={handleLogin} />;
+  }
+
+  if (userType === 'admin') {
+    return <AdminDashboard />;
+  }
+
+  const renderStudentContent = () => {
     switch (activeTab) {
       case 'home':
-        return <StudentDashboard />;
+        return <StudentDashboard activeTab={activeTab} onTabChange={setActiveTab} />;
       case 'practice':
-        return <QuizCenter />;
+        return <QuizCenter activeTab={activeTab} onTabChange={setActiveTab} />;
       case 'learning':
-        return <LearningHub />;
+        return <VideoLearning activeTab={activeTab} onTabChange={setActiveTab} />;
       case 'profile':
-        return <Profile />;
+        return <Profile activeTab={activeTab} onTabChange={setActiveTab} />;
       default:
-        return <StudentDashboard />;
+        return <StudentDashboard activeTab={activeTab} onTabChange={setActiveTab} />;
     }
   };
 
   return (
     <StudentProvider>
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 pb-20">
-        <div className="container mx-auto px-4 py-6">
-          {renderActiveComponent()}
-        </div>
-        <BottomNavigation activeTab={activeTab} onTabChange={setActiveTab} />
-      </div>
+      {renderStudentContent()}
     </StudentProvider>
   );
 };
