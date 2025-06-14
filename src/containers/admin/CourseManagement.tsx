@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -23,9 +22,9 @@ const CourseManagement = () => {
       studentsEnrolled: 245,
       subjects: ['Physics', 'Chemistry', 'Biology'],
       batches: [
-        { id: 1, name: 'Morning Batch A', timing: '6:00 AM - 9:00 AM', students: 85 },
-        { id: 2, name: 'Evening Batch B', timing: '5:00 PM - 8:00 PM', students: 92 },
-        { id: 3, name: 'Weekend Batch', timing: '9:00 AM - 6:00 PM', students: 68 }
+        { id: 1, name: 'Morning Batch A', timing: '6:00 AM - 9:00 AM', students: 85, capacity: 100 },
+        { id: 2, name: 'Evening Batch B', timing: '5:00 PM - 8:00 PM', students: 92, capacity: 100 },
+        { id: 3, name: 'Weekend Batch', timing: '9:00 AM - 6:00 PM', students: 68, capacity: 80 }
       ]
     },
     {
@@ -38,8 +37,8 @@ const CourseManagement = () => {
       studentsEnrolled: 189,
       subjects: ['Physics', 'Chemistry', 'Mathematics'],
       batches: [
-        { id: 4, name: 'Morning Batch', timing: '7:00 AM - 10:00 AM', students: 95 },
-        { id: 5, name: 'Evening Batch', timing: '6:00 PM - 9:00 PM', students: 94 }
+        { id: 4, name: 'Morning Batch', timing: '7:00 AM - 10:00 AM', students: 95, capacity: 120 },
+        { id: 5, name: 'Evening Batch', timing: '6:00 PM - 9:00 PM', students: 94, capacity: 120 }
       ]
     }
   ]);
@@ -386,48 +385,56 @@ const CourseManagement = () => {
         </TabsContent>
 
         <TabsContent value="batches" className="space-y-4">
-          <div className="grid gap-4">
+          <div className="space-y-6">
             {courses.map((course) => (
-              <div key={course.id}>
-                <h3 className="text-lg font-semibold text-gray-900 mb-3">{course.name}</h3>
-                <div className="grid gap-3">
+              <div key={course.id} className="bg-white rounded-lg p-4 shadow-sm">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4 border-b pb-2">{course.name}</h3>
+                <div className="grid gap-3 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
                   {course.batches.map((batch) => (
-                    <Card key={batch.id} className="shadow-md border-0">
+                    <Card key={batch.id} className="shadow-md border-0 hover:shadow-lg transition-shadow">
                       <CardContent className="p-4">
-                        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3">
-                          <div className="flex-1">
-                            <h4 className="font-medium text-gray-900 mb-1">{batch.name}</h4>
-                            <p className="text-sm text-gray-600 mb-2">{batch.timing}</p>
+                        <div className="flex flex-col gap-3">
+                          <div className="flex justify-between items-start">
+                            <div className="flex-1 min-w-0">
+                              <h4 className="font-medium text-gray-900 mb-1 truncate">{batch.name}</h4>
+                              <p className="text-sm text-gray-600 mb-2">{batch.timing}</p>
+                            </div>
+                            <div className="flex gap-1 ml-2">
+                              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                <Edit className="w-3 h-3" />
+                              </Button>
+                              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                <Trash2 className="w-3 h-3" />
+                              </Button>
+                            </div>
                           </div>
-                          <div className="flex gap-2">
-                            <Button variant="ghost" size="sm">
-                              <Edit className="w-4 h-4" />
-                            </Button>
-                            <Button variant="ghost" size="sm">
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        </div>
-                        
-                        <div className="grid grid-cols-2 gap-3">
-                          <div className="text-center p-2 bg-blue-50 rounded-lg">
-                            <Users className="w-4 h-4 text-blue-600 mx-auto mb-1" />
-                            <p className="text-xs text-gray-600">Students</p>
-                            <p className="text-sm font-bold text-blue-600">{batch.students}</p>
-                          </div>
-                          <div className="text-center p-2 bg-green-50 rounded-lg">
-                            <Calendar className="w-4 h-4 text-green-600 mx-auto mb-1" />
-                            <p className="text-xs text-gray-600">Capacity</p>
-                            <p className="text-sm font-bold text-green-600">{batch.capacity || 'N/A'}</p>
+                          
+                          <div className="grid grid-cols-2 gap-2">
+                            <div className="text-center p-2 bg-blue-50 rounded-lg">
+                              <Users className="w-4 h-4 text-blue-600 mx-auto mb-1" />
+                              <p className="text-xs text-gray-600">Students</p>
+                              <p className="text-sm font-bold text-blue-600">{batch.students}</p>
+                            </div>
+                            <div className="text-center p-2 bg-green-50 rounded-lg">
+                              <Calendar className="w-4 h-4 text-green-600 mx-auto mb-1" />
+                              <p className="text-xs text-gray-600">Capacity</p>
+                              <p className="text-sm font-bold text-green-600">{batch.capacity || 'N/A'}</p>
+                            </div>
                           </div>
                         </div>
                       </CardContent>
                     </Card>
                   ))}
-                  {course.batches.length === 0 && (
-                    <p className="text-gray-500 text-center py-4">No batches created for this course</p>
-                  )}
                 </div>
+                {course.batches.length === 0 && (
+                  <div className="text-center py-8">
+                    <p className="text-gray-500">No batches created for this course</p>
+                    <Button variant="outline" size="sm" className="mt-2">
+                      <Plus className="w-4 h-4 mr-2" />
+                      Add First Batch
+                    </Button>
+                  </div>
+                )}
               </div>
             ))}
           </div>
