@@ -3,7 +3,7 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useStudent } from '@/contexts/StudentContext';
-import { User, Mail, Calendar, Award, LogOut } from 'lucide-react';
+import { User, Mail, Calendar, Award, LogOut, Settings } from 'lucide-react';
 import BottomNavigation from '@/components/common/BottomNavigation';
 
 interface ProfileProps {
@@ -60,8 +60,13 @@ const Profile: React.FC<ProfileProps> = ({ activeTab, onTabChange }) => {
             <CardTitle>Settings</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            <Button variant="outline" className="w-full justify-start">
-              Edit Profile
+            <Button 
+              variant="outline" 
+              className="w-full justify-start"
+              onClick={() => onTabChange('settings')}
+            >
+              <Settings className="w-4 h-4 mr-2" />
+              Settings & Preferences
             </Button>
             <Button variant="outline" className="w-full justify-start">
               Change Password

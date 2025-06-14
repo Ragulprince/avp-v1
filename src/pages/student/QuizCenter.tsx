@@ -4,7 +4,7 @@ import { useStudent } from '@/contexts/StudentContext';
 import QuizHeader from '@/containers/quiz/QuizHeader';
 import QuizCategories from '@/containers/quiz/QuizCategories';
 import QuizList from '@/containers/quiz/QuizList';
-import QuizInterface from '@/containers/quiz/QuizInterface';
+import EnhancedQuizInterface from '@/containers/quiz/EnhancedQuizInterface';
 import BottomNavigation from '@/components/common/BottomNavigation';
 
 interface QuizCenterProps {
@@ -19,7 +19,7 @@ const QuizCenter: React.FC<QuizCenterProps> = ({ activeTab, onTabChange }) => {
 
   if (selectedQuiz) {
     return (
-      <QuizInterface
+      <EnhancedQuizInterface
         quizId={selectedQuiz}
         onBack={() => setSelectedQuiz(null)}
       />

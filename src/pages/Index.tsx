@@ -6,6 +6,7 @@ import StudentDashboard from './student/StudentDashboard';
 import VideoLearning from './student/VideoLearning';
 import QuizCenter from './student/QuizCenter';
 import Profile from './student/Profile';
+import Settings from './student/Settings';
 import { StudentProvider } from '@/contexts/StudentContext';
 
 const Index = () => {
@@ -34,6 +35,8 @@ const Index = () => {
         return <VideoLearning activeTab={activeTab} onTabChange={setActiveTab} />;
       case 'profile':
         return <Profile activeTab={activeTab} onTabChange={setActiveTab} />;
+      case 'settings':
+        return <Settings activeTab={activeTab} onTabChange={setActiveTab} />;
       default:
         return <StudentDashboard activeTab={activeTab} onTabChange={setActiveTab} />;
     }

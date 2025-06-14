@@ -7,6 +7,8 @@ import StudentManagement from '@/containers/admin/StudentManagement';
 import ContentManagement from '@/containers/admin/ContentManagement';
 import TestManagement from '@/containers/admin/TestManagement';
 import Analytics from '@/containers/admin/Analytics';
+import CourseManagement from '@/containers/admin/CourseManagement';
+import QuestionBank from '@/containers/admin/QuestionBank';
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -18,10 +20,14 @@ const AdminDashboard = () => {
         return <DashboardOverview />;
       case 'students':
         return <StudentManagement />;
+      case 'courses':
+        return <CourseManagement />;
       case 'content':
         return <ContentManagement />;
       case 'tests':
         return <TestManagement />;
+      case 'questions':
+        return <QuestionBank />;
       case 'analytics':
         return <Analytics />;
       default:
