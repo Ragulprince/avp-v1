@@ -130,7 +130,17 @@ const StaffManagement = () => {
     }
   ]);
 
-  const [newStaff, setNewStaff] = useState({
+  const [newStaff, setNewStaff] = useState<{
+    name: string;
+    email: string;
+    phone: string;
+    role: 'teacher' | 'admin' | 'support';
+    subjects: string[];
+    address: string;
+    qualification: string;
+    experience: number;
+    hourlyRate: number;
+  }>({
     name: '',
     email: '',
     phone: '',
@@ -142,7 +152,15 @@ const StaffManagement = () => {
     hourlyRate: 0
   });
 
-  const [newHourLog, setNewHourLog] = useState({
+  const [newHourLog, setNewHourLog] = useState<{
+    staffId: string;
+    date: string;
+    startTime: string;
+    endTime: string;
+    subject: string;
+    batch: string;
+    status: 'completed' | 'pending' | 'cancelled';
+  }>({
     staffId: '',
     date: '',
     startTime: '',
@@ -172,7 +190,6 @@ const StaffManagement = () => {
     const staff_member: Staff = {
       id: Date.now().toString(),
       ...newStaff,
-      subjects: typeof newStaff.subjects === 'string' ? newStaff.subjects.split(',').map(s => s.trim()) : [],
       joinDate: new Date().toISOString().split('T')[0],
       avatar: '',
       totalHours: 0,
@@ -528,7 +545,7 @@ const StaffManagement = () => {
             </div>
             <div>
               <Label htmlFor="role">Role</Label>
-              <Select value={newStaff.role} onValueChange={(value) => setNewStaff(prev => ({ ...prev, role: value }))}>
+              <Select value={newStaff.role} onValueChange={(value: 'teacher' | 'admin' | 'support') => setNewStaff(prev => ({ ...prev, role: value }))}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -543,8 +560,8 @@ const StaffManagement = () => {
               <Label htmlFor="subjects">Subjects (comma separated)</Label>
               <Input
                 id="subjects"
-                value={Array.isArray(newStaff.subjects) ? newStaff.subjects.join(', ') : newStaff.subjects}
-                onChange={(e) => setNewStaff(prev => ({ ...prev, subjects: e.target.value }))}
+                value={newStaff.subjects.join(', ')}
+                onChange={(e) => setNewStaff(prev => ({ ...prev, subjects: e.target.value.split(',').map(s => s.trim()) }))}
                 placeholder="Physics, Mathematics"
               />
             </div>
