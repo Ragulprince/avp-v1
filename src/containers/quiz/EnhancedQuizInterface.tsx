@@ -12,7 +12,7 @@ interface Question {
   type: 'mcq' | 'true-false' | 'drag-drop' | 'match' | 'fill-blank';
   text: string;
   options?: string[];
-  correctAnswer: number | string[];
+  correctAnswer: number | string | string[];
   explanation?: string;
   matchPairs?: { left: string; right: string }[];
 }
@@ -241,7 +241,35 @@ const EnhancedQuizInterface: React.FC<EnhancedQuizInterfaceProps> = ({ quizId, o
   };
 
   if (showResults) {
-    return <QuizResults quizId={quizId} answers={answers} questions={questions} onBack={onBack} />;
+    const correctAnswers = questions.filter((question, index) => {
+      const userAnswer = answers[index];
+      if (question.type === 'mcq' || question.type === 'true-false') {
+        return userAnswer === question.correctAnswer;
+      }
+      if (question.type === 'fill-blank') {
+        return userAnswer?.toLowerCase() === (question.correctAnswer as string).toLowerCase();
+      }
+      if (question.type === 'drag-drop' || question.type === 'match') {
+        return JSON.stringify(userAnswer) === JSON.stringify(question.correctAnswer);
+      }
+      return false;
+    }).length;
+
+    return (
+      <QuizResults 
+        score={Math.round((correctAnswers / questions.length) * 100)}
+        totalQuestions={questions.length}
+        timeSpent={3600 - timeLeft}
+        correctAnswers={correctAnswers}
+        onRetry={() => {
+          setAnswers({});
+          setCurrentQuestion(0);
+          setTimeLeft(3600);
+          setShowResults(false);
+        }}
+        onBackToCenter={onBack}
+      />
+    );
   }
 
   const question = questions[currentQuestion];
