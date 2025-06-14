@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -26,7 +25,7 @@ interface EnhancedQuizInterfaceProps {
 const EnhancedQuizInterface: React.FC<EnhancedQuizInterfaceProps> = ({ quizId, onBack }) => {
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [answers, setAnswers] = useState<Record<number, any>>({});
-  const [timeLeft, setTimeLeft] = useState(3600); // 60 minutes
+  const [timeLeft, setTimeLeft] = useState(3600);
   const [showResults, setShowResults] = useState(false);
   const [showLedger, setShowLedger] = useState(false);
   const [flaggedQuestions, setFlaggedQuestions] = useState<Set<number>>(new Set());
@@ -97,7 +96,7 @@ const EnhancedQuizInterface: React.FC<EnhancedQuizInterfaceProps> = ({ quizId, o
           setShowResults(true);
           return 0;
         }
-        if (prev === 300) { // 5 minutes warning
+        if (prev === 300) {
           toast({
             title: "5 Minutes Remaining",
             description: "Please complete your quiz soon.",
@@ -119,20 +118,12 @@ const EnhancedQuizInterface: React.FC<EnhancedQuizInterfaceProps> = ({ quizId, o
 
   const handleAnswer = (answer: any) => {
     setAnswers(prev => ({ ...prev, [currentQuestion]: answer }));
-    toast({
-      title: "Answer Saved",
-      description: `Question ${currentQuestion + 1} answered successfully.`,
-    });
   };
 
   const handleNext = () => {
     if (currentQuestion < questions.length - 1) {
       setCurrentQuestion(prev => prev + 1);
     } else {
-      toast({
-        title: "Quiz Submitted",
-        description: "Your answers have been submitted successfully.",
-      });
       setShowResults(true);
     }
   };
@@ -147,16 +138,8 @@ const EnhancedQuizInterface: React.FC<EnhancedQuizInterfaceProps> = ({ quizId, o
     const newFlagged = new Set(flaggedQuestions);
     if (newFlagged.has(currentQuestion)) {
       newFlagged.delete(currentQuestion);
-      toast({
-        title: "Question Unflagged",
-        description: `Question ${currentQuestion + 1} removed from review.`,
-      });
     } else {
       newFlagged.add(currentQuestion);
-      toast({
-        title: "Question Flagged",
-        description: `Question ${currentQuestion + 1} marked for review.`,
-      });
     }
     setFlaggedQuestions(newFlagged);
   };
@@ -188,16 +171,16 @@ const EnhancedQuizInterface: React.FC<EnhancedQuizInterfaceProps> = ({ quizId, o
     switch (question.type) {
       case 'mcq':
         return (
-          <div className="space-y-4">
+          <div className="space-y-3">
             {question.options?.map((option, index) => (
               <Button
                 key={index}
                 variant={currentAnswer === index ? "default" : "outline"}
-                className="w-full text-left justify-start p-4 h-auto"
+                className="w-full text-left justify-start p-3 md:p-4 h-auto text-sm md:text-base"
                 onClick={() => handleAnswer(index)}
               >
-                <span className="mr-3 font-bold">{String.fromCharCode(65 + index)}.</span>
-                {option}
+                <span className="mr-2 md:mr-3 font-bold text-sm">{String.fromCharCode(65 + index)}.</span>
+                <span className="flex-1">{option}</span>
               </Button>
             ))}
           </div>
@@ -205,17 +188,17 @@ const EnhancedQuizInterface: React.FC<EnhancedQuizInterfaceProps> = ({ quizId, o
 
       case 'true-false':
         return (
-          <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
+          <div className="flex flex-col space-y-3 md:flex-row md:space-y-0 md:space-x-4">
             <Button
               variant={currentAnswer === 0 ? "default" : "outline"}
-              className="flex-1 p-6"
+              className="flex-1 p-4 md:p-6 text-lg"
               onClick={() => handleAnswer(0)}
             >
               True
             </Button>
             <Button
               variant={currentAnswer === 1 ? "default" : "outline"}
-              className="flex-1 p-6"
+              className="flex-1 p-4 md:p-6 text-lg"
               onClick={() => handleAnswer(1)}
             >
               False
@@ -339,54 +322,44 @@ const EnhancedQuizInterface: React.FC<EnhancedQuizInterfaceProps> = ({ quizId, o
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white border-b p-4">
+      {/* Mobile-First Header */}
+      <div className="bg-white border-b p-3 md:p-4 sticky top-0 z-40">
         <div className="flex items-center justify-between">
           <Button variant="outline" onClick={onBack} size="sm">
-            <ChevronLeft className="w-4 h-4 mr-2" />
-            Back
+            <ChevronLeft className="w-4 h-4 md:mr-2" />
+            <span className="hidden md:inline">Back</span>
           </Button>
-          <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-2 md:space-x-4">
+            <div className="flex items-center space-x-1 md:space-x-2">
               <Clock className="w-4 h-4" />
-              <span className="font-mono text-sm">{formatTime(timeLeft)}</span>
+              <span className="font-mono text-sm md:text-base">{formatTime(timeLeft)}</span>
             </div>
-            <Badge variant="outline">
-              Question {currentQuestion + 1} of {questions.length}
+            <Badge variant="outline" className="text-xs md:text-sm">
+              {currentQuestion + 1}/{questions.length}
             </Badge>
-            {/* Desktop Ledger Toggle */}
-            <Button
-              variant="outline"
-              onClick={() => setShowLedger(!showLedger)}
-              className="hidden lg:flex items-center space-x-2"
-              size="sm"
-            >
-              {showLedger ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-              <span>Ledger</span>
-            </Button>
           </div>
         </div>
-      </div>
-
-      {/* Progress */}
-      <div className="bg-white border-b p-4">
-        <div className="flex justify-between text-sm text-gray-600 mb-2">
-          <span>Progress</span>
-          <span>{Math.round(progress)}%</span>
+        
+        {/* Progress Bar */}
+        <div className="mt-3">
+          <div className="flex justify-between text-xs text-gray-600 mb-1">
+            <span>Progress</span>
+            <span>{Math.round(progress)}%</span>
+          </div>
+          <Progress value={progress} className="h-1 md:h-2" />
         </div>
-        <Progress value={progress} className="h-2" />
       </div>
 
-      <div className="flex flex-col lg:flex-row">
+      <div className="flex flex-col lg:flex-row min-h-[calc(100vh-120px)]">
         {/* Main Question Area */}
-        <div className="flex-1 p-4 lg:p-6">
+        <div className="flex-1 p-3 md:p-6">
           {/* Question Card */}
-          <Card className="mb-6">
-            <CardHeader>
-              <CardTitle className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-                <span className="flex-1">{question.text}</span>
-                <div className="flex items-center space-x-2">
-                  <Badge variant="outline">
+          <Card className="mb-4 md:mb-6">
+            <CardHeader className="p-3 md:p-6">
+              <CardTitle className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                <span className="flex-1 text-base md:text-lg leading-relaxed">{question.text}</span>
+                <div className="flex items-center justify-between md:justify-end space-x-2">
+                  <Badge variant="outline" className="text-xs">
                     {question.type.replace('-', ' ').toUpperCase()}
                   </Badge>
                   <Button
@@ -400,13 +373,13 @@ const EnhancedQuizInterface: React.FC<EnhancedQuizInterfaceProps> = ({ quizId, o
                 </div>
               </CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-3 md:p-6 pt-0">
               {renderQuestion()}
             </CardContent>
           </Card>
 
           {/* Navigation */}
-          <div className="flex flex-col sm:flex-row justify-between gap-4 mb-6">
+          <div className="flex flex-col sm:flex-row justify-between gap-3 mb-4 md:mb-6">
             <Button
               variant="outline"
               onClick={handlePrevious}
@@ -517,11 +490,12 @@ const EnhancedQuizInterface: React.FC<EnhancedQuizInterfaceProps> = ({ quizId, o
       </div>
 
       {/* Mobile Ledger at Bottom */}
-      <div className="lg:hidden bg-white border-t p-4">
+      <div className="lg:hidden bg-white border-t p-3 md:p-4 sticky bottom-0">
         <Button
           variant="outline"
           onClick={() => setShowLedger(!showLedger)}
-          className="w-full mb-4 flex items-center justify-center space-x-2"
+          className="w-full mb-3 flex items-center justify-center space-x-2"
+          size="sm"
         >
           {showLedger ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
           <span>Question Overview</span>
@@ -529,28 +503,25 @@ const EnhancedQuizInterface: React.FC<EnhancedQuizInterfaceProps> = ({ quizId, o
         
         {showLedger && (
           <Card>
-            <CardContent className="p-4">
-              <div className="space-y-4">
+            <CardContent className="p-3">
+              <div className="space-y-3">
                 {/* Status Legend */}
-                <div className="space-y-2">
-                  <h4 className="font-medium text-sm">Status:</h4>
-                  <div className="grid grid-cols-2 gap-2 text-xs">
-                    <div className="flex items-center space-x-1">
-                      <div className="w-3 h-3 bg-green-500 rounded"></div>
-                      <span>Answered</span>
-                    </div>
-                    <div className="flex items-center space-x-1">
-                      <div className="w-3 h-3 bg-yellow-500 rounded"></div>
-                      <span>Flagged</span>
-                    </div>
-                    <div className="flex items-center space-x-1">
-                      <div className="w-3 h-3 bg-blue-500 rounded"></div>
-                      <span>Current</span>
-                    </div>
-                    <div className="flex items-center space-x-1">
-                      <div className="w-3 h-3 bg-gray-200 rounded"></div>
-                      <span>Unanswered</span>
-                    </div>
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <div className="flex items-center space-x-1">
+                    <div className="w-3 h-3 bg-green-500 rounded"></div>
+                    <span>Answered</span>
+                  </div>
+                  <div className="flex items-center space-x-1">
+                    <div className="w-3 h-3 bg-yellow-500 rounded"></div>
+                    <span>Flagged</span>
+                  </div>
+                  <div className="flex items-center space-x-1">
+                    <div className="w-3 h-3 bg-blue-500 rounded"></div>
+                    <span>Current</span>
+                  </div>
+                  <div className="flex items-center space-x-1">
+                    <div className="w-3 h-3 bg-gray-200 rounded"></div>
+                    <span>Unanswered</span>
                   </div>
                 </div>
 
@@ -565,7 +536,7 @@ const EnhancedQuizInterface: React.FC<EnhancedQuizInterfaceProps> = ({ quizId, o
                           key={index}
                           variant="outline"
                           size="sm"
-                          className={`w-full h-10 ${getStatusColor(status)} border-0 text-xs`}
+                          className={`w-full h-8 ${getStatusColor(status)} border-0 text-xs`}
                           onClick={() => setCurrentQuestion(index)}
                         >
                           {index + 1}
@@ -576,17 +547,17 @@ const EnhancedQuizInterface: React.FC<EnhancedQuizInterfaceProps> = ({ quizId, o
                 </div>
 
                 {/* Quick Stats */}
-                <div className="grid grid-cols-3 gap-4 pt-2 border-t text-center">
+                <div className="grid grid-cols-3 gap-3 pt-2 border-t text-center">
                   <div>
-                    <div className="text-lg font-bold text-green-600">{Object.keys(answers).length}</div>
+                    <div className="text-sm font-bold text-green-600">{Object.keys(answers).length}</div>
                     <div className="text-xs text-gray-600">Answered</div>
                   </div>
                   <div>
-                    <div className="text-lg font-bold text-yellow-600">{flaggedQuestions.size}</div>
+                    <div className="text-sm font-bold text-yellow-600">{flaggedQuestions.size}</div>
                     <div className="text-xs text-gray-600">Flagged</div>
                   </div>
                   <div>
-                    <div className="text-lg font-bold text-gray-600">{questions.length - Object.keys(answers).length}</div>
+                    <div className="text-sm font-bold text-gray-600">{questions.length - Object.keys(answers).length}</div>
                     <div className="text-xs text-gray-600">Remaining</div>
                   </div>
                 </div>

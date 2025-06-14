@@ -1,35 +1,58 @@
 
-import React from 'react';
+import React, { useState } from 'react';
+import { Bell, Search, Menu } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Bell } from 'lucide-react';
-import LanguageSelector from '@/components/common/LanguageSelector';
+import { Badge } from '@/components/ui/badge';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Card, CardContent } from '@/components/ui/card';
 
-interface Student {
-  name: string;
-  batch: string;
-}
+const StudentHeader = () => {
+  const [isNotificationOpen, setIsNotificationOpen] = useState(false);
 
-interface StudentHeaderProps {
-  student: Student;
-}
+  const notifications = [
+    { id: 1, title: 'New Physics lecture uploaded', time: '2 hours ago', type: 'info' },
+    { id: 2, title: 'Mock test scheduled for tomorrow', time: '4 hours ago', type: 'warning' },
+    { id: 3, title: 'Assignment deadline approaching', time: '1 day ago', type: 'urgent' }
+  ];
 
-const StudentHeader: React.FC<StudentHeaderProps> = ({ student }) => {
   return (
-    <div className="flex justify-between items-center">
-      <div>
-        <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">
-          Hi {student.name} 👋
-        </h1>
-        <p className="text-gray-600 text-sm lg:text-base">{student.batch}</p>
-      </div>
-      <div className="flex items-center gap-3">
-        <Button variant="outline" size="sm" className="relative">
-          <Bell className="w-4 h-4" />
-          <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-            3
-          </span>
-        </Button>
-        <LanguageSelector />
+    <div className="bg-white border-b border-gray-200 p-4">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-4">
+          <h1 className="text-xl font-bold text-gray-900">Student Portal</h1>
+        </div>
+        
+        <div className="flex items-center space-x-3">
+          <Popover open={isNotificationOpen} onOpenChange={setIsNotificationOpen}>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="sm" className="relative">
+                <Bell className="w-4 h-4" />
+                {notifications.length > 0 && (
+                  <Badge className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center p-0">
+                    {notifications.length}
+                  </Badge>
+                )}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-80 p-0" align="end">
+              <div className="p-4 border-b">
+                <h3 className="font-semibold">Notifications</h3>
+              </div>
+              <div className="max-h-64 overflow-y-auto">
+                {notifications.map((notification) => (
+                  <div key={notification.id} className="p-3 border-b last:border-b-0 hover:bg-gray-50">
+                    <p className="text-sm font-medium text-gray-900">{notification.title}</p>
+                    <p className="text-xs text-gray-500 mt-1">{notification.time}</p>
+                  </div>
+                ))}
+              </div>
+            </PopoverContent>
+          </Popover>
+          
+          <Button variant="outline" size="sm">
+            <Search className="w-4 h-4" />
+          </Button>
+        </div>
       </div>
     </div>
   );

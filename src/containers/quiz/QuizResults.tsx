@@ -1,9 +1,12 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { Trophy, Target, Clock, BookOpen, TrendingUp, Award, Star } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Trophy, Target, Clock, BookOpen, TrendingUp, Award, Star, RotateCcw, Home } from 'lucide-react';
+import QuizLeaderboard from './QuizLeaderboard';
+import TestHistory from './TestHistory';
 
 interface QuizResultsProps {
   score: number;
@@ -35,132 +38,190 @@ const QuizResults: React.FC<QuizResultsProps> = ({
   const performance = getPerformanceMessage();
   const PerformanceIcon = performance.icon;
 
+  // Mock leaderboard data
+  const leaderboardEntries = [
+    { rank: 1, name: "Alex Chen", score: 95, time: "12:45", avatar: "", badge: "Top Scorer" },
+    { rank: 2, name: "Sarah Johnson", score: 92, time: "14:20", avatar: "" },
+    { rank: 3, name: "Mike Wilson", score: 88, time: "13:15", avatar: "" },
+    { rank: 4, name: "You", score: percentage, time: `${Math.floor(timeSpent / 60)}:${(timeSpent % 60).toString().padStart(2, '0')}`, avatar: "" },
+    { rank: 5, name: "Emma Davis", score: 82, time: "15:30", avatar: "" }
+  ];
+
+  // Mock test history data
+  const testHistory = [
+    {
+      id: '1',
+      title: 'Physics Mock Test 1',
+      subject: 'Physics',
+      score: 85,
+      totalQuestions: 20,
+      correctAnswers: 17,
+      timeSpent: '25:30',
+      date: '2024-06-10',
+      rank: 3,
+      totalParticipants: 150,
+      status: 'completed' as const
+    },
+    {
+      id: '2',
+      title: 'Chemistry Daily Test',
+      subject: 'Chemistry',
+      score: 78,
+      totalQuestions: 15,
+      correctAnswers: 12,
+      timeSpent: '18:45',
+      date: '2024-06-08',
+      rank: 8,
+      totalParticipants: 120,
+      status: 'completed' as const
+    }
+  ];
+
   return (
     <div className="min-h-screen bg-gray-50 p-4">
-      <div className="max-w-2xl mx-auto space-y-6">
+      <div className="max-w-4xl mx-auto space-y-6">
         {/* Main Results Card */}
-        <Card className="text-center">
+        <Card className="text-center shadow-lg">
           <CardHeader className="pb-4">
-            <div className="w-20 h-20 mx-auto mb-4 flex items-center justify-center bg-blue-100 rounded-full">
-              <PerformanceIcon className={`w-10 h-10 ${performance.color}`} />
+            <div className="w-16 h-16 md:w-20 md:h-20 mx-auto mb-4 flex items-center justify-center bg-blue-100 rounded-full">
+              <PerformanceIcon className={`w-8 h-8 md:w-10 md:h-10 ${performance.color}`} />
             </div>
-            <CardTitle className="text-2xl text-gray-900">Quiz Completed!</CardTitle>
-            <p className={`text-lg ${performance.color} font-medium`}>
+            <CardTitle className="text-xl md:text-2xl text-gray-900">Quiz Completed!</CardTitle>
+            <p className={`text-base md:text-lg ${performance.color} font-medium`}>
               {performance.message}
             </p>
           </CardHeader>
           <CardContent className="space-y-6">
             {/* Score Circle */}
-            <div className="relative w-32 h-32 mx-auto">
+            <div className="relative w-24 h-24 md:w-32 md:h-32 mx-auto">
               <div className="w-full h-full rounded-full bg-gray-200 flex items-center justify-center">
-                <div className="text-3xl font-bold text-gray-900">{percentage}%</div>
+                <div className="text-2xl md:text-3xl font-bold text-gray-900">{percentage}%</div>
               </div>
             </div>
 
             {/* Quick Stats */}
             <div className="grid grid-cols-2 gap-4">
               <div className="text-center">
-                <div className="text-2xl font-bold text-green-600">{correctAnswers}</div>
+                <div className="text-xl md:text-2xl font-bold text-green-600">{correctAnswers}</div>
                 <div className="text-sm text-gray-600">Correct</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-red-600">{incorrectAnswers}</div>
+                <div className="text-xl md:text-2xl font-bold text-red-600">{incorrectAnswers}</div>
                 <div className="text-sm text-gray-600">Incorrect</div>
               </div>
             </div>
-          </CardContent>
-        </Card>
 
-        {/* Detailed Analytics */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <TrendingUp className="w-5 h-5 mr-2" />
-              Performance Analysis
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-3">
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600">Accuracy</span>
-                <span className="font-medium">{percentage}%</span>
-              </div>
-              <Progress value={percentage} className="h-2" />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4 pt-4">
-              <div className="flex items-center space-x-3">
-                <Clock className="w-5 h-5 text-blue-500" />
-                <div>
-                  <div className="text-sm text-gray-600">Time Spent</div>
-                  <div className="font-medium">{Math.floor(timeSpent / 60)}m {timeSpent % 60}s</div>
-                </div>
-              </div>
-              <div className="flex items-center space-x-3">
-                <Target className="w-5 h-5 text-purple-500" />
-                <div>
-                  <div className="text-sm text-gray-600">Questions</div>
-                  <div className="font-medium">{totalQuestions} total</div>
-                </div>
-              </div>
+            {/* Action Buttons */}
+            <div className="flex flex-col sm:flex-row gap-3 pt-4">
+              <Button onClick={onRetry} variant="outline" className="flex-1 flex items-center justify-center gap-2">
+                <RotateCcw className="w-4 h-4" />
+                Retry Quiz
+              </Button>
+              <Button onClick={onBackToCenter} className="flex-1 flex items-center justify-center gap-2">
+                <Home className="w-4 h-4" />
+                Back to Center
+              </Button>
             </div>
           </CardContent>
         </Card>
 
-        {/* Subject-wise Performance */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <BookOpen className="w-5 h-5 mr-2" />
-              Subject Performance
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {['Physics', 'Chemistry', 'Biology'].map((subject) => {
-                const subjectScore = Math.floor(Math.random() * 40) + 60;
-                return (
-                  <div key={subject} className="space-y-2">
-                    <div className="flex justify-between">
-                      <span className="text-sm font-medium">{subject}</span>
-                      <span className="text-sm text-gray-600">{subjectScore}%</span>
-                    </div>
-                    <Progress value={subjectScore} className="h-2" />
+        {/* Detailed Results Tabs */}
+        <Tabs defaultValue="leaderboard" className="w-full">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="leaderboard" className="flex items-center gap-2">
+              <Trophy className="w-4 h-4" />
+              <span className="hidden sm:inline">Leaderboard</span>
+            </TabsTrigger>
+            <TabsTrigger value="analysis" className="flex items-center gap-2">
+              <TrendingUp className="w-4 h-4" />
+              <span className="hidden sm:inline">Analysis</span>
+            </TabsTrigger>
+            <TabsTrigger value="history" className="flex items-center gap-2">
+              <Clock className="w-4 h-4" />
+              <span className="hidden sm:inline">History</span>
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="leaderboard" className="space-y-4">
+            <QuizLeaderboard 
+              quizTitle="Physics Mock Test"
+              userRank={4}
+              entries={leaderboardEntries}
+            />
+          </TabsContent>
+
+          <TabsContent value="analysis" className="space-y-4">
+            {/* Performance Analysis */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <TrendingUp className="w-5 h-5 mr-2" />
+                  Performance Analysis
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-600">Accuracy</span>
+                    <span className="font-medium">{percentage}%</span>
                   </div>
-                );
-              })}
-            </div>
-          </CardContent>
-        </Card>
+                  <Progress value={percentage} className="h-2" />
+                </div>
 
-        {/* Recommendations */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Recommendations</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              <div className="p-3 bg-blue-50 rounded-lg">
-                <h4 className="font-medium text-blue-900">Strong Areas</h4>
-                <p className="text-sm text-blue-700">Great performance in Physics concepts!</p>
-              </div>
-              <div className="p-3 bg-orange-50 rounded-lg">
-                <h4 className="font-medium text-orange-900">Areas for Improvement</h4>
-                <p className="text-sm text-orange-700">Focus more on Chemistry organic reactions.</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+                <div className="grid grid-cols-2 gap-4 pt-4">
+                  <div className="flex items-center space-x-3">
+                    <Clock className="w-5 h-5 text-blue-500" />
+                    <div>
+                      <div className="text-sm text-gray-600">Time Spent</div>
+                      <div className="font-medium">{Math.floor(timeSpent / 60)}m {timeSpent % 60}s</div>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <Target className="w-5 h-5 text-purple-500" />
+                    <div>
+                      <div className="text-sm text-gray-600">Questions</div>
+                      <div className="font-medium">{totalQuestions} total</div>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
 
-        {/* Action Buttons */}
-        <div className="flex flex-col sm:flex-row gap-3">
-          <Button onClick={onRetry} variant="outline" className="flex-1">
-            Retry Quiz
-          </Button>
-          <Button onClick={onBackToCenter} className="flex-1">
-            Back to Quiz Center
-          </Button>
-        </div>
+            {/* Subject-wise Performance */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <BookOpen className="w-5 h-5 mr-2" />
+                  Subject Performance
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {['Physics', 'Chemistry', 'Biology'].map((subject) => {
+                    const subjectScore = Math.floor(Math.random() * 40) + 60;
+                    return (
+                      <div key={subject} className="space-y-2">
+                        <div className="flex justify-between">
+                          <span className="text-sm font-medium">{subject}</span>
+                          <span className="text-sm text-gray-600">{subjectScore}%</span>
+                        </div>
+                        <Progress value={subjectScore} className="h-2" />
+                      </div>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="history" className="space-y-4">
+            <TestHistory 
+              entries={testHistory}
+              onRetakeTest={(testId) => console.log('Retake test:', testId)}
+              onViewDetails={(testId) => console.log('View details:', testId)}
+            />
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );

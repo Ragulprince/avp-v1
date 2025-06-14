@@ -31,7 +31,7 @@ const Index = () => {
         return <StudentDashboard activeTab={activeTab} onTabChange={setActiveTab} />;
       case 'practice':
         return <QuizCenter activeTab={activeTab} onTabChange={setActiveTab} />;
-      case 'learning':
+      case 'hub':
         return <VideoLearning activeTab={activeTab} onTabChange={setActiveTab} />;
       case 'profile':
         return <Profile activeTab={activeTab} onTabChange={setActiveTab} />;

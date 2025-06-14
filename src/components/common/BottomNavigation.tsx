@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Home, BookOpen, Video, User } from 'lucide-react';
+import { Home, Target, BookOpen, User, Settings } from 'lucide-react';
 
 interface BottomNavigationProps {
   activeTab: string;
@@ -9,35 +9,33 @@ interface BottomNavigationProps {
 }
 
 const BottomNavigation: React.FC<BottomNavigationProps> = ({ activeTab, onTabChange }) => {
-  const tabs = [
+  const navItems = [
     { id: 'home', label: 'Home', icon: Home },
-    { id: 'practice', label: 'Practice', icon: BookOpen },
-    { id: 'learning', label: 'Videos', icon: Video },
+    { id: 'practice', label: 'Practice', icon: Target },
+    { id: 'hub', label: 'Hub', icon: BookOpen },
     { id: 'profile', label: 'Profile', icon: User },
+    { id: 'settings', label: 'Settings', icon: Settings }
   ];
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-4 py-2 z-50 safe-area-pb">
-      <div className="flex justify-around items-center max-w-md mx-auto">
-        {tabs.map((tab) => {
-          const Icon = tab.icon;
-          const isActive = activeTab === tab.id;
+    <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-4 py-2 z-50">
+      <div className="flex justify-around items-center max-w-sm mx-auto">
+        {navItems.map((item) => {
+          const Icon = item.icon;
+          const isActive = activeTab === item.id;
+          
           return (
             <Button
-              key={tab.id}
+              key={item.id}
               variant="ghost"
               size="sm"
-              onClick={() => onTabChange(tab.id)}
-              className={`flex flex-col items-center p-2 h-auto min-w-0 flex-1 ${
-                isActive 
-                  ? 'text-blue-600 bg-blue-50' 
-                  : 'text-gray-600 hover:text-gray-900'
+              onClick={() => onTabChange(item.id)}
+              className={`flex flex-col items-center space-y-1 min-w-0 ${
+                isActive ? 'text-blue-600' : 'text-gray-600'
               }`}
             >
-              <Icon className={`w-5 h-5 mb-1 ${isActive ? 'text-blue-600' : ''}`} />
-              <span className={`text-xs ${isActive ? 'font-medium' : ''} truncate`}>
-                {tab.label}
-              </span>
+              <Icon className="w-5 h-5" />
+              <span className="text-xs truncate">{item.label}</span>
             </Button>
           );
         })}
