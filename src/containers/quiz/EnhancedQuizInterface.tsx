@@ -1,10 +1,9 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { Clock, ChevronLeft, ChevronRight, Flag, BookOpen } from 'lucide-react';
+import { Clock, ChevronLeft, ChevronRight, Flag, BookOpen, Eye, EyeOff } from 'lucide-react';
 import QuizResults from './QuizResults';
 
 interface Question {
@@ -27,7 +26,8 @@ const EnhancedQuizInterface: React.FC<EnhancedQuizInterfaceProps> = ({ quizId, o
   const [answers, setAnswers] = useState<Record<number, any>>({});
   const [timeLeft, setTimeLeft] = useState(3600); // 60 minutes
   const [showResults, setShowResults] = useState(false);
-  const [draggedItems, setDraggedItems] = useState<Record<string, string>>({});
+  const [showLedger, setShowLedger] = useState(false);
+  const [flaggedQuestions, setFlaggedQuestions] = useState<Set<number>>(new Set());
 
   // Mock questions data
   const questions: Question[] = [
@@ -117,6 +117,36 @@ const EnhancedQuizInterface: React.FC<EnhancedQuizInterfaceProps> = ({ quizId, o
   const handlePrevious = () => {
     if (currentQuestion > 0) {
       setCurrentQuestion(prev => prev - 1);
+    }
+  };
+
+  const handleFlag = () => {
+    const newFlagged = new Set(flaggedQuestions);
+    if (newFlagged.has(currentQuestion)) {
+      newFlagged.delete(currentQuestion);
+    } else {
+      newFlagged.add(currentQuestion);
+    }
+    setFlaggedQuestions(newFlagged);
+  };
+
+  const getQuestionStatus = (index: number) => {
+    if (answers[index] !== undefined) {
+      return 'answered';
+    } else if (flaggedQuestions.has(index)) {
+      return 'flagged';
+    } else if (index === currentQuestion) {
+      return 'current';
+    }
+    return 'unanswered';
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'answered': return 'bg-green-500 text-white';
+      case 'flagged': return 'bg-yellow-500 text-white';
+      case 'current': return 'bg-blue-500 text-white';
+      default: return 'bg-gray-200 text-gray-700';
     }
   };
 
@@ -266,6 +296,7 @@ const EnhancedQuizInterface: React.FC<EnhancedQuizInterfaceProps> = ({ quizId, o
           setCurrentQuestion(0);
           setTimeLeft(3600);
           setShowResults(false);
+          setFlaggedQuestions(new Set());
         }}
         onBackToCenter={onBack}
       />
@@ -291,6 +322,14 @@ const EnhancedQuizInterface: React.FC<EnhancedQuizInterfaceProps> = ({ quizId, o
           <Badge variant="outline">
             Question {currentQuestion + 1} of {questions.length}
           </Badge>
+          <Button
+            variant="outline"
+            onClick={() => setShowLedger(!showLedger)}
+            className="flex items-center space-x-2"
+          >
+            {showLedger ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            <span>Ledger</span>
+          </Button>
         </div>
       </div>
 
@@ -303,59 +342,140 @@ const EnhancedQuizInterface: React.FC<EnhancedQuizInterfaceProps> = ({ quizId, o
         <Progress value={progress} className="h-2" />
       </div>
 
-      {/* Question Card */}
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle className="flex items-start justify-between">
-            <span className="flex-1">{question.text}</span>
-            <Badge variant="outline" className="ml-4">
-              {question.type.replace('-', ' ').toUpperCase()}
-            </Badge>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {renderQuestion()}
-        </CardContent>
-      </Card>
+      <div className="flex gap-6">
+        {/* Main Question Area */}
+        <div className="flex-1">
+          {/* Question Card */}
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle className="flex items-start justify-between">
+                <span className="flex-1">{question.text}</span>
+                <div className="flex items-center space-x-2 ml-4">
+                  <Badge variant="outline">
+                    {question.type.replace('-', ' ').toUpperCase()}
+                  </Badge>
+                  <Button
+                    variant={flaggedQuestions.has(currentQuestion) ? "default" : "outline"}
+                    size="sm"
+                    onClick={handleFlag}
+                    className={flaggedQuestions.has(currentQuestion) ? "bg-yellow-500 hover:bg-yellow-600" : ""}
+                  >
+                    <Flag className="w-4 h-4" />
+                  </Button>
+                </div>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {renderQuestion()}
+            </CardContent>
+          </Card>
 
-      {/* Question Navigator */}
-      <div className="grid grid-cols-5 gap-2 mb-6">
-        {questions.map((_, index) => (
-          <Button
-            key={index}
-            variant={index === currentQuestion ? "default" : answers[index] !== undefined ? "secondary" : "outline"}
-            size="sm"
-            onClick={() => setCurrentQuestion(index)}
-          >
-            {index + 1}
-          </Button>
-        ))}
-      </div>
-
-      {/* Navigation */}
-      <div className="flex justify-between">
-        <Button
-          variant="outline"
-          onClick={handlePrevious}
-          disabled={currentQuestion === 0}
-        >
-          <ChevronLeft className="w-4 h-4 mr-2" />
-          Previous
-        </Button>
-        
-        <div className="flex space-x-2">
-          <Button variant="outline">
-            <Flag className="w-4 h-4 mr-2" />
-            Flag
-          </Button>
-          <Button
-            onClick={handleNext}
-            className="bg-blue-600 hover:bg-blue-700"
-          >
-            {currentQuestion === questions.length - 1 ? 'Submit' : 'Next'}
-            <ChevronRight className="w-4 h-4 ml-2" />
-          </Button>
+          {/* Navigation */}
+          <div className="flex justify-between">
+            <Button
+              variant="outline"
+              onClick={handlePrevious}
+              disabled={currentQuestion === 0}
+            >
+              <ChevronLeft className="w-4 h-4 mr-2" />
+              Previous
+            </Button>
+            
+            <Button
+              onClick={handleNext}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              {currentQuestion === questions.length - 1 ? 'Submit' : 'Next'}
+              <ChevronRight className="w-4 h-4 ml-2" />
+            </Button>
+          </div>
         </div>
+
+        {/* Question Ledger */}
+        {showLedger && (
+          <div className="w-80">
+            <Card className="sticky top-6">
+              <CardHeader>
+                <CardTitle className="text-lg">Question Ledger</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {/* Status Legend */}
+                  <div className="space-y-2">
+                    <h4 className="font-medium text-sm">Status Legend:</h4>
+                    <div className="flex flex-wrap gap-2 text-xs">
+                      <div className="flex items-center space-x-1">
+                        <div className="w-3 h-3 bg-green-500 rounded"></div>
+                        <span>Answered</span>
+                      </div>
+                      <div className="flex items-center space-x-1">
+                        <div className="w-3 h-3 bg-yellow-500 rounded"></div>
+                        <span>Flagged</span>
+                      </div>
+                      <div className="flex items-center space-x-1">
+                        <div className="w-3 h-3 bg-blue-500 rounded"></div>
+                        <span>Current</span>
+                      </div>
+                      <div className="flex items-center space-x-1">
+                        <div className="w-3 h-3 bg-gray-200 rounded"></div>
+                        <span>Unanswered</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Question Navigator */}
+                  <div>
+                    <h4 className="font-medium text-sm mb-2">Questions:</h4>
+                    <div className="grid grid-cols-5 gap-2">
+                      {questions.map((_, index) => {
+                        const status = getQuestionStatus(index);
+                        return (
+                          <Button
+                            key={index}
+                            variant="outline"
+                            size="sm"
+                            className={`w-full h-10 ${getStatusColor(status)} border-0`}
+                            onClick={() => setCurrentQuestion(index)}
+                          >
+                            {index + 1}
+                            {flaggedQuestions.has(index) && (
+                              <Flag className="w-3 h-3 ml-1" />
+                            )}
+                          </Button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Quick Stats */}
+                  <div className="space-y-2 pt-4 border-t">
+                    <h4 className="font-medium text-sm">Quick Stats:</h4>
+                    <div className="text-sm space-y-1">
+                      <div className="flex justify-between">
+                        <span>Answered:</span>
+                        <span className="font-medium text-green-600">
+                          {Object.keys(answers).length}/{questions.length}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Flagged:</span>
+                        <span className="font-medium text-yellow-600">
+                          {flaggedQuestions.size}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Remaining:</span>
+                        <span className="font-medium text-gray-600">
+                          {questions.length - Object.keys(answers).length}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
       </div>
     </div>
   );
