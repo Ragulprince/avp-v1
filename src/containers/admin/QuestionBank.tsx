@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -10,6 +9,22 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Plus, BookOpen, Edit, Trash2, Search, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+
+interface Question {
+  id: number;
+  text: string;
+  type: string;
+  courseId: number;
+  course: string;
+  subjectId: number;
+  subject: string;
+  difficulty: string;
+  explanation: string;
+  options?: string[];
+  correctAnswer?: number | string[];
+  matchPairs?: { left: string; right: string }[];
+  blanksCount?: number;
+}
 
 const QuestionBank = () => {
   const { toast } = useToast();
@@ -27,7 +42,7 @@ const QuestionBank = () => {
     { id: 4, name: 'Mathematics', courseId: 2 }
   ];
 
-  const [questions, setQuestions] = useState([
+  const [questions, setQuestions] = useState<Question[]>([
     {
       id: 1,
       text: 'What is Newton\'s First Law of Motion?',
@@ -83,7 +98,7 @@ const QuestionBank = () => {
     const selectedCourse = courses.find(c => c.id === parseInt(newQuestion.courseId));
     const selectedSubject = subjects.find(s => s.id === parseInt(newQuestion.subjectId));
 
-    let questionData = {
+    let questionData: Question = {
       id: questions.length + 1,
       text: newQuestion.text,
       type: newQuestion.type,
@@ -102,19 +117,13 @@ const QuestionBank = () => {
           toast({ title: "Error", description: "Please fill all options.", variant: "destructive" });
           return;
         }
-        questionData = {
-          ...questionData,
-          options: newQuestion.options,
-          correctAnswer: newQuestion.correctAnswer
-        };
+        questionData.options = newQuestion.options;
+        questionData.correctAnswer = newQuestion.correctAnswer;
         break;
       
       case 'true-false':
-        questionData = {
-          ...questionData,
-          options: ['True', 'False'],
-          correctAnswer: newQuestion.correctAnswer
-        };
+        questionData.options = ['True', 'False'];
+        questionData.correctAnswer = newQuestion.correctAnswer;
         break;
       
       case 'fill-blank':
@@ -122,11 +131,8 @@ const QuestionBank = () => {
           toast({ title: "Error", description: "Please fill all correct answers for blanks.", variant: "destructive" });
           return;
         }
-        questionData = {
-          ...questionData,
-          correctAnswer: newQuestion.fillBlanks,
-          blanksCount: newQuestion.fillBlanks.length
-        };
+        questionData.correctAnswer = newQuestion.fillBlanks;
+        questionData.blanksCount = newQuestion.fillBlanks.length;
         break;
       
       case 'match':
@@ -134,11 +140,8 @@ const QuestionBank = () => {
           toast({ title: "Error", description: "Please fill all match pairs.", variant: "destructive" });
           return;
         }
-        questionData = {
-          ...questionData,
-          matchPairs: newQuestion.matchPairs,
-          correctAnswer: newQuestion.matchPairs.map(pair => `${pair.left}-${pair.right}`)
-        };
+        questionData.matchPairs = newQuestion.matchPairs;
+        questionData.correctAnswer = newQuestion.matchPairs.map(pair => `${pair.left}-${pair.right}`);
         break;
       
       default:
@@ -161,19 +164,19 @@ const QuestionBank = () => {
     toast({ title: "Success", description: "Question created successfully!" });
   };
 
-  const handleOptionChange = (index, value) => {
+  const handleOptionChange = (index: number, value: string) => {
     const newOptions = [...newQuestion.options];
     newOptions[index] = value;
     setNewQuestion({ ...newQuestion, options: newOptions });
   };
 
-  const handleMatchPairChange = (index, field, value) => {
+  const handleMatchPairChange = (index: number, field: 'left' | 'right', value: string) => {
     const newPairs = [...newQuestion.matchPairs];
     newPairs[index][field] = value;
     setNewQuestion({ ...newQuestion, matchPairs: newPairs });
   };
 
-  const handleFillBlankChange = (index, value) => {
+  const handleFillBlankChange = (index: number, value: string) => {
     const newBlanks = [...newQuestion.fillBlanks];
     newBlanks[index] = value;
     setNewQuestion({ ...newQuestion, fillBlanks: newBlanks });
@@ -186,7 +189,7 @@ const QuestionBank = () => {
     });
   };
 
-  const removeMatchPair = (index) => {
+  const removeMatchPair = (index: number) => {
     if (newQuestion.matchPairs.length > 2) {
       const newPairs = newQuestion.matchPairs.filter((_, i) => i !== index);
       setNewQuestion({ ...newQuestion, matchPairs: newPairs });
@@ -200,7 +203,7 @@ const QuestionBank = () => {
     });
   };
 
-  const removeFillBlank = (index) => {
+  const removeFillBlank = (index: number) => {
     if (newQuestion.fillBlanks.length > 1) {
       const newBlanks = newQuestion.fillBlanks.filter((_, i) => i !== index);
       setNewQuestion({ ...newQuestion, fillBlanks: newBlanks });
@@ -220,7 +223,7 @@ const QuestionBank = () => {
     return matchesSearch && matchesCourse && matchesSubject && matchesType;
   });
 
-  const getDifficultyColor = (difficulty) => {
+  const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
       case 'easy': return 'bg-green-100 text-green-800';
       case 'medium': return 'bg-yellow-100 text-yellow-800';
@@ -229,7 +232,7 @@ const QuestionBank = () => {
     }
   };
 
-  const getTypeColor = (type) => {
+  const getTypeColor = (type: string) => {
     switch (type) {
       case 'mcq': return 'bg-blue-100 text-blue-800';
       case 'true-false': return 'bg-green-100 text-green-800';
@@ -508,7 +511,6 @@ const QuestionBank = () => {
         </TabsContent>
 
         <TabsContent value="manage" className="space-y-6">
-          {/* Search and Filters */}
           <Card className="shadow-lg border-0">
             <CardContent className="p-4">
               <div className="flex flex-col md:flex-row gap-4">
@@ -567,7 +569,6 @@ const QuestionBank = () => {
             </CardContent>
           </Card>
 
-          {/* Questions List */}
           <div className="space-y-4">
             {filteredQuestions.map((question) => (
               <Card key={question.id} className="shadow-lg border-0 hover:shadow-xl transition-shadow">
@@ -611,16 +612,16 @@ const QuestionBank = () => {
                     </div>
                   )}
 
-                  {question.type === 'true-false' && (
+                  {question.type === 'true-false' && question.options && (
                     <div className="mb-3">
                       <p className="text-sm font-medium text-gray-700 mb-2">Correct Answer:</p>
                       <Badge className="bg-green-100 text-green-800">
-                        {question.options[question.correctAnswer]}
+                        {question.options[question.correctAnswer as number]}
                       </Badge>
                     </div>
                   )}
 
-                  {question.type === 'fill-blank' && question.correctAnswer && (
+                  {question.type === 'fill-blank' && Array.isArray(question.correctAnswer) && (
                     <div className="mb-3">
                       <p className="text-sm font-medium text-gray-700 mb-2">Correct Answers:</p>
                       <div className="flex flex-wrap gap-2">
