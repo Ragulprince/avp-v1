@@ -86,9 +86,18 @@ export const getVideos = async (req: AuthRequest, res: Response) => {
 export const getVideoById = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
+    const videoId = parseInt(id);
+
+    if (isNaN(videoId)) {
+      res.status(400).json({
+        success: false,
+        message: 'Invalid video ID'
+      });
+      return;
+    }
 
     const video = await prisma.video.findUnique({
-      where: { id },
+      where: { id: videoId },
       include: {
         course: {
           select: {
@@ -109,7 +118,7 @@ export const getVideoById = async (req: AuthRequest, res: Response): Promise<voi
 
     // Update view count
     await prisma.video.update({
-      where: { id },
+      where: { id: videoId },
       data: { views: { increment: 1 } }
     });
 
@@ -132,10 +141,19 @@ export const getVideoById = async (req: AuthRequest, res: Response): Promise<voi
 export const downloadVideo = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
+    const videoId = parseInt(id);
     const userId = req.user!.id;
 
+    if (isNaN(videoId)) {
+      res.status(400).json({
+        success: false,
+        message: 'Invalid video ID'
+      });
+      return;
+    }
+
     const video = await prisma.video.findUnique({
-      where: { id }
+      where: { id: videoId }
     });
 
     if (!video || !video.isPublished) {
@@ -151,7 +169,7 @@ export const downloadVideo = async (req: AuthRequest, res: Response): Promise<vo
       where: {
         userId_videoId: {
           userId,
-          videoId: id
+          videoId: videoId
         }
       }
     });
@@ -162,9 +180,7 @@ export const downloadVideo = async (req: AuthRequest, res: Response): Promise<vo
         message: 'Download link already active',
         data: {
           downloadUrl: video.videoUrl,
-          expires
-
-: existingDownload.expiresAt
+          expiresAt: existingDownload.expiresAt
         }
       });
       return;
@@ -178,7 +194,7 @@ export const downloadVideo = async (req: AuthRequest, res: Response): Promise<vo
       where: {
         userId_videoId: {
           userId,
-          videoId: id
+          videoId: videoId
         }
       },
       update: {
@@ -186,7 +202,7 @@ export const downloadVideo = async (req: AuthRequest, res: Response): Promise<vo
       },
       create: {
         userId,
-        videoId: id,
+        videoId: videoId,
         expiresAt
       }
     });
@@ -210,7 +226,7 @@ export const downloadVideo = async (req: AuthRequest, res: Response): Promise<vo
   }
 };
 
-export const getVideoSubjects = async (res: Response) => {
+export const getVideoSubjects = async (req: AuthRequest, res: Response) => {
   try {
     const subjects = await prisma.video.findMany({
       where: { isPublished: true },

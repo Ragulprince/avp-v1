@@ -1,3 +1,4 @@
+
 import { Request } from 'express';
 import { User, StudentProfile, Batch, Course } from '@prisma/client';
 
@@ -17,6 +18,12 @@ export interface ApiResponse {
   success: boolean;
   message: string;
   data?: any;
+  meta?: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
 }
 
 export interface PaginationQuery {
@@ -24,6 +31,11 @@ export interface PaginationQuery {
   limit?: string;
   sortBy?: string;
   sortOrder?: 'asc' | 'desc';
+}
+
+export interface SearchQuery extends PaginationQuery {
+  subject?: string;
+  search?: string;
 }
 
 export interface QuizQuery extends PaginationQuery {
