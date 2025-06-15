@@ -1,9 +1,10 @@
 
 import { Request } from 'express';
-import { User } from '@prisma/client';
+import { User, Quiz } from '@prisma/client';
 
 export interface AuthRequest extends Request {
   user?: User;
+  quiz?: Quiz;
 }
 
 export interface PaginationQuery {
@@ -61,4 +62,54 @@ export interface MaterialUpload {
   courseId: string;
   type: string;
   file: Express.Multer.File;
+}
+
+export interface SessionData {
+  token: string;
+  loginTime: Date;
+  userId: string;
+}
+
+export interface QuizConfiguration {
+  shuffleQuestions?: boolean;
+  shuffleOptions?: boolean;
+  negativeMarking?: boolean;
+  negativeMarks?: number;
+  timeLimit?: number;
+  maxAttempts?: number;
+}
+
+export interface TestReport {
+  testId: string;
+  totalAttempts: number;
+  averageScore: number;
+  passRate: number;
+  questionAnalysis: QuestionAnalysis[];
+}
+
+export interface QuestionAnalysis {
+  questionId: string;
+  correctAnswers: number;
+  incorrectAnswers: number;
+  accuracy: number;
+  topic: string;
+  difficulty: string;
+}
+
+export interface StudentTestResult {
+  studentId: string;
+  testId: string;
+  score: number;
+  percentage: number;
+  rank: number;
+  timeTaken: number;
+  questionWiseResults: QuestionResult[];
+}
+
+export interface QuestionResult {
+  questionId: string;
+  isCorrect: boolean;
+  studentAnswer: string;
+  correctAnswer: string;
+  marks: number;
 }
