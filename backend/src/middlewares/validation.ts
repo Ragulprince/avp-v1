@@ -1,10 +1,8 @@
 
-import { Request, Response, NextFunction } from 'express';
 import { validationResult } from 'express-validator';
 
-export const handleValidationErrors = (req: Request, res: Response, next: NextFunction): void => {
+export const validateRequest = (req, res, next) => {
   const errors = validationResult(req);
-  
   if (!errors.isEmpty()) {
     res.status(400).json({
       success: false,
@@ -13,6 +11,5 @@ export const handleValidationErrors = (req: Request, res: Response, next: NextFu
     });
     return;
   }
-  
   next();
 };
