@@ -3,25 +3,25 @@
 
 # Setup - Create shared network and install dependencies
 setup:
-	docker network create avp-network 2>/dev/null || true
+	docker network create avp-network 2>nul || exit 0
 	cd web && make install
 	cd backend && make install
 
 # Run both web and backend
 run-all:
-	docker network create avp-network 2>/dev/null || true
+	docker network create avp-network 2>nul || exit 0
 	cd backend && make run-detached
-	sleep 10
+	timeout /t 10 /nobreak >nul
 	cd web && make run
 
 # Run only web
 run-web:
-	docker network create avp-network 2>/dev/null || true
+	docker network create avp-network 2>nul || exit 0
 	cd web && make run
 
 # Run only backend (with postgres, redis, adminer)
 run-backend:
-	docker network create avp-network 2>/dev/null || true
+	docker network create avp-network 2>nul || exit 0
 	cd backend && make run
 
 # Stop all services
@@ -33,7 +33,7 @@ stop-all:
 clean-all:
 	cd web && make clean
 	cd backend && make clean
-	docker network rm avp-network 2>/dev/null || true
+	docker network rm avp-network 2>nul || exit 0
 
 # Install dependencies for both
 install-all:
@@ -46,4 +46,3 @@ logs-web:
 
 logs-backend:
 	cd backend && make logs
-

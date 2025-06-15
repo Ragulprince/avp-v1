@@ -8,10 +8,17 @@ A comprehensive educational technology platform built with React, Node.js, Postg
 ```
 avp-academy/
 ├── web/                    # React Frontend (Vite + TypeScript)
+│   ├── src/               # Source code
+│   ├── package.json       # Web dependencies
+│   ├── node_modules/      # Web node modules
 │   ├── Dockerfile         # Web container configuration
 │   ├── docker-compose.yml # Web service
 │   └── Makefile          # Web commands
 ├── backend/               # Node.js API (Express + TypeScript)
+│   ├── src/               # Source code
+│   ├── prisma/            # Database schema and migrations
+│   ├── package.json       # Backend dependencies
+│   ├── node_modules/      # Backend node modules
 │   ├── Dockerfile         # Backend container configuration
 │   ├── docker-compose.yml # Backend + DB services
 │   └── Makefile          # Backend commands
@@ -133,10 +140,12 @@ make db-studio    # Open Prisma Studio
 
 All services use a shared Docker network called `avp-network` for inter-service communication. The network is automatically created when running any service.
 
-## 📚 API Documentation
+## 📚 Project Structure
 
-- **Health Check**: http://localhost:3000/health
-- **API Endpoints**: See backend/README.md for detailed API documentation
+- **Separate Dependencies**: Each service (web/backend) has its own `package.json`, `node_modules`, and dependencies
+- **Individual Docker Configs**: Each service has its own `Dockerfile` and `docker-compose.yml`
+- **Shared Network**: All services communicate via `avp-network` Docker network
+- **Windows Compatible**: Makefiles work on both Windows and Unix systems
 
 ## 🔐 Demo Credentials
 
@@ -169,7 +178,10 @@ docker network rm avp-network
 - Wait for database to be ready (health check in docker-compose)
 - Check logs: `cd backend && make logs-db`
 
+**Windows specific:**
+- The Makefiles are designed to work on Windows Command Prompt and PowerShell
+- Use `timeout` instead of `sleep` for delays
+
 ---
 
 **Happy Learning! 🎓**
-
