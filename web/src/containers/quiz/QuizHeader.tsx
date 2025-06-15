@@ -1,30 +1,69 @@
 
 import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Target, Trophy } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Trophy, Target, Clock, Award } from 'lucide-react';
+import { useQuizAttempts } from '@/hooks/api/useQuizzes';
 
-const QuizHeader = () => {
+const QuizHeader: React.FC = () => {
+  const { data: attemptsData } = useQuizAttempts();
+  const attempts = attemptsData?.data || [];
+
+  const stats = React.useMemo(() => {
+    const totalAttempts = attempts.length;
+    const totalScore = attempts.reduce((sum: number, attempt: any) => sum + (attempt.score || 0), 0);
+    const avgScore = totalAttempts > 0 ? Math.round(totalScore / totalAttempts) : 0;
+    const bestScore = attempts.length > 0 ? Math.max(...attempts.map((a: any) => a.score || 0)) : 0;
+    
+    return {
+      totalAttempts,
+      avgScore,
+      bestScore,
+      rank: Math.floor(Math.random() * 50) + 1 // Mock rank
+    };
+  }, [attempts]);
+
   return (
-    <Card className="bg-gradient-to-r from-blue-500 to-purple-600 text-white">
-      <CardHeader className="pb-2">
-        <CardTitle className="text-2xl font-bold flex items-center">
-          <Target className="w-6 h-6 mr-2" />
-          Practice Center
-        </CardTitle>
-        <p className="text-blue-100">Test your knowledge and track your progress</p>
-      </CardHeader>
-      <CardContent className="pt-2">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center">
-            <Trophy className="w-5 h-5 mr-2" />
-            <span className="text-sm">Today's Goal: Complete 2 tests</span>
-          </div>
-          <div className="text-sm bg-white/20 px-3 py-1 rounded-full">
-            Streak: 5 days
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+    <div className="space-y-4">
+      <div className="text-center">
+        <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">Quiz Center</h1>
+        <p className="text-gray-600">Test your knowledge and track your progress</p>
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <Card>
+          <CardContent className="p-3 text-center">
+            <Target className="w-6 h-6 text-blue-500 mx-auto mb-1" />
+            <p className="text-xl font-bold text-gray-900">{stats.totalAttempts}</p>
+            <p className="text-xs text-gray-600">Tests Taken</p>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardContent className="p-3 text-center">
+            <Award className="w-6 h-6 text-green-500 mx-auto mb-1" />
+            <p className="text-xl font-bold text-gray-900">{stats.avgScore}%</p>
+            <p className="text-xs text-gray-600">Avg Score</p>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardContent className="p-3 text-center">
+            <Trophy className="w-6 h-6 text-purple-500 mx-auto mb-1" />
+            <p className="text-xl font-bold text-gray-900">{stats.bestScore}%</p>
+            <p className="text-xs text-gray-600">Best Score</p>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardContent className="p-3 text-center">
+            <Clock className="w-6 h-6 text-orange-500 mx-auto mb-1" />
+            <p className="text-xl font-bold text-gray-900">#{stats.rank}</p>
+            <p className="text-xs text-gray-600">Rank</p>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
   );
 };
 

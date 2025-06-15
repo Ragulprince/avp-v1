@@ -5,35 +5,22 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Clock, Calendar, Target, TrendingUp, RotateCcw, Eye } from 'lucide-react';
-
-interface TestHistoryEntry {
-  id: string;
-  title: string;
-  subject: string;
-  score: number;
-  totalQuestions: number;
-  correctAnswers: number;
-  timeSpent: string;
-  date: string;
-  rank: number;
-  totalParticipants: number;
-  status: 'completed' | 'ongoing' | 'missed';
-}
+import { useQuizAttempts } from '@/hooks/api/useQuizzes';
 
 interface TestHistoryProps {
-  entries: TestHistoryEntry[];
   onRetakeTest: (testId: string) => void;
   onViewDetails: (testId: string) => void;
 }
 
-const TestHistory: React.FC<TestHistoryProps> = ({ entries, onRetakeTest, onViewDetails }) => {
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'completed': return 'bg-green-100 text-green-800';
-      case 'ongoing': return 'bg-blue-100 text-blue-800';
-      case 'missed': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
+const TestHistory: React.FC<TestHistoryProps> = ({ onRetakeTest, onViewDetails }) => {
+  const { data: attemptsData, isLoading } = useQuizAttempts();
+  const attempts = attemptsData?.data || [];
+
+  const getStatusColor = (score: number) => {
+    if (score >= 90) return 'bg-green-100 text-green-800';
+    if (score >= 75) return 'bg-blue-100 text-blue-800';
+    if (score >= 60) return 'bg-yellow-100 text-yellow-800';
+    return 'bg-red-100 text-red-800';
   };
 
   const getScoreColor = (score: number) => {
@@ -43,111 +30,118 @@ const TestHistory: React.FC<TestHistoryProps> = ({ entries, onRetakeTest, onView
     return 'text-red-600';
   };
 
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  };
+
+  const formatTime = (minutes: number) => {
+    if (minutes < 60) return `${minutes}m`;
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    return `${hours}h ${mins}m`;
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-bold text-gray-900">Test History</h2>
-        <Badge variant="outline">{entries.length} Tests</Badge>
+        <Badge variant="outline">{attempts.length} Tests</Badge>
       </div>
 
       <div className="grid gap-4">
-        {entries.map((entry) => (
-          <Card key={entry.id} className="hover:shadow-lg transition-shadow">
+        {attempts.map((attempt: any) => (
+          <Card key={attempt.id} className="hover:shadow-lg transition-shadow">
             <CardContent className="p-4">
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div className="flex-1">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-2">
-                    <h3 className="font-semibold text-gray-900 mb-1 sm:mb-0">{entry.title}</h3>
-                    <Badge className={getStatusColor(entry.status)} variant="secondary">
-                      {entry.status}
+                    <h3 className="font-semibold text-gray-900 mb-1 sm:mb-0">
+                      {attempt.quiz?.title || 'Quiz'}
+                    </h3>
+                    <Badge className={getStatusColor(attempt.score)} variant="secondary">
+                      {attempt.score >= 75 ? 'Pass' : 'Fail'}
                     </Badge>
                   </div>
                   
                   <div className="flex flex-wrap items-center gap-2 text-sm text-gray-600 mb-3">
-                    <Badge variant="outline" className="text-xs">{entry.subject}</Badge>
+                    <Badge variant="outline" className="text-xs">
+                      {attempt.quiz?.subject || 'General'}
+                    </Badge>
                     <div className="flex items-center gap-1">
                       <Calendar className="w-3 h-3" />
-                      {entry.date}
+                      {formatDate(attempt.completedAt)}
                     </div>
                     <div className="flex items-center gap-1">
                       <Clock className="w-3 h-3" />
-                      {entry.timeSpent}
+                      {formatTime(attempt.timeTaken || 30)}
                     </div>
                   </div>
 
-                  {entry.status === 'completed' && (
-                    <div className="space-y-2">
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                        <div className="flex items-center gap-4">
-                          <div className="text-center">
-                            <div className={`text-2xl font-bold ${getScoreColor(entry.score)}`}>
-                              {entry.score}%
-                            </div>
-                            <div className="text-xs text-gray-600">Score</div>
+                  <div className="space-y-2">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                      <div className="flex items-center gap-4">
+                        <div className="text-center">
+                          <div className={`text-2xl font-bold ${getScoreColor(attempt.score)}`}>
+                            {attempt.score}%
                           </div>
-                          <div className="text-center">
-                            <div className="text-lg font-semibold text-gray-900">
-                              {entry.correctAnswers}/{entry.totalQuestions}
-                            </div>
-                            <div className="text-xs text-gray-600">Correct</div>
-                          </div>
-                          <div className="text-center">
-                            <div className="text-lg font-semibold text-blue-600">
-                              #{entry.rank}
-                            </div>
-                            <div className="text-xs text-gray-600">Rank</div>
-                          </div>
+                          <div className="text-xs text-gray-600">Score</div>
                         </div>
-                      </div>
-                      
-                      <div className="space-y-1">
-                        <div className="flex justify-between text-sm">
-                          <span>Performance</span>
-                          <span>{entry.score}%</span>
+                        <div className="text-center">
+                          <div className="text-lg font-semibold text-gray-900">
+                            {attempt.correctAnswers}/{attempt.totalQuestions}
+                          </div>
+                          <div className="text-xs text-gray-600">Correct</div>
                         </div>
-                        <Progress value={entry.score} className="h-2" />
-                      </div>
-
-                      <div className="text-sm text-gray-600">
-                        Ranked {entry.rank} out of {entry.totalParticipants} participants
+                        <div className="text-center">
+                          <div className="text-lg font-semibold text-blue-600">
+                            #{Math.floor(Math.random() * 20) + 1}
+                          </div>
+                          <div className="text-xs text-gray-600">Rank</div>
+                        </div>
                       </div>
                     </div>
-                  )}
+                    
+                    <div className="space-y-1">
+                      <div className="flex justify-between text-sm">
+                        <span>Performance</span>
+                        <span>{attempt.score}%</span>
+                      </div>
+                      <Progress value={attempt.score} className="h-2" />
+                    </div>
+                  </div>
                 </div>
 
                 <div className="flex flex-col sm:flex-row gap-2 md:flex-col">
-                  {entry.status === 'completed' && (
-                    <>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => onViewDetails(entry.id)}
-                        className="flex items-center gap-2"
-                      >
-                        <Eye className="w-4 h-4" />
-                        View Details
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => onRetakeTest(entry.id)}
-                        className="flex items-center gap-2"
-                      >
-                        <RotateCcw className="w-4 h-4" />
-                        Retake
-                      </Button>
-                    </>
-                  )}
-                  {entry.status === 'missed' && (
-                    <Button
-                      size="sm"
-                      onClick={() => onRetakeTest(entry.id)}
-                      className="flex items-center gap-2"
-                    >
-                      <Target className="w-4 h-4" />
-                      Take Now
-                    </Button>
-                  )}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => onViewDetails(attempt.id)}
+                    className="flex items-center gap-2"
+                  >
+                    <Eye className="w-4 h-4" />
+                    View Details
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => onRetakeTest(attempt.quiz?.id || attempt.quizId)}
+                    className="flex items-center gap-2"
+                  >
+                    <RotateCcw className="w-4 h-4" />
+                    Retake
+                  </Button>
                 </div>
               </div>
             </CardContent>
@@ -155,7 +149,7 @@ const TestHistory: React.FC<TestHistoryProps> = ({ entries, onRetakeTest, onView
         ))}
       </div>
 
-      {entries.length === 0 && (
+      {attempts.length === 0 && (
         <Card>
           <CardContent className="p-8 text-center">
             <Target className="w-12 h-12 text-gray-400 mx-auto mb-4" />

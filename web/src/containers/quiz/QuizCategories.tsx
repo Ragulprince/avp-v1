@@ -1,7 +1,8 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { BookOpen, Clock, Target, Users } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { BookOpen, Target, Clock, Trophy } from 'lucide-react';
 
 interface QuizCategoriesProps {
   activeCategory: string;
@@ -10,16 +11,16 @@ interface QuizCategoriesProps {
 
 const QuizCategories: React.FC<QuizCategoriesProps> = ({ activeCategory, onCategoryChange }) => {
   const categories = [
-    { id: 'all', label: 'All Tests', icon: BookOpen, count: 24 },
-    { id: 'mock', label: 'Mock Exams', icon: Target, count: 8 },
-    { id: 'daily', label: 'Daily Tests', icon: Clock, count: 12 },
-    { id: 'subject', label: 'Subject Tests', icon: Users, count: 4 },
+    { id: 'all', label: 'All Tests', icon: BookOpen, color: 'bg-blue-500' },
+    { id: 'mock', label: 'Mock Exams', icon: Trophy, color: 'bg-purple-500' },
+    { id: 'daily', label: 'Daily Tests', icon: Clock, color: 'bg-green-500' },
+    { id: 'subject', label: 'Subject Tests', icon: Target, color: 'bg-orange-500' }
   ];
 
   return (
-    <div className="space-y-3">
-      <h3 className="text-lg font-semibold text-gray-900">Categories</h3>
-      <div className="grid grid-cols-2 gap-3">
+    <div className="space-y-4">
+      <h2 className="text-lg font-semibold text-gray-900">Categories</h2>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {categories.map((category) => {
           const Icon = category.icon;
           const isActive = activeCategory === category.id;
@@ -29,17 +30,10 @@ const QuizCategories: React.FC<QuizCategoriesProps> = ({ activeCategory, onCateg
               key={category.id}
               variant={isActive ? "default" : "outline"}
               onClick={() => onCategoryChange(category.id)}
-              className={`flex flex-col h-auto p-4 ${
-                isActive 
-                  ? 'bg-blue-600 hover:bg-blue-700 text-white' 
-                  : 'hover:bg-gray-50'
-              }`}
+              className={`flex flex-col h-20 p-3 ${isActive ? category.color : ''}`}
             >
-              <Icon className={`w-6 h-6 mb-2 ${isActive ? 'text-white' : 'text-gray-600'}`} />
-              <span className="font-medium text-sm">{category.label}</span>
-              <span className={`text-xs ${isActive ? 'text-blue-100' : 'text-gray-500'}`}>
-                {category.count} tests
-              </span>
+              <Icon className="w-6 h-6 mb-1" />
+              <span className="text-xs font-medium">{category.label}</span>
             </Button>
           );
         })}

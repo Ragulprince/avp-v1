@@ -6,13 +6,15 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
 import { ArrowLeft, Clock, Flag, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useQuizById, useSubmitQuiz } from '@/hooks/api/useQuizzes';
+import { useToast } from '@/hooks/use-toast';
 
 interface Question {
   id: string;
-  text: string;
+  question: string;
   options: string[];
-  correctAnswer: number;
-  type: 'single' | 'multiple' | 'boolean';
+  type: string;
+  marks: number;
 }
 
 interface QuizInterfaceProps {
@@ -22,39 +24,27 @@ interface QuizInterfaceProps {
 
 const QuizInterface: React.FC<QuizInterfaceProps> = ({ quizId, onBack }) => {
   const [currentQuestion, setCurrentQuestion] = useState(0);
-  const [answers, setAnswers] = useState<{ [key: number]: string }>({});
+  const [answers, setAnswers] = useState<{ [key: string]: string }>({});
   const [markedForReview, setMarkedForReview] = useState<Set<number>>(new Set());
-  const [timeLeft, setTimeLeft] = useState(1800);
+  const [timeLeft, setTimeLeft] = useState(0);
   const [isSubmitted, setIsSubmitted] = useState(false);
 
-  const questions: Question[] = [
-    {
-      id: '1',
-      text: 'What is Newton\'s First Law of Motion?',
-      options: [
-        'An object at rest stays at rest unless acted upon by a force',
-        'Force equals mass times acceleration',
-        'For every action, there is an equal and opposite reaction',
-        'Energy cannot be created or destroyed'
-      ],
-      correctAnswer: 0,
-      type: 'single'
-    },
-    {
-      id: '2',
-      text: 'Which of the following are characteristics of living organisms?',
-      options: [
-        'Growth and development',
-        'Reproduction',
-        'Response to environment',
-        'Magnetic properties'
-      ],
-      correctAnswer: 0,
-      type: 'single'
-    }
-  ];
+  const { toast } = useToast();
+  const { data: quizData, isLoading } = useQuizById(quizId);
+  const submitQuiz = useSubmitQuiz();
+
+  const quiz = quizData?.data;
+  const questions = quiz?.questions?.map((q: any) => q.question) || [];
 
   useEffect(() => {
+    if (quiz?.duration) {
+      setTimeLeft(quiz.duration * 60); // Convert minutes to seconds
+    }
+  }, [quiz]);
+
+  useEffect(() => {
+    if (timeLeft <= 0) return;
+    
     const timer = setInterval(() => {
       setTimeLeft((prev) => {
         if (prev <= 1) {
@@ -66,7 +56,7 @@ const QuizInterface: React.FC<QuizInterfaceProps> = ({ quizId, onBack }) => {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, []);
+  }, [timeLeft]);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -75,17 +65,65 @@ const QuizInterface: React.FC<QuizInterfaceProps> = ({ quizId, onBack }) => {
   };
 
   const handleAnswerChange = (value: string) => {
-    setAnswers(prev => ({
-      ...prev,
-      [currentQuestion]: value
-    }));
+    const questionId = questions[currentQuestion]?.id;
+    if (questionId) {
+      setAnswers(prev => ({
+        ...prev,
+        [questionId]: value
+      }));
+    }
   };
 
-  const handleSubmit = () => {
-    setIsSubmitted(true);
+  const handleSubmit = async () => {
+    const submission = {
+      quizId: quizId,
+      answers: Object.entries(answers).map(([questionId, answer]) => ({
+        questionId,
+        answer,
+        timeTaken: 5 // Mock time per question
+      })),
+      totalTimeTaken: (quiz?.duration * 60) - timeLeft
+    };
+
+    try {
+      await submitQuiz.mutateAsync(submission);
+      setIsSubmitted(true);
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to submit quiz. Please try again.',
+        variant: 'destructive',
+      });
+    }
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading quiz...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!quiz || questions.length === 0) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <Card className="text-center max-w-md mx-auto">
+          <CardContent className="p-8">
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Quiz not found</h3>
+            <p className="text-gray-600 mb-4">The quiz you're looking for doesn't exist or is no longer available.</p>
+            <Button onClick={onBack}>Back to Quiz Center</Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   const progress = ((currentQuestion + 1) / questions.length) * 100;
+  const currentQ = questions[currentQuestion];
 
   if (isSubmitted) {
     const score = Math.floor(Math.random() * 30) + 70;
@@ -137,28 +175,30 @@ const QuizInterface: React.FC<QuizInterfaceProps> = ({ quizId, onBack }) => {
       </Card>
 
       {/* Question */}
-      <Card className="mb-4">
-        <CardHeader>
-          <CardTitle className="text-lg">
-            {questions[currentQuestion].text}
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <RadioGroup
-            value={answers[currentQuestion] || ''}
-            onValueChange={handleAnswerChange}
-          >
-            {questions[currentQuestion].options.map((option, index) => (
-              <div key={index} className="flex items-center space-x-2 p-3 border rounded-lg">
-                <RadioGroupItem value={index.toString()} id={`option-${index}`} />
-                <Label htmlFor={`option-${index}`} className="flex-1 text-sm">
-                  {option}
-                </Label>
-              </div>
-            ))}
-          </RadioGroup>
-        </CardContent>
-      </Card>
+      {currentQ && (
+        <Card className="mb-4">
+          <CardHeader>
+            <CardTitle className="text-lg">
+              {currentQ.question}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <RadioGroup
+              value={answers[currentQ.id] || ''}
+              onValueChange={handleAnswerChange}
+            >
+              {currentQ.options?.map((option: string, index: number) => (
+                <div key={index} className="flex items-center space-x-2 p-3 border rounded-lg">
+                  <RadioGroupItem value={index.toString()} id={`option-${index}`} />
+                  <Label htmlFor={`option-${index}`} className="flex-1 text-sm">
+                    {option}
+                  </Label>
+                </div>
+              ))}
+            </RadioGroup>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Navigation */}
       <div className="flex justify-between items-center mb-4">
