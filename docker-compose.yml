@@ -1,4 +1,3 @@
-
 version: '3.8'
 
 services:
@@ -50,6 +49,8 @@ services:
     networks:
       - avp-network
     restart: unless-stopped
+    entrypoint: ["sh", "-c", "dos2unix /app/entrypoint.sh && /app/entrypoint.sh"]
+    command: ["npm", "start"]
 
   # PostgreSQL Database
   postgres:
