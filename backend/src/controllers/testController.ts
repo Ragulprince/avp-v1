@@ -143,13 +143,31 @@ export const addQuestionToTest = async (req: AuthRequest, res: Response): Promis
   try {
     const { testId } = req.params;
     const { questionId, questionData } = req.body;
+    const testIdInt = parseInt(testId);
+
+    if (isNaN(testIdInt)) {
+      res.status(400).json({
+        success: false,
+        message: 'Invalid test ID'
+      });
+      return;
+    }
 
     let question;
     
     if (questionId) {
       // Adding from question bank
+      const questionIdInt = parseInt(questionId);
+      if (isNaN(questionIdInt)) {
+        res.status(400).json({
+          success: false,
+          message: 'Invalid question ID'
+        });
+        return;
+      }
+
       question = await prisma.question.findUnique({
-        where: { id: questionId }
+        where: { id: questionIdInt }
       });
       
       if (!question) {
@@ -184,7 +202,7 @@ export const addQuestionToTest = async (req: AuthRequest, res: Response): Promis
 
     // Get next order number
     const lastQuestion = await prisma.quizQuestion.findFirst({
-      where: { quizId: testId },
+      where: { quizId: testIdInt },
       orderBy: { order: 'desc' }
     });
 
@@ -193,7 +211,7 @@ export const addQuestionToTest = async (req: AuthRequest, res: Response): Promis
     // Add question to quiz
     await prisma.quizQuestion.create({
       data: {
-        quizId: testId,
+        quizId: testIdInt,
         questionId: question.id,
         order: nextOrder
       }
@@ -214,9 +232,18 @@ export const addQuestionToTest = async (req: AuthRequest, res: Response): Promis
 export const getTestReport = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { testId } = req.params;
+    const testIdInt = parseInt(testId);
+
+    if (isNaN(testIdInt)) {
+      res.status(400).json({
+        success: false,
+        message: 'Invalid test ID'
+      });
+      return;
+    }
 
     const test = await prisma.quiz.findUnique({
-      where: { id: testId },
+      where: { id: testIdInt },
       include: {
         course: true,
         questions: {
@@ -250,17 +277,17 @@ export const getTestReport = async (req: AuthRequest, res: Response): Promise<vo
 
     // Calculate analytics
     const totalAttempts = test.attempts.length;
-    const completedAttempts = test.attempts.filter(a => a.isCompleted).length;
+    const completedAttempts = test.attempts.filter((a: any) => a.isCompleted).length;
     const averageScore = totalAttempts > 0 
-      ? test.attempts.reduce((sum, a) => sum + a.score, 0) / totalAttempts 
+      ? test.attempts.reduce((sum: number, a: any) => sum + a.score, 0) / totalAttempts 
       : 0;
     const passRate = totalAttempts > 0 
-      ? (test.attempts.filter(a => a.score >= test.passingMarks).length / totalAttempts) * 100 
+      ? (test.attempts.filter((a: any) => a.score >= test.passingMarks).length / totalAttempts) * 100 
       : 0;
 
     // Question-wise analysis
-    const questionAnalysis = test.questions.map(q => {
-      const correctCount = test.attempts.filter(attempt => {
+    const questionAnalysis = test.questions.map((q: any) => {
+      const correctCount = test.attempts.filter((attempt: any) => {
         const answers = attempt.answers as any;
         return answers[q.questionId] === q.question.correctAnswer;
       }).length;
@@ -300,11 +327,21 @@ export const getTestReport = async (req: AuthRequest, res: Response): Promise<vo
 export const getStudentTestReport = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { studentId, testId } = req.params;
+    const studentIdInt = parseInt(studentId);
+    const testIdInt = parseInt(testId);
+
+    if (isNaN(studentIdInt) || isNaN(testIdInt)) {
+      res.status(400).json({
+        success: false,
+        message: 'Invalid student ID or test ID'
+      });
+      return;
+    }
 
     const attempt = await prisma.quizAttempt.findFirst({
       where: {
-        userId: studentId,
-        quizId: testId
+        userId: studentIdInt,
+        quizId: testIdInt
       },
       include: {
         user: {
@@ -337,7 +374,7 @@ export const getStudentTestReport = async (req: AuthRequest, res: Response): Pro
 
     // Question-wise analysis
     const answers = attempt.answers as any;
-    const questionAnalysis = attempt.quiz.questions.map(q => {
+    const questionAnalysis = attempt.quiz.questions.map((q: any) => {
       const studentAnswer = answers[q.questionId];
       const isCorrect = studentAnswer === q.question.correctAnswer;
       
@@ -367,7 +404,7 @@ export const getStudentTestReport = async (req: AuthRequest, res: Response): Pro
           score: attempt.score,
           percentage: (attempt.score / attempt.quiz.totalMarks) * 100,
           timeTaken: attempt.timeTaken,
-          rank: await getStudentRank(testId, attempt.score)
+          rank: await getStudentRank(testIdInt, attempt.score)
         }
       }
     });
@@ -378,7 +415,7 @@ export const getStudentTestReport = async (req: AuthRequest, res: Response): Pro
 };
 
 // Helper function to get student rank
-async function getStudentRank(quizId: string, score: number): Promise<number> {
+async function getStudentRank(quizId: number, score: number): Promise<number> {
   const higherScores = await prisma.quizAttempt.count({
     where: {
       quizId,
@@ -394,9 +431,18 @@ export const toggleTestPublish = async (req: AuthRequest, res: Response) => {
   try {
     const { testId } = req.params;
     const { isPublished } = req.body;
+    const testIdInt = parseInt(testId);
+
+    if (isNaN(testIdInt)) {
+      res.status(400).json({
+        success: false,
+        message: 'Invalid test ID'
+      });
+      return;
+    }
 
     const test = await prisma.quiz.update({
-      where: { id: testId },
+      where: { id: testIdInt },
       data: { isPublished }
     });
 
