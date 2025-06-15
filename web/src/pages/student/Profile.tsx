@@ -24,6 +24,26 @@ import BottomNavigation from '@/components/common/BottomNavigation';
 import { useStudentProfile, useStudentVideos } from '@/hooks/api/useStudent';
 import { useProfile } from '@/hooks/api/useAuth';
 
+// Define TypeScript interfaces for type safety
+interface User {
+  avatar?: string;
+  name?: string;
+  email?: string;
+  phone?: string;
+  createdAt?: string;
+}
+
+interface StudentProfile {
+  studentProfile?: {
+    batch?: { name: string };
+    address?: string;
+  };
+}
+
+interface Video {
+  id: string; // Adjust based on actual video data structure
+}
+
 interface ProfileProps {
   activeTab: string;
   onTabChange: (tab: string) => void;
@@ -40,29 +60,29 @@ const Profile: React.FC<ProfileProps> = ({ activeTab, onTabChange }) => {
   const { data: studentProfileData, isLoading: studentProfileLoading } = useStudentProfile();
   const { data: videosData } = useStudentVideos();
 
-  const user = profileData?.data;
-  const studentProfile = studentProfileData?.data;
-  const videos = videosData?.data || [];
+  const user: User | undefined = profileData?.data;
+  const studentProfile: StudentProfile | undefined = studentProfileData?.data;
+  const videos: Video[] = videosData?.data || [];
 
   const enrolledSubjects = [
     { name: 'Physics', progress: 75, totalChapters: 20, completedChapters: 15 },
     { name: 'Chemistry', progress: 60, totalChapters: 18, completedChapters: 11 },
     { name: 'Mathematics', progress: 85, totalChapters: 25, completedChapters: 21 },
-    { name: 'Biology', progress: 45, totalChapters: 22, completedChapters: 10 }
+    { name: 'Biology', progress: 45, totalChapters: 22, completedChapters: 10 },
   ];
 
   const achievements = [
     { title: 'First Quiz Completed', date: '2024-06-01', icon: '🎯' },
     { title: '10 Videos Watched', date: '2024-06-05', icon: '📺' },
     { title: 'Score Above 80%', date: '2024-06-10', icon: '🏆' },
-    { title: 'Daily Streak - 7 Days', date: '2024-06-14', icon: '🔥' }
+    { title: 'Daily Streak - 7 Days', date: '2024-06-14', icon: '🔥' },
   ];
 
   const stats = [
     { label: 'Videos Watched', value: videos.length, total: 50, color: 'bg-blue-500' },
     { label: 'Quizzes Taken', value: 18, total: 30, color: 'bg-green-500' },
     { label: 'Study Hours', value: 45, total: 100, color: 'bg-purple-500' },
-    { label: 'Notes Downloaded', value: 12, total: 20, color: 'bg-orange-500' }
+    { label: 'Notes Downloaded', value: 12, total: 20, color: 'bg-orange-500' },
   ];
 
   const educationDetails = {
@@ -70,27 +90,27 @@ const Profile: React.FC<ProfileProps> = ({ activeTab, onTabChange }) => {
       school: 'DAV Public School',
       board: 'CBSE',
       percentage: '95.2%',
-      year: '2022'
+      year: '2022',
     },
     class12: {
       school: 'St. Xavier Higher Secondary School',
       board: 'CBSE',
       percentage: '92.8%',
       year: '2024',
-      stream: 'PCM+B'
+      stream: 'PCM+B',
     },
     college: {
       name: 'Not Yet Enrolled',
       course: 'Preparing for NEET',
-      year: 'Target: 2025'
-    }
+      year: 'Target: 2025',
+    },
   };
 
   if (profileLoading || studentProfileLoading) {
     return (
       <div className="min-h-screen bg-gray-50 pb-24 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4" />
           <p className="text-gray-600">Loading profile...</p>
         </div>
       </div>
@@ -112,35 +132,37 @@ const Profile: React.FC<ProfileProps> = ({ activeTab, onTabChange }) => {
           <CardContent className="p-4 md:p-6">
             <div className="flex flex-col sm:flex-row items-center sm:items-start space-y-4 sm:space-y-0 sm:space-x-6">
               <Avatar className="w-20 h-20 md:w-24 md:h-24">
-                <AvatarImage src={user?.avatar} alt={user?.name} />
+                <AvatarImage src={user?.avatar ?? ''} alt={user?.name ?? 'User'} />
                 <AvatarFallback className="text-xl">
-                  {user?.name?.split(' ').map(n => n[0]).join('') || 'U'}
+                  {user?.name?.split(' ').map(n => n[0]).join('') ?? 'U'}
                 </AvatarFallback>
               </Avatar>
               <div className="flex-1 text-center sm:text-left">
-                <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-2">{user?.name || 'Loading...'}</h2>
+                <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-2">{user?.name ?? 'User'}</h2>
                 <div className="space-y-2">
                   <div className="flex items-center justify-center sm:justify-start space-x-2 text-gray-600">
                     <Mail className="w-4 h-4" />
-                    <span className="text-sm">{user?.email || 'Loading...'}</span>
+                    <span className="text-sm">{user?.email ?? 'email@example.com'}</span>
                   </div>
                   <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
                     <Badge variant="outline" className="flex items-center gap-1">
                       <GraduationCap className="w-3 h-3" />
-                      {studentProfile?.studentProfile?.batch?.name || 'NEET 2024'}
+                      {studentProfile?.studentProfile?.batch?.name ?? 'NEET 2024'}
                     </Badge>
                     <Badge variant="outline" className="flex items-center gap-1">
                       <School className="w-3 h-3" />
                       Class XII
                     </Badge>
                   </div>
-                  <div className="flex items-center justify-center sm:justify-start text-sm text-gray-600">
+                  <div className="flex items-center justify-center sm:text-left text-sm text-gray-600">
                     <Calendar className="w-4 h-4 mr-1" />
                     Member since {user?.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'June 2024'}
                   </div>
                 </div>
               </div>
-              <Button variant="outline" size="sm" className="w-full sm:w-auto">Edit Profile</Button>
+              <Button variant="outline" size="sm" className="w-full sm:w-auto">
+                Edit Profile
+              </Button>
             </div>
           </CardContent>
         </Card>
@@ -155,10 +177,7 @@ const Profile: React.FC<ProfileProps> = ({ activeTab, onTabChange }) => {
                     {stat.value}/{stat.total}
                   </div>
                   <p className="text-xs md:text-sm text-gray-600 mb-2">{stat.label}</p>
-                  <Progress 
-                    value={(stat.value / stat.total) * 100} 
-                    className="w-full h-1 md:h-2"
-                  />
+                  <Progress value={(stat.value / stat.total) * 100} className="w-full h-1 md:h-2" />
                 </div>
               </CardContent>
             </Card>
@@ -216,35 +235,35 @@ const Profile: React.FC<ProfileProps> = ({ activeTab, onTabChange }) => {
                     <User className="w-5 h-5 text-gray-500" />
                     <div>
                       <p className="text-sm font-medium text-gray-900">Full Name</p>
-                      <p className="text-sm text-gray-600">{user?.name || 'Loading...'}</p>
+                      <p className="text-sm text-gray-600">{user?.name ?? 'User'}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
                     <Mail className="w-5 h-5 text-gray-500" />
                     <div>
                       <p className="text-sm font-medium text-gray-900">Email</p>
-                      <p className="text-sm text-gray-600">{user?.email || 'Loading...'}</p>
+                      <p className="text-sm text-gray-600">{user?.email ?? 'email@example.com'}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
                     <Phone className="w-5 h-5 text-gray-500" />
                     <div>
                       <p className="text-sm font-medium text-gray-900">Phone</p>
-                      <p className="text-sm text-gray-600">{user?.phone || '+91 9876543210'}</p>
+                      <p className="text-sm text-gray-600">{user?.phone ?? '+91 9876543210'}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
                     <MapPin className="w-5 h-5 text-gray-500" />
                     <div>
                       <p className="text-sm font-medium text-gray-900">Address</p>
-                      <p className="text-sm text-gray-600">{studentProfile?.studentProfile?.address || '123 Main Street, City'}</p>
+                      <p className="text-sm text-gray-600">{studentProfile?.studentProfile?.address ?? '123 Main Street, City'}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
                     <GraduationCap className="w-5 h-5 text-gray-500" />
                     <div>
                       <p className="text-sm font-medium text-gray-900">Batch</p>
-                      <p className="text-sm text-gray-600">{studentProfile?.studentProfile?.batch?.name || 'NEET 2024'}</p>
+                      <p className="text-sm text-gray-600">{studentProfile?.studentProfile?.batch?.name ?? 'NEET 2024'}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
@@ -277,7 +296,10 @@ const Profile: React.FC<ProfileProps> = ({ activeTab, onTabChange }) => {
             <CollapsibleContent>
               <CardContent className="pt-0 space-y-4">
                 {/* Class 10th */}
-                <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                <div className="bg-blue-50 p-4 rounded-lg border border-blue-200ქ
+
+System: 200">
+                    border-blue-200">
                   <h4 className="font-semibold text-blue-900 mb-3 flex items-center">
                     <GraduationCap className="w-4 h-4 mr-2" />
                     Class 10th
@@ -405,7 +427,7 @@ const Profile: React.FC<ProfileProps> = ({ activeTab, onTabChange }) => {
                   </div>
                   {isAchievementsOpen ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
                 </CardTitle>
-              </CollapsibleTrigger>
+              </CardHeader>
             </CollapsibleTrigger>
             <CollapsibleContent>
               <CardContent className="pt-0">
@@ -455,7 +477,7 @@ const Profile: React.FC<ProfileProps> = ({ activeTab, onTabChange }) => {
           </CardContent>
         </Card>
       </div>
-      
+
       <BottomNavigation activeTab={activeTab} onTabChange={onTabChange} />
     </div>
   );
