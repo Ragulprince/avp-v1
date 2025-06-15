@@ -9,7 +9,7 @@ async function main() {
 
   // Create admin user
   const adminPassword = await hash('admin123', 12);
-  const admin = await prisma.user.upsert({
+  const _admin = await prisma.user.upsert({
     where: { email: 'admin@avpacademy.com' },
     update: {},
     create: {
@@ -51,7 +51,7 @@ async function main() {
 
   // Create sample student
   const studentPassword = await hash('student123', 12);
-  const student = await prisma.user.upsert({
+  const _student = await prisma.user.upsert({
     where: { email: 'student@example.com' },
     update: {},
     create: {
@@ -84,3 +84,4 @@ main()
   .finally(async () => {
     await prisma.$disconnect();
   });
+
