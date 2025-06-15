@@ -10,11 +10,16 @@ export const useLogin = () => {
   return useMutation({
     mutationFn: (credentials: LoginCredentials) => authService.login(credentials),
     onSuccess: (data) => {
+      // Store token in localStorage
+      localStorage.setItem('authToken', data.data.token);
+      
+      // Invalidate profile query to fetch fresh user data
+      queryClient.invalidateQueries({ queryKey: ['profile'] });
+      
       toast({
         title: 'Success',
         description: 'Logged in successfully',
       });
-      queryClient.invalidateQueries({ queryKey: ['profile'] });
     },
     onError: (error: any) => {
       toast({
@@ -28,10 +33,17 @@ export const useLogin = () => {
 
 export const useRegister = () => {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: (userData: RegisterData) => authService.register(userData),
-    onSuccess: () => {
+    onSuccess: (data) => {
+      // Store token in localStorage
+      localStorage.setItem('authToken', data.data.token);
+      
+      // Invalidate profile query to fetch fresh user data
+      queryClient.invalidateQueries({ queryKey: ['profile'] });
+      
       toast({
         title: 'Success',
         description: 'Account created successfully',
@@ -52,5 +64,21 @@ export const useProfile = () => {
     queryKey: ['profile'],
     queryFn: authService.getProfile,
     retry: false,
+    enabled: !!localStorage.getItem('authToken'), // Only fetch if token exists
+  });
+};
+
+export const useLogout = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async () => {
+      localStorage.removeItem('authToken');
+      return Promise.resolve();
+    },
+    onSuccess: () => {
+      queryClient.clear();
+      window.location.reload();
+    },
   });
 };
