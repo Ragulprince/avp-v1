@@ -1,4 +1,3 @@
-
 import { Response } from 'express';
 import { prisma } from '../config/database';
 import { AuthRequest } from '../types';
@@ -22,7 +21,7 @@ const storage = multer.diskStorage({
   }
 });
 
-const fileFilter = (req: any, file: any, cb: any) => {
+const fileFilter = (_req: any, file: any, cb: any) => {
   // Allow documents, images, and videos
   const allowedTypes = [
     'application/pdf',

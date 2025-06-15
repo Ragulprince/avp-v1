@@ -40,9 +40,9 @@ router.get('/batches', getBatches);
 
 // Staff Management
 router.post('/staff', createStaff);
-router.get('/staff', (req, res) => getStaff(res));
+router.get('/staff', (_, res) => getStaff(res));
 
 // Settings
-router.get('/settings', (req, res) => getAdminSettings(res));
+router.get('/settings', (_, res) => getAdminSettings(res));
 
 export default router;

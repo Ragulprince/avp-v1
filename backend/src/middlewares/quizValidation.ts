@@ -1,4 +1,3 @@
-
 import { Request, Response, NextFunction } from 'express';
 import { prisma } from '../config/database';
 import { AuthRequest } from '../types';
@@ -10,10 +9,11 @@ export const validateQuizAccess = async (req: AuthRequest, res: Response, next: 
     const userId = req.user?.id;
 
     if (!quizId || !userId) {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         message: 'Quiz ID and user authentication required'
       });
+      return;
     }
 
     // Check if quiz exists and is published
@@ -25,33 +25,37 @@ export const validateQuizAccess = async (req: AuthRequest, res: Response, next: 
     });
 
     if (!quiz) {
-      return res.status(404).json({
+      res.status(404).json({
         success: false,
         message: 'Quiz not found'
       });
+      return;
     }
 
     if (!quiz.isPublished) {
-      return res.status(403).json({
+      res.status(403).json({
         success: false,
         message: 'Quiz is not published yet'
       });
+      return;
     }
 
     // Check if quiz has expired
     if (quiz.expiresAt && new Date() > quiz.expiresAt) {
-      return res.status(403).json({
+      res.status(403).json({
         success: false,
         message: 'Quiz has expired'
       });
+      return;
     }
 
     // Check if quiz is scheduled for future
     if (quiz.scheduledAt && new Date() < quiz.scheduledAt) {
-      return res.status(403).json({
+      res.status(403).json({
         success: false,
         message: 'Quiz is not yet available'
       });
+      return;
     }
 
     // Check if student belongs to the correct course
@@ -63,10 +67,11 @@ export const validateQuizAccess = async (req: AuthRequest, res: Response, next: 
     });
 
     if (!student?.studentProfile || student.studentProfile.courseId !== quiz.courseId) {
-      return res.status(403).json({
+      res.status(403).json({
         success: false,
         message: 'You are not enrolled in this course'
       });
+      return;
     }
 
     // Check if student has already attempted the quiz
@@ -79,10 +84,11 @@ export const validateQuizAccess = async (req: AuthRequest, res: Response, next: 
     });
 
     if (existingAttempt) {
-      return res.status(403).json({
+      res.status(403).json({
         success: false,
         message: 'You have already completed this quiz'
       });
+      return;
     }
 
     // Add quiz to request for use in controller
@@ -99,7 +105,7 @@ export const validateQuizAccess = async (req: AuthRequest, res: Response, next: 
 
 export const validateQuizSubmission = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const { quizId, answers, totalTimeTaken } = req.body;
+    const { quizId, answers } = req.body;
     const userId = req.user?.id;
 
     // Check if there's an active attempt
@@ -112,10 +118,11 @@ export const validateQuizSubmission = async (req: AuthRequest, res: Response, ne
     });
 
     if (!activeAttempt) {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         message: 'No active quiz attempt found'
       });
+      return;
     }
 
     // Check if submission is within time limit
@@ -123,18 +130,20 @@ export const validateQuizSubmission = async (req: AuthRequest, res: Response, ne
     const quiz = await prisma.quiz.findUnique({ where: { id: quizId } });
     
     if (quiz && timeSinceStart > (quiz.duration * 60 * 1000) + 30000) { // 30 seconds grace period
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         message: 'Quiz submission time has expired'
       });
+      return;
     }
 
     // Validate answers format
     if (!answers || typeof answers !== 'object') {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         message: 'Invalid answers format'
       });
+      return;
     }
 
     next();

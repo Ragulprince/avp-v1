@@ -61,13 +61,13 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Request logging
-app.use((req, res, next) => {
+app.use((req, _res, next) => {
   logger.info(`${req.method} ${req.path} - ${req.ip}`);
   next();
 });
 
 // Health check endpoint
-app.get('/health', (req, res) => {
+app.get('/health', (_, res) => {
   res.status(200).json({
     status: 'OK',
     timestamp: new Date().toISOString(),
@@ -90,7 +90,7 @@ app.use('/api/content', contentRoutes);
 app.use('/api/notifications', notificationRoutes);
 
 // Error handling middleware
-app.use((err: any, res: express.Response, next: express.NextFunction): void => {
+app.use((err: any, res: express.Response, _next: express.NextFunction): void => {
   logger.error('Unhandled error:', err);
   
   res.status(err.statusCode || 500).json({
@@ -101,7 +101,7 @@ app.use((err: any, res: express.Response, next: express.NextFunction): void => {
 });
 
 // 404 handler
-app.use((res: express.Response) => {
+app.use((_req, res: express.Response) => {
   res.status(404).json({
     success: false,
     message: 'Route not found'
