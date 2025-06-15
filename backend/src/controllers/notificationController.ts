@@ -117,10 +117,19 @@ export const markAsRead = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
     const userId = req.user?.id;
+    const notificationId = parseInt(id);
+
+    if (isNaN(notificationId)) {
+      res.status(400).json({
+        success: false,
+        message: 'Invalid notification ID'
+      });
+      return;
+    }
 
     const notification = await prisma.notification.update({
       where: { 
-        id,
+        id: notificationId,
         OR: [
           { userId },
           { userId: null }
@@ -170,9 +179,18 @@ export const markAllAsRead = async (req: AuthRequest, res: Response) => {
 export const deleteNotification = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
+    const notificationId = parseInt(id);
+
+    if (isNaN(notificationId)) {
+      res.status(400).json({
+        success: false,
+        message: 'Invalid notification ID'
+      });
+      return;
+    }
 
     await prisma.notification.delete({
-      where: { id }
+      where: { id: notificationId }
     });
 
     res.json({
