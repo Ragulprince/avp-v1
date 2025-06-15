@@ -1,4 +1,5 @@
 
+
 import { Request } from 'express';
 import { User, StudentProfile, Batch, Course } from '@prisma/client';
 
@@ -48,3 +49,16 @@ export interface VideoQuery extends PaginationQuery {
   subject?: string;
   courseId?: string;
 }
+
+export interface QuizAnswer {
+  questionId: string;
+  answer: string;
+  timeTaken: number;
+}
+
+export interface QuizSubmission {
+  quizId: string;
+  answers: QuizAnswer[];
+  totalTimeTaken: number;
+}
+

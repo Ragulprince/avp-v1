@@ -2,7 +2,7 @@
 import { Response } from 'express';
 import { body, query } from 'express-validator';
 import { prisma } from '../config/database';
-import { AuthRequest, ApiResponse, QuizSubmission } from '../types';
+import { AuthRequest, ApiResponse, QuizSubmission, QuizAnswer } from '../types';
 import { logger } from '../config/logger';
 
 export const getQuizzesValidation = [
@@ -198,10 +198,10 @@ export const submitQuiz = async (req: AuthRequest, res: Response): Promise<void>
     let correctAnswers = 0;
     let wrongAnswers = 0;
 
-    const answerMap = new Map(answers.map(a => [a.questionId, a.answer]));
+    const answerMap = new Map(answers.map((a: QuizAnswer) => [a.questionId, a.answer]));
 
     for (const quizQuestion of quiz.questions) {
-      const userAnswer = answerMap.get(quizQuestion.questionId);
+      const userAnswer = answerMap.get(quizQuestion.questionId.toString());
       const correctAnswer = quizQuestion.question.correctAnswer;
 
       if (userAnswer === correctAnswer) {
