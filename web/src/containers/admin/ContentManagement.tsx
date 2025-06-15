@@ -4,370 +4,193 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
+import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Upload, Play, FileText, MoreHorizontal, Video, File, Image, Search, Filter } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, Upload, Download, Video, FileText, Image, File } from 'lucide-react';
+import { useContent } from '@/hooks/api/useContent';
+import { useCourses } from '@/hooks/api/useAdmin';
 import { useToast } from '@/hooks/use-toast';
 
 const ContentManagement = () => {
   const { toast } = useToast();
+  const { data: materialsResponse, isLoading: materialsLoading } = useContent();
+  const { data: coursesResponse } = useCourses();
   
-  // Mock data for courses and subjects
-  const courses = [
-    { id: 1, name: 'NEET 2024' },
-    { id: 2, name: 'JEE Main 2024' },
-    { id: 3, name: 'NEET 2025' }
-  ];
-
-  const subjects = [
-    { id: 1, name: 'Physics', courseId: 1, courseName: 'NEET 2024' },
-    { id: 2, name: 'Chemistry', courseId: 1, courseName: 'NEET 2024' },
-    { id: 3, name: 'Biology', courseId: 1, courseName: 'NEET 2024' },
-    { id: 4, name: 'Mathematics', courseId: 2, courseName: 'JEE Main 2024' }
-  ];
-
-  const batches = [
-    { id: 1, name: 'Morning Batch A', courseId: 1, courseName: 'NEET 2024' },
-    { id: 2, name: 'Evening Batch B', courseId: 1, courseName: 'NEET 2024' },
-    { id: 3, name: 'Weekend Batch', courseId: 2, courseName: 'JEE Main 2024' }
-  ];
-
-  const [content, setContent] = useState([
-    { 
-      id: 1, 
-      title: 'Newton\'s Laws of Motion', 
-      type: 'Video', 
-      subjectId: 1,
-      subject: 'Physics', 
-      courseId: 1,
-      course: 'NEET 2024',
-      batchIds: [1, 2],
-      batches: ['Morning Batch A', 'Evening Batch B'],
-      status: 'Published',
-      duration: '45 min',
-      uploadDate: '2024-01-15',
-      views: 1250
-    },
-    { 
-      id: 2, 
-      title: 'Organic Chemistry Notes', 
-      type: 'Document', 
-      subjectId: 2,
-      subject: 'Chemistry', 
-      courseId: 1,
-      course: 'NEET 2024',
-      batchIds: [1],
-      batches: ['Morning Batch A'],
-      status: 'Draft',
-      uploadDate: '2024-01-20',
-      views: 0
-    },
-    { 
-      id: 3, 
-      title: 'Cell Structure and Function', 
-      type: 'Video', 
-      subjectId: 3,
-      subject: 'Biology', 
-      courseId: 1,
-      course: 'NEET 2024',
-      batchIds: [1, 2],
-      batches: ['Morning Batch A', 'Evening Batch B'],
-      status: 'Published',
-      duration: '60 min',
-      uploadDate: '2024-01-10',
-      views: 890
-    }
-  ]);
-
-  const [newContent, setNewContent] = useState({
+  const materials = materialsResponse?.data || [];
+  const courses = coursesResponse?.data || [];
+  
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedSubject, setSelectedSubject] = useState('');
+  const [selectedType, setSelectedType] = useState('');
+  const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
+  const [uploadFile, setUploadFile] = useState<File | null>(null);
+  const [uploadData, setUploadData] = useState({
     title: '',
-    type: 'Video',
-    courseId: '',
-    subjectId: '',
-    batchIds: [],
     description: '',
-    file: null
+    subject: '',
+    topic: '',
+    courseId: '',
+    type: 'PDF' as const
   });
 
-  const [filters, setFilters] = useState({
-    search: '',
-    course: 'all',
-    subject: 'all',
-    type: 'all',
-    status: 'all'
+  const filteredMaterials = materials.filter(material => {
+    const matchesSearch = material.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         material.topic.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSubject = !selectedSubject || material.subject === selectedSubject;
+    const matchesType = !selectedType || material.type === selectedType;
+    return matchesSearch && matchesSubject && matchesType;
   });
 
-  const handleCreateContent = () => {
-    if (!newContent.title || !newContent.courseId || !newContent.subjectId) {
-      toast({ title: "Error", description: "Please fill all required fields.", variant: "destructive" });
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setUploadFile(file);
+      setUploadData(prev => ({
+        ...prev,
+        title: file.name.split('.')[0],
+        type: getFileType(file.name)
+      }));
+    }
+  };
+
+  const getFileType = (filename: string) => {
+    const ext = filename.split('.').pop()?.toLowerCase();
+    switch (ext) {
+      case 'pdf': return 'PDF';
+      case 'ppt':
+      case 'pptx': return 'PPT';
+      case 'doc':
+      case 'docx': return 'DOC';
+      case 'jpg':
+      case 'jpeg':
+      case 'png':
+      case 'gif': return 'IMAGE';
+      default: return 'OTHER';
+    }
+  };
+
+  const handleUpload = async () => {
+    if (!uploadFile || !uploadData.title || !uploadData.courseId) {
+      toast({
+        title: 'Error',
+        description: 'Please fill all required fields and select a file',
+        variant: 'destructive'
+      });
       return;
     }
 
-    const selectedCourse = courses.find(c => c.id === parseInt(newContent.courseId));
-    const selectedSubject = subjects.find(s => s.id === parseInt(newContent.subjectId));
-    const selectedBatches = batches.filter(b => newContent.batchIds.includes(b.id));
+    try {
+      const formData = new FormData();
+      formData.append('file', uploadFile);
+      formData.append('title', uploadData.title);
+      formData.append('description', uploadData.description);
+      formData.append('subject', uploadData.subject);
+      formData.append('topic', uploadData.topic);
+      formData.append('courseId', uploadData.courseId);
+      formData.append('type', uploadData.type);
 
-    const contentItem = {
-      id: content.length + 1,
-      title: newContent.title,
-      type: newContent.type,
-      subjectId: parseInt(newContent.subjectId),
-      subject: selectedSubject?.name || '',
-      courseId: parseInt(newContent.courseId),
-      course: selectedCourse?.name || '',
-      batchIds: newContent.batchIds,
-      batches: selectedBatches.map(b => b.name),
-      status: 'Draft',
-      uploadDate: new Date().toISOString().split('T')[0],
-      views: 0,
-      duration: newContent.type === 'Video' ? '0 min' : undefined
-    };
-
-    setContent([...content, contentItem]);
-    setNewContent({
-      title: '',
-      type: 'Video',
-      courseId: '',
-      subjectId: '',
-      batchIds: [],
-      description: '',
-      file: null
-    });
-    toast({ title: "Success", description: "Content uploaded successfully!" });
-  };
-
-  const getFilteredSubjects = () => {
-    if (!newContent.courseId) return [];
-    return subjects.filter(s => s.courseId === parseInt(newContent.courseId));
-  };
-
-  const getFilteredBatches = () => {
-    if (!newContent.courseId) return [];
-    return batches.filter(b => b.courseId === parseInt(newContent.courseId));
-  };
-
-  const filteredContent = content.filter(item => {
-    const matchesSearch = item.title.toLowerCase().includes(filters.search.toLowerCase());
-    const matchesCourse = filters.course === 'all' || item.courseId === parseInt(filters.course);
-    const matchesSubject = filters.subject === 'all' || item.subjectId === parseInt(filters.subject);
-    const matchesType = filters.type === 'all' || item.type === filters.type;
-    const matchesStatus = filters.status === 'all' || item.status === filters.status;
-    
-    return matchesSearch && matchesCourse && matchesSubject && matchesType && matchesStatus;
-  });
-
-  const getTypeIcon = (type) => {
-    switch (type) {
-      case 'Video': return <Video className="w-4 h-4" />;
-      case 'Document': return <FileText className="w-4 h-4" />;
-      case 'Image': return <Image className="w-4 h-4" />;
-      default: return <File className="w-4 h-4" />;
+      // In real app, this would call contentService.uploadStudyMaterial(formData)
+      console.log('Uploading material:', uploadData);
+      
+      toast({
+        title: 'Success',
+        description: 'Material uploaded successfully'
+      });
+      
+      setIsUploadDialogOpen(false);
+      setUploadFile(null);
+      setUploadData({
+        title: '',
+        description: '',
+        subject: '',
+        topic: '',
+        courseId: '',
+        type: 'PDF'
+      });
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to upload material',
+        variant: 'destructive'
+      });
     }
   };
 
-  return (
-    <div className="space-y-8 bg-gradient-to-br from-orange-50 to-red-50 min-h-screen p-6">
-      <div className="bg-white rounded-xl shadow-lg p-6">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent">
-              Content Management
-            </h1>
-            <p className="text-gray-600 mt-2">Upload and manage videos, documents, and study materials</p>
-          </div>
-          <div className="flex gap-3">
-            <div className="bg-blue-100 p-4 rounded-lg text-center">
-              <Video className="w-6 h-6 text-blue-600 mx-auto mb-1" />
-              <p className="text-sm font-medium text-blue-800">{content.filter(c => c.type === 'Video').length} Videos</p>
-            </div>
-            <div className="bg-green-100 p-4 rounded-lg text-center">
-              <FileText className="w-6 h-6 text-green-600 mx-auto mb-1" />
-              <p className="text-sm font-medium text-green-800">{content.filter(c => c.type === 'Document').length} Documents</p>
-            </div>
-            <div className="bg-purple-100 p-4 rounded-lg text-center">
-              <Upload className="w-6 h-6 text-purple-600 mx-auto mb-1" />
-              <p className="text-sm font-medium text-purple-800">{content.filter(c => c.status === 'Draft').length} Pending</p>
-            </div>
+  const getTypeIcon = (type: string) => {
+    switch (type) {
+      case 'PDF': return <FileText className="w-5 h-5 text-red-500" />;
+      case 'VIDEO': return <Video className="w-5 h-5 text-blue-500" />;
+      case 'IMAGE': return <Image className="w-5 h-5 text-green-500" />;
+      default: return <File className="w-5 h-5 text-gray-500" />;
+    }
+  };
+
+  const subjects = ['Physics', 'Chemistry', 'Biology', 'Mathematics'];
+  const fileTypes = ['PDF', 'PPT', 'DOC', 'IMAGE', 'VIDEO', 'OTHER'];
+
+  if (materialsLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="animate-pulse">
+          <div className="h-8 bg-gray-200 rounded w-1/4 mb-4"></div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="h-64 bg-gray-200 rounded-lg"></div>
+            ))}
           </div>
         </div>
       </div>
+    );
+  }
 
-      <Tabs defaultValue="upload" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 bg-white shadow-md">
-          <TabsTrigger value="upload" className="data-[state=active]:bg-orange-500 data-[state=active]:text-white">Upload Content</TabsTrigger>
-          <TabsTrigger value="manage" className="data-[state=active]:bg-red-500 data-[state=active]:text-white">Manage Content</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="upload" className="space-y-6">
-          <Card className="shadow-lg border-0 bg-gradient-to-r from-orange-50 to-orange-100">
-            <CardHeader className="bg-orange-500 text-white rounded-t-lg">
-              <CardTitle className="flex items-center">
-                <Upload className="w-5 h-5 mr-2" />
-                Upload New Content
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-6 space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="contentTitle" className="text-orange-700 font-medium">Content Title *</Label>
-                  <Input
-                    id="contentTitle"
-                    value={newContent.title}
-                    onChange={(e) => setNewContent({...newContent, title: e.target.value})}
-                    placeholder="e.g., Newton's Laws of Motion"
-                    className="border-orange-200 focus:border-orange-500"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="contentType" className="text-orange-700 font-medium">Content Type *</Label>
-                  <Select value={newContent.type} onValueChange={(value) => setNewContent({...newContent, type: value})}>
-                    <SelectTrigger className="border-orange-200 focus:border-orange-500">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Video">Video</SelectItem>
-                      <SelectItem value="Document">Document</SelectItem>
-                      <SelectItem value="Image">Image</SelectItem>
-                      <SelectItem value="Audio">Audio</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="contentCourse" className="text-orange-700 font-medium">Course *</Label>
-                  <Select 
-                    value={newContent.courseId} 
-                    onValueChange={(value) => setNewContent({...newContent, courseId: value, subjectId: '', batchIds: []})}
-                  >
-                    <SelectTrigger className="border-orange-200 focus:border-orange-500">
-                      <SelectValue placeholder="Select Course" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {courses.map((course) => (
-                        <SelectItem key={course.id} value={course.id.toString()}>
-                          {course.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="contentSubject" className="text-orange-700 font-medium">Subject *</Label>
-                  <Select 
-                    value={newContent.subjectId} 
-                    onValueChange={(value) => setNewContent({...newContent, subjectId: value})}
-                    disabled={!newContent.courseId}
-                  >
-                    <SelectTrigger className="border-orange-200 focus:border-orange-500">
-                      <SelectValue placeholder="Select Subject" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {getFilteredSubjects().map((subject) => (
-                        <SelectItem key={subject.id} value={subject.id.toString()}>
-                          {subject.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Content Management</h1>
+          <p className="text-gray-600 mt-1">Upload and manage study materials</p>
+        </div>
+        
+        <Dialog open={isUploadDialogOpen} onOpenChange={setIsUploadDialogOpen}>
+          <DialogTrigger asChild>
+            <Button className="bg-blue-600 hover:bg-blue-700">
+              <Upload className="w-4 h-4 mr-2" />
+              Upload Content
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Upload Study Material</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 mt-4">
               <div>
-                <Label className="text-orange-700 font-medium">Target Batches</Label>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-2">
-                  {getFilteredBatches().map((batch) => (
-                    <div key={batch.id} className="flex items-center space-x-2">
-                      <input
-                        type="checkbox"
-                        id={`batch-${batch.id}`}
-                        checked={newContent.batchIds.includes(batch.id)}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setNewContent({...newContent, batchIds: [...newContent.batchIds, batch.id]});
-                          } else {
-                            setNewContent({...newContent, batchIds: newContent.batchIds.filter(id => id !== batch.id)});
-                          }
-                        }}
-                        className="rounded border-orange-300 text-orange-600 focus:ring-orange-500"
-                      />
-                      <label htmlFor={`batch-${batch.id}`} className="text-sm text-gray-700">
-                        {batch.name}
-                      </label>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <Label htmlFor="contentDescription" className="text-orange-700 font-medium">Description</Label>
-                <Textarea
-                  id="contentDescription"
-                  value={newContent.description}
-                  onChange={(e) => setNewContent({...newContent, description: e.target.value})}
-                  placeholder="Describe the content and learning objectives..."
-                  rows={3}
-                  className="border-orange-200 focus:border-orange-500"
+                <Label htmlFor="file">Select File *</Label>
+                <Input
+                  id="file"
+                  type="file"
+                  onChange={handleFileUpload}
+                  accept=".pdf,.doc,.docx,.ppt,.pptx,.jpg,.jpeg,.png,.gif"
                 />
               </div>
-
-              <div>
-                <Label htmlFor="contentFile" className="text-orange-700 font-medium">Upload File *</Label>
-                <div className="mt-2 border-2 border-dashed border-orange-200 rounded-lg p-6 text-center hover:border-orange-400 transition-colors">
-                  <Upload className="w-12 h-12 text-orange-400 mx-auto mb-4" />
-                  <p className="text-gray-600 mb-2">Drag and drop your file here, or click to browse</p>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="title">Title *</Label>
                   <Input
-                    id="contentFile"
-                    type="file"
-                    className="hidden"
-                    onChange={(e) => setNewContent({...newContent, file: e.target.files[0]})}
+                    id="title"
+                    value={uploadData.title}
+                    onChange={(e) => setUploadData({...uploadData, title: e.target.value})}
                   />
-                  <Button 
-                    variant="outline" 
-                    onClick={() => document.getElementById('contentFile').click()}
-                    className="border-orange-300 text-orange-600 hover:bg-orange-50"
-                  >
-                    Choose File
-                  </Button>
-                  {newContent.file && (
-                    <p className="mt-2 text-sm text-green-600">
-                      Selected: {newContent.file.name}
-                    </p>
-                  )}
                 </div>
-              </div>
-
-              <Button onClick={handleCreateContent} className="w-full bg-orange-600 hover:bg-orange-700">
-                <Upload className="w-4 h-4 mr-2" />
-                Upload Content
-              </Button>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="manage" className="space-y-6">
-          {/* Filters */}
-          <Card className="shadow-lg border-0">
-            <CardContent className="p-4">
-              <div className="flex flex-col lg:flex-row gap-4">
-                <div className="flex-1">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                    <Input
-                      placeholder="Search content..."
-                      value={filters.search}
-                      onChange={(e) => setFilters({...filters, search: e.target.value})}
-                      className="pl-10"
-                    />
-                  </div>
-                </div>
-                <div className="flex gap-2 flex-wrap">
-                  <Select value={filters.course} onValueChange={(value) => setFilters({...filters, course: value})}>
-                    <SelectTrigger className="w-[140px]">
-                      <SelectValue placeholder="Course" />
+                <div>
+                  <Label htmlFor="course">Course *</Label>
+                  <Select value={uploadData.courseId} onValueChange={(value) => setUploadData({...uploadData, courseId: value})}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select course" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">All Courses</SelectItem>
                       {courses.map((course) => (
                         <SelectItem key={course.id} value={course.id.toString()}>
                           {course.name}
@@ -375,112 +198,204 @@ const ContentManagement = () => {
                       ))}
                     </SelectContent>
                   </Select>
-                  <Select value={filters.subject} onValueChange={(value) => setFilters({...filters, subject: value})}>
-                    <SelectTrigger className="w-[140px]">
-                      <SelectValue placeholder="Subject" />
+                </div>
+                <div>
+                  <Label htmlFor="subject">Subject</Label>
+                  <Select value={uploadData.subject} onValueChange={(value) => setUploadData({...uploadData, subject: value})}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select subject" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">All Subjects</SelectItem>
                       {subjects.map((subject) => (
-                        <SelectItem key={subject.id} value={subject.id.toString()}>
-                          {subject.name}
+                        <SelectItem key={subject} value={subject}>
+                          {subject}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
-                  <Select value={filters.type} onValueChange={(value) => setFilters({...filters, type: value})}>
-                    <SelectTrigger className="w-[120px]">
-                      <SelectValue placeholder="Type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Types</SelectItem>
-                      <SelectItem value="Video">Video</SelectItem>
-                      <SelectItem value="Document">Document</SelectItem>
-                      <SelectItem value="Image">Image</SelectItem>
-                      <SelectItem value="Audio">Audio</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Select value={filters.status} onValueChange={(value) => setFilters({...filters, status: value})}>
-                    <SelectTrigger className="w-[120px]">
-                      <SelectValue placeholder="Status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Status</SelectItem>
-                      <SelectItem value="Published">Published</SelectItem>
-                      <SelectItem value="Draft">Draft</SelectItem>
-                    </SelectContent>
-                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="topic">Topic</Label>
+                  <Input
+                    id="topic"
+                    value={uploadData.topic}
+                    onChange={(e) => setUploadData({...uploadData, topic: e.target.value})}
+                  />
+                </div>
+              </div>
+              <div>
+                <Label htmlFor="description">Description</Label>
+                <Textarea
+                  id="description"
+                  value={uploadData.description}
+                  onChange={(e) => setUploadData({...uploadData, description: e.target.value})}
+                />
+              </div>
+            </div>
+            <div className="flex justify-end space-x-2 mt-6">
+              <Button variant="outline" onClick={() => setIsUploadDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleUpload}>
+                Upload Material
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      </div>
+
+      {/* Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Total Materials</p>
+                <p className="text-2xl font-bold">{materials.length}</p>
+              </div>
+              <FileText className="w-8 h-8 text-blue-500" />
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Published</p>
+                <p className="text-2xl font-bold">{materials.filter(m => m.isPublished).length}</p>
+              </div>
+              <Upload className="w-8 h-8 text-green-500" />
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Videos</p>
+                <p className="text-2xl font-bold">{materials.filter(m => m.type === 'VIDEO').length}</p>
+              </div>
+              <Video className="w-8 h-8 text-purple-500" />
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">PDFs</p>
+                <p className="text-2xl font-bold">{materials.filter(m => m.type === 'PDF').length}</p>
+              </div>
+              <FileText className="w-8 h-8 text-red-500" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Filters */}
+      <Card>
+        <CardContent className="p-6">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <Input
+                placeholder="Search materials..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            <Select value={selectedSubject} onValueChange={setSelectedSubject}>
+              <SelectTrigger>
+                <SelectValue placeholder="All subjects" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">All subjects</SelectItem>
+                {subjects.map((subject) => (
+                  <SelectItem key={subject} value={subject}>
+                    {subject}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={selectedType} onValueChange={setSelectedType}>
+              <SelectTrigger>
+                <SelectValue placeholder="All types" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">All types</SelectItem>
+                {fileTypes.map((type) => (
+                  <SelectItem key={type} value={type}>
+                    {type}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button variant="outline" onClick={() => {
+              setSearchTerm('');
+              setSelectedSubject('');
+              setSelectedType('');
+            }}>
+              Clear Filters
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Materials Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {filteredMaterials.map((material) => (
+          <Card key={material.id} className="hover:shadow-lg transition-shadow">
+            <CardContent className="p-6">
+              <div className="flex items-start justify-between mb-4">
+                <div className="flex items-center space-x-3">
+                  {getTypeIcon(material.type)}
+                  <div>
+                    <h3 className="font-semibold text-gray-900">{material.title}</h3>
+                    <Badge variant={material.isPublished ? "default" : "secondary"}>
+                      {material.isPublished ? 'Published' : 'Draft'}
+                    </Badge>
+                  </div>
+                </div>
+                <div className="flex space-x-1">
+                  <Button variant="ghost" size="sm">
+                    <Edit className="w-4 h-4" />
+                  </Button>
+                  <Button variant="ghost" size="sm">
+                    <Download className="w-4 h-4" />
+                  </Button>
+                  <Button variant="ghost" size="sm">
+                    <Trash2 className="w-4 h-4 text-red-500" />
+                  </Button>
+                </div>
+              </div>
+              
+              <p className="text-sm text-gray-600 mb-4 line-clamp-2">
+                {material.description || 'No description available'}
+              </p>
+
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Subject:</span>
+                  <span className="font-medium">{material.subject}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Topic:</span>
+                  <span className="font-medium">{material.topic}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Type:</span>
+                  <span className="font-medium">{material.type}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Size:</span>
+                  <span className="font-medium">{material.fileSize}</span>
                 </div>
               </div>
             </CardContent>
           </Card>
-
-          {/* Content List */}
-          <div className="grid gap-4">
-            {filteredContent.map((item) => (
-              <Card key={item.id} className="shadow-lg border-0 overflow-hidden hover:shadow-xl transition-shadow">
-                <CardContent className="p-0">
-                  <div className="flex">
-                    {/* Content Preview */}
-                    <div className="w-24 h-24 bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
-                      {getTypeIcon(item.type)}
-                    </div>
-                    
-                    {/* Content Details */}
-                    <div className="flex-1 p-4">
-                      <div className="flex justify-between items-start mb-2">
-                        <div>
-                          <h3 className="font-semibold text-lg text-gray-900">{item.title}</h3>
-                          <div className="flex items-center space-x-3 mt-1">
-                            <Badge className="bg-blue-100 text-blue-800">{item.course}</Badge>
-                            <Badge variant="outline">{item.subject}</Badge>
-                            <Badge 
-                              variant={item.status === 'Published' ? 'default' : 'secondary'}
-                              className={item.status === 'Published' ? 'bg-green-100 text-green-800' : ''}
-                            >
-                              {item.status}
-                            </Badge>
-                          </div>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <Button variant="ghost" size="sm">
-                            <MoreHorizontal className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </div>
-                      
-                      <div className="flex flex-wrap gap-1 mb-3">
-                        {item.batches.map((batch, index) => (
-                          <Badge key={index} variant="outline" className="text-xs bg-purple-50 text-purple-700">
-                            {batch}
-                          </Badge>
-                        ))}
-                      </div>
-                      
-                      <div className="flex items-center justify-between text-sm text-gray-500">
-                        <div className="flex items-center space-x-4">
-                          <span className="flex items-center">
-                            {getTypeIcon(item.type)}
-                            <span className="ml-1">{item.type}</span>
-                          </span>
-                          {item.duration && (
-                            <span>Duration: {item.duration}</span>
-                          )}
-                          <span>Uploaded: {item.uploadDate}</span>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <Play className="w-4 h-4" />
-                          <span>{item.views} views</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </TabsContent>
-      </Tabs>
+        ))}
+      </div>
     </div>
   );
 };

@@ -1,664 +1,495 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, BookOpen, Edit, Trash2, Search, X } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, HelpCircle, FileText, Upload, Download } from 'lucide-react';
+import { useQuestions } from '@/hooks/api/useQuestionBank';
 import { useToast } from '@/hooks/use-toast';
-
-interface Question {
-  id: number;
-  text: string;
-  type: string;
-  courseId: number;
-  course: string;
-  subjectId: number;
-  subject: string;
-  difficulty: string;
-  explanation: string;
-  options?: string[];
-  correctAnswer?: number | string[];
-  matchPairs?: { left: string; right: string }[];
-  blanksCount?: number;
-}
 
 const QuestionBank = () => {
   const { toast } = useToast();
+  const { data: questionsResponse, isLoading } = useQuestions();
   
-  const courses = [
-    { id: 1, name: 'NEET 2024' },
-    { id: 2, name: 'JEE Main 2024' },
-    { id: 3, name: 'NEET 2025' }
-  ];
-
-  const subjects = [
-    { id: 1, name: 'Physics', courseId: 1 },
-    { id: 2, name: 'Chemistry', courseId: 1 },
-    { id: 3, name: 'Biology', courseId: 1 },
-    { id: 4, name: 'Mathematics', courseId: 2 }
-  ];
-
-  const [questions, setQuestions] = useState<Question[]>([
-    {
-      id: 1,
-      text: 'What is Newton\'s First Law of Motion?',
-      type: 'mcq',
-      courseId: 1,
-      course: 'NEET 2024',
-      subjectId: 1,
-      subject: 'Physics',
-      difficulty: 'medium',
-      options: ['An object at rest stays at rest unless acted upon by a force', 'Force equals mass times acceleration', 'For every action there is an equal and opposite reaction', 'Energy cannot be created or destroyed'],
-      correctAnswer: 0,
-      explanation: 'Newton\'s First Law states that an object at rest will remain at rest, and an object in motion will remain in motion at constant velocity, unless acted upon by an external force.'
-    },
-    {
-      id: 2,
-      text: 'The Earth revolves around the Sun.',
-      type: 'true-false',
-      courseId: 1,
-      course: 'NEET 2024',
-      subjectId: 1,
-      subject: 'Physics',
-      difficulty: 'easy',
-      options: ['True', 'False'],
-      correctAnswer: 0,
-      explanation: 'The Earth orbits around the Sun, which takes approximately 365.25 days to complete one revolution.'
-    }
-  ]);
-
+  const questions = questionsResponse?.data || [];
+  
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedSubject, setSelectedSubject] = useState('');
+  const [selectedDifficulty, setSelectedDifficulty] = useState('');
+  const [selectedType, setSelectedType] = useState('');
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  
   const [newQuestion, setNewQuestion] = useState({
-    text: '',
-    type: 'mcq',
-    courseId: '',
-    subjectId: '',
-    difficulty: 'medium',
+    question: '',
+    type: 'MCQ' as const,
+    subject: '',
+    topic: '',
+    difficulty: 'MEDIUM' as const,
     options: ['', '', '', ''],
-    correctAnswer: 0,
+    correctAnswer: '',
     explanation: '',
-    matchPairs: [{ left: '', right: '' }, { left: '', right: '' }],
-    fillBlanks: ['']
+    marks: 1
   });
 
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterCourse, setFilterCourse] = useState('all');
-  const [filterSubject, setFilterSubject] = useState('all');
-  const [filterType, setFilterType] = useState('all');
+  const filteredQuestions = questions.filter(question => {
+    const matchesSearch = question.question.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         question.topic.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSubject = !selectedSubject || question.subject === selectedSubject;
+    const matchesDifficulty = !selectedDifficulty || question.difficulty === selectedDifficulty;
+    const matchesType = !selectedType || question.type === selectedType;
+    return matchesSearch && matchesSubject && matchesDifficulty && matchesType;
+  });
 
-  const handleCreateQuestion = () => {
-    if (!newQuestion.text || !newQuestion.courseId || !newQuestion.subjectId) {
-      toast({ title: "Error", description: "Please fill all required fields.", variant: "destructive" });
+  const handleAddQuestion = async () => {
+    if (!newQuestion.question || !newQuestion.subject || !newQuestion.correctAnswer) {
+      toast({
+        title: 'Error',
+        description: 'Please fill all required fields',
+        variant: 'destructive'
+      });
       return;
     }
 
-    const selectedCourse = courses.find(c => c.id === parseInt(newQuestion.courseId));
-    const selectedSubject = subjects.find(s => s.id === parseInt(newQuestion.subjectId));
-
-    let questionData: Question = {
-      id: questions.length + 1,
-      text: newQuestion.text,
-      type: newQuestion.type,
-      courseId: parseInt(newQuestion.courseId),
-      course: selectedCourse?.name || '',
-      subjectId: parseInt(newQuestion.subjectId),
-      subject: selectedSubject?.name || '',
-      difficulty: newQuestion.difficulty,
-      explanation: newQuestion.explanation
-    };
-
-    // Handle different question types
-    switch (newQuestion.type) {
-      case 'mcq':
-        if (newQuestion.options.some(opt => !opt.trim())) {
-          toast({ title: "Error", description: "Please fill all options.", variant: "destructive" });
-          return;
-        }
-        questionData.options = newQuestion.options;
-        questionData.correctAnswer = newQuestion.correctAnswer;
-        break;
-      
-      case 'true-false':
-        questionData.options = ['True', 'False'];
-        questionData.correctAnswer = newQuestion.correctAnswer;
-        break;
-      
-      case 'fill-blank':
-        if (newQuestion.fillBlanks.some(blank => !blank.trim())) {
-          toast({ title: "Error", description: "Please fill all correct answers for blanks.", variant: "destructive" });
-          return;
-        }
-        questionData.correctAnswer = newQuestion.fillBlanks;
-        questionData.blanksCount = newQuestion.fillBlanks.length;
-        break;
-      
-      case 'match':
-        if (newQuestion.matchPairs.some(pair => !pair.left.trim() || !pair.right.trim())) {
-          toast({ title: "Error", description: "Please fill all match pairs.", variant: "destructive" });
-          return;
-        }
-        questionData.matchPairs = newQuestion.matchPairs;
-        questionData.correctAnswer = newQuestion.matchPairs.map(pair => `${pair.left}-${pair.right}`);
-        break;
-      
-      default:
-        break;
+    if (newQuestion.type === 'MCQ' && newQuestion.options.some(opt => !opt.trim())) {
+      toast({
+        title: 'Error',
+        description: 'Please fill all MCQ options',
+        variant: 'destructive'
+      });
+      return;
     }
 
-    setQuestions([...questions, questionData]);
-    setNewQuestion({
-      text: '',
-      type: 'mcq',
-      courseId: '',
-      subjectId: '',
-      difficulty: 'medium',
-      options: ['', '', '', ''],
-      correctAnswer: 0,
-      explanation: '',
-      matchPairs: [{ left: '', right: '' }, { left: '', right: '' }],
-      fillBlanks: ['']
-    });
-    toast({ title: "Success", description: "Question created successfully!" });
-  };
-
-  const handleOptionChange = (index: number, value: string) => {
-    const newOptions = [...newQuestion.options];
-    newOptions[index] = value;
-    setNewQuestion({ ...newQuestion, options: newOptions });
-  };
-
-  const handleMatchPairChange = (index: number, field: 'left' | 'right', value: string) => {
-    const newPairs = [...newQuestion.matchPairs];
-    newPairs[index][field] = value;
-    setNewQuestion({ ...newQuestion, matchPairs: newPairs });
-  };
-
-  const handleFillBlankChange = (index: number, value: string) => {
-    const newBlanks = [...newQuestion.fillBlanks];
-    newBlanks[index] = value;
-    setNewQuestion({ ...newQuestion, fillBlanks: newBlanks });
-  };
-
-  const addMatchPair = () => {
-    setNewQuestion({
-      ...newQuestion,
-      matchPairs: [...newQuestion.matchPairs, { left: '', right: '' }]
-    });
-  };
-
-  const removeMatchPair = (index: number) => {
-    if (newQuestion.matchPairs.length > 2) {
-      const newPairs = newQuestion.matchPairs.filter((_, i) => i !== index);
-      setNewQuestion({ ...newQuestion, matchPairs: newPairs });
+    try {
+      // In real app, this would call questionBankService.createQuestion(newQuestion)
+      console.log('Creating question:', newQuestion);
+      
+      toast({
+        title: 'Success',
+        description: 'Question added successfully'
+      });
+      
+      setIsAddDialogOpen(false);
+      setNewQuestion({
+        question: '',
+        type: 'MCQ',
+        subject: '',
+        topic: '',
+        difficulty: 'MEDIUM',
+        options: ['', '', '', ''],
+        correctAnswer: '',
+        explanation: '',
+        marks: 1
+      });
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to add question',
+        variant: 'destructive'
+      });
     }
   };
-
-  const addFillBlank = () => {
-    setNewQuestion({
-      ...newQuestion,
-      fillBlanks: [...newQuestion.fillBlanks, '']
-    });
-  };
-
-  const removeFillBlank = (index: number) => {
-    if (newQuestion.fillBlanks.length > 1) {
-      const newBlanks = newQuestion.fillBlanks.filter((_, i) => i !== index);
-      setNewQuestion({ ...newQuestion, fillBlanks: newBlanks });
-    }
-  };
-
-  const getFilteredSubjects = () => {
-    if (!newQuestion.courseId) return [];
-    return subjects.filter(s => s.courseId === parseInt(newQuestion.courseId));
-  };
-
-  const filteredQuestions = questions.filter(q => {
-    const matchesSearch = q.text.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCourse = filterCourse === 'all' || q.courseId === parseInt(filterCourse);
-    const matchesSubject = filterSubject === 'all' || q.subjectId === parseInt(filterSubject);
-    const matchesType = filterType === 'all' || q.type === filterType;
-    return matchesSearch && matchesCourse && matchesSubject && matchesType;
-  });
 
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
-      case 'easy': return 'bg-green-100 text-green-800';
-      case 'medium': return 'bg-yellow-100 text-yellow-800';
-      case 'hard': return 'bg-red-100 text-red-800';
+      case 'EASY': return 'bg-green-100 text-green-800';
+      case 'MEDIUM': return 'bg-yellow-100 text-yellow-800';
+      case 'HARD': return 'bg-red-100 text-red-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
 
   const getTypeColor = (type: string) => {
     switch (type) {
-      case 'mcq': return 'bg-blue-100 text-blue-800';
-      case 'true-false': return 'bg-green-100 text-green-800';
-      case 'fill-blank': return 'bg-purple-100 text-purple-800';
-      case 'match': return 'bg-orange-100 text-orange-800';
+      case 'MCQ': return 'bg-blue-100 text-blue-800';
+      case 'FILL_BLANKS': return 'bg-purple-100 text-purple-800';
+      case 'TRUE_FALSE': return 'bg-green-100 text-green-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
 
-  return (
-    <div className="space-y-8 bg-gradient-to-br from-emerald-50 to-teal-50 min-h-screen p-6">
-      <div className="bg-white rounded-xl shadow-lg p-6">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
-              Question Bank
-            </h1>
-            <p className="text-gray-600 mt-2">Create and manage your question repository</p>
-          </div>
-          <div className="flex gap-3">
-            <div className="bg-blue-100 p-4 rounded-lg text-center">
-              <BookOpen className="w-6 h-6 text-blue-600 mx-auto mb-1" />
-              <p className="text-sm font-medium text-blue-800">{questions.length} Questions</p>
-            </div>
+  const subjects = ['Physics', 'Chemistry', 'Biology', 'Mathematics'];
+  const difficulties = ['EASY', 'MEDIUM', 'HARD'];
+  const questionTypes = ['MCQ', 'FILL_BLANKS', 'TRUE_FALSE', 'MATCH', 'CHOICE_BASED'];
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="animate-pulse">
+          <div className="h-8 bg-gray-200 rounded w-1/4 mb-4"></div>
+          <div className="space-y-4">
+            {[...Array(5)].map((_, i) => (
+              <div key={i} className="h-32 bg-gray-200 rounded-lg"></div>
+            ))}
           </div>
         </div>
       </div>
+    );
+  }
 
-      <Tabs defaultValue="create" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 bg-white shadow-md">
-          <TabsTrigger value="create" className="data-[state=active]:bg-emerald-500 data-[state=active]:text-white">Create Question</TabsTrigger>
-          <TabsTrigger value="manage" className="data-[state=active]:bg-teal-500 data-[state=active]:text-white">Manage Questions</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="create" className="space-y-6">
-          <Card className="shadow-lg border-0 bg-gradient-to-r from-emerald-50 to-emerald-100">
-            <CardHeader className="bg-emerald-500 text-white rounded-t-lg">
-              <CardTitle className="flex items-center">
-                <Plus className="w-5 h-5 mr-2" />
-                Create New Question
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-6 space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div>
-                  <Label htmlFor="questionType" className="text-emerald-700 font-medium">Question Type *</Label>
-                  <Select value={newQuestion.type} onValueChange={(value) => setNewQuestion({...newQuestion, type: value})}>
-                    <SelectTrigger className="border-emerald-200 focus:border-emerald-500">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="mcq">Multiple Choice</SelectItem>
-                      <SelectItem value="true-false">True/False</SelectItem>
-                      <SelectItem value="fill-blank">Fill in the Blanks</SelectItem>
-                      <SelectItem value="match">Match the Following</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="questionCourse" className="text-emerald-700 font-medium">Course *</Label>
-                  <Select 
-                    value={newQuestion.courseId} 
-                    onValueChange={(value) => setNewQuestion({...newQuestion, courseId: value, subjectId: ''})}
-                  >
-                    <SelectTrigger className="border-emerald-200 focus:border-emerald-500">
-                      <SelectValue placeholder="Select course" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {courses.map((course) => (
-                        <SelectItem key={course.id} value={course.id.toString()}>
-                          {course.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="questionSubject" className="text-emerald-700 font-medium">Subject *</Label>
-                  <Select 
-                    value={newQuestion.subjectId} 
-                    onValueChange={(value) => setNewQuestion({...newQuestion, subjectId: value})}
-                    disabled={!newQuestion.courseId}
-                  >
-                    <SelectTrigger className="border-emerald-200 focus:border-emerald-500">
-                      <SelectValue placeholder="Select subject" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {getFilteredSubjects().map((subject) => (
-                        <SelectItem key={subject.id} value={subject.id.toString()}>
-                          {subject.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="questionDifficulty" className="text-emerald-700 font-medium">Difficulty *</Label>
-                  <Select value={newQuestion.difficulty} onValueChange={(value) => setNewQuestion({...newQuestion, difficulty: value})}>
-                    <SelectTrigger className="border-emerald-200 focus:border-emerald-500">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="easy">Easy</SelectItem>
-                      <SelectItem value="medium">Medium</SelectItem>
-                      <SelectItem value="hard">Hard</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <div>
-                <Label htmlFor="questionText" className="text-emerald-700 font-medium">Question Text *</Label>
-                <Textarea
-                  id="questionText"
-                  value={newQuestion.text}
-                  onChange={(e) => setNewQuestion({...newQuestion, text: e.target.value})}
-                  placeholder="Enter your question here..."
-                  rows={3}
-                  className="border-emerald-200 focus:border-emerald-500"
-                />
-              </div>
-
-              {/* MCQ Options */}
-              {newQuestion.type === 'mcq' && (
-                <div className="space-y-4">
-                  <Label className="text-emerald-700 font-medium">Options *</Label>
-                  {newQuestion.options.map((option, index) => (
-                    <div key={index} className="flex items-center space-x-3">
-                      <div className="flex-1 flex items-center space-x-2">
-                        <span className="w-8 h-8 bg-emerald-100 text-emerald-700 rounded-full flex items-center justify-center font-medium text-sm">
-                          {String.fromCharCode(65 + index)}
-                        </span>
-                        <Input
-                          value={option}
-                          onChange={(e) => handleOptionChange(index, e.target.value)}
-                          placeholder={`Option ${String.fromCharCode(65 + index)}`}
-                          className="border-emerald-200 focus:border-emerald-500"
-                        />
-                      </div>
-                      <Button
-                        variant={newQuestion.correctAnswer === index ? "default" : "outline"}
-                        onClick={() => setNewQuestion({...newQuestion, correctAnswer: index})}
-                        size="sm"
-                        className={newQuestion.correctAnswer === index ? "bg-green-600 hover:bg-green-700" : "border-green-300 text-green-600 hover:bg-green-50"}
-                      >
-                        Correct
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* True/False */}
-              {newQuestion.type === 'true-false' && (
-                <div className="space-y-3">
-                  <Label className="text-emerald-700 font-medium">Correct Answer *</Label>
-                  <div className="flex space-x-4">
-                    <Button
-                      variant={newQuestion.correctAnswer === 0 ? "default" : "outline"}
-                      onClick={() => setNewQuestion({...newQuestion, correctAnswer: 0})}
-                      className={newQuestion.correctAnswer === 0 ? "bg-green-600 hover:bg-green-700" : "border-green-300 text-green-600 hover:bg-green-50"}
-                    >
-                      True
-                    </Button>
-                    <Button
-                      variant={newQuestion.correctAnswer === 1 ? "default" : "outline"}
-                      onClick={() => setNewQuestion({...newQuestion, correctAnswer: 1})}
-                      className={newQuestion.correctAnswer === 1 ? "bg-green-600 hover:bg-green-700" : "border-green-300 text-green-600 hover:bg-green-50"}
-                    >
-                      False
-                    </Button>
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Question Bank</h1>
+          <p className="text-gray-600 mt-1">Manage questions for tests and quizzes</p>
+        </div>
+        
+        <div className="flex space-x-2">
+          <Button variant="outline">
+            <Upload className="w-4 h-4 mr-2" />
+            Import
+          </Button>
+          <Button variant="outline">
+            <Download className="w-4 h-4 mr-2" />
+            Export
+          </Button>
+          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+            <DialogTrigger asChild>
+              <Button className="bg-blue-600 hover:bg-blue-700">
+                <Plus className="w-4 h-4 mr-2" />
+                Add Question
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-4xl">
+              <DialogHeader>
+                <DialogTitle>Add New Question</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4 mt-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="subject">Subject *</Label>
+                    <Select value={newQuestion.subject} onValueChange={(value) => setNewQuestion({...newQuestion, subject: value})}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select subject" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {subjects.map((subject) => (
+                          <SelectItem key={subject} value={subject}>
+                            {subject}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label htmlFor="topic">Topic</Label>
+                    <Input
+                      id="topic"
+                      value={newQuestion.topic}
+                      onChange={(e) => setNewQuestion({...newQuestion, topic: e.target.value})}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="type">Question Type *</Label>
+                    <Select value={newQuestion.type} onValueChange={(value: any) => setNewQuestion({...newQuestion, type: value})}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {questionTypes.map((type) => (
+                          <SelectItem key={type} value={type}>
+                            {type.replace('_', ' ')}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label htmlFor="difficulty">Difficulty *</Label>
+                    <Select value={newQuestion.difficulty} onValueChange={(value: any) => setNewQuestion({...newQuestion, difficulty: value})}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {difficulties.map((difficulty) => (
+                          <SelectItem key={difficulty} value={difficulty}>
+                            {difficulty}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
-              )}
-
-              {/* Fill in the Blanks */}
-              {newQuestion.type === 'fill-blank' && (
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <Label className="text-emerald-700 font-medium">Correct Answers for Blanks *</Label>
-                    <Button onClick={addFillBlank} variant="outline" size="sm" className="text-emerald-600 border-emerald-300">
-                      <Plus className="w-4 h-4 mr-1" />
-                      Add Blank
-                    </Button>
-                  </div>
-                  {newQuestion.fillBlanks.map((blank, index) => (
-                    <div key={index} className="flex items-center space-x-2">
-                      <span className="text-sm font-medium text-emerald-700 w-16">Blank {index + 1}:</span>
-                      <Input
-                        value={blank}
-                        onChange={(e) => handleFillBlankChange(index, e.target.value)}
-                        placeholder={`Correct answer for blank ${index + 1}`}
-                        className="flex-1 border-emerald-200 focus:border-emerald-500"
-                      />
-                      {newQuestion.fillBlanks.length > 1 && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => removeFillBlank(index)}
-                          className="text-red-600 hover:bg-red-50"
-                        >
-                          <X className="w-4 h-4" />
-                        </Button>
-                      )}
-                    </div>
-                  ))}
+                <div>
+                  <Label htmlFor="question">Question *</Label>
+                  <Textarea
+                    id="question"
+                    value={newQuestion.question}
+                    onChange={(e) => setNewQuestion({...newQuestion, question: e.target.value})}
+                    placeholder="Enter your question..."
+                    rows={3}
+                  />
                 </div>
-              )}
-
-              {/* Match the Following */}
-              {newQuestion.type === 'match' && (
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <Label className="text-emerald-700 font-medium">Match Pairs *</Label>
-                    <Button onClick={addMatchPair} variant="outline" size="sm" className="text-emerald-600 border-emerald-300">
-                      <Plus className="w-4 h-4 mr-1" />
-                      Add Pair
-                    </Button>
-                  </div>
-                  {newQuestion.matchPairs.map((pair, index) => (
-                    <div key={index} className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 border border-emerald-200 rounded-lg">
-                      <div>
-                        <Label className="text-sm text-emerald-600">Left Item {index + 1}</Label>
-                        <Input
-                          value={pair.left}
-                          onChange={(e) => handleMatchPairChange(index, 'left', e.target.value)}
-                          placeholder="Enter left item"
-                          className="border-emerald-200 focus:border-emerald-500"
-                        />
-                      </div>
-                      <div className="flex items-end space-x-2">
-                        <div className="flex-1">
-                          <Label className="text-sm text-emerald-600">Right Item {index + 1}</Label>
+                {newQuestion.type === 'MCQ' && (
+                  <div>
+                    <Label>Options *</Label>
+                    <div className="space-y-2 mt-2">
+                      {newQuestion.options.map((option, index) => (
+                        <div key={index} className="flex items-center space-x-2">
+                          <span className="w-6 h-6 bg-gray-100 rounded-full flex items-center justify-center text-sm font-medium">
+                            {String.fromCharCode(65 + index)}
+                          </span>
                           <Input
-                            value={pair.right}
-                            onChange={(e) => handleMatchPairChange(index, 'right', e.target.value)}
-                            placeholder="Enter right item"
-                            className="border-emerald-200 focus:border-emerald-500"
+                            value={option}
+                            onChange={(e) => {
+                              const newOptions = [...newQuestion.options];
+                              newOptions[index] = e.target.value;
+                              setNewQuestion({...newQuestion, options: newOptions});
+                            }}
+                            placeholder={`Option ${String.fromCharCode(65 + index)}`}
                           />
                         </div>
-                        {newQuestion.matchPairs.length > 2 && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => removeMatchPair(index)}
-                            className="text-red-600 hover:bg-red-50"
-                          >
-                            <X className="w-4 h-4" />
-                          </Button>
-                        )}
-                      </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
-              )}
-
-              {/* Explanation */}
-              <div>
-                <Label htmlFor="explanation" className="text-emerald-700 font-medium">Explanation (Optional)</Label>
-                <Textarea
-                  id="explanation"
-                  value={newQuestion.explanation}
-                  onChange={(e) => setNewQuestion({...newQuestion, explanation: e.target.value})}
-                  placeholder="Provide explanation for the correct answer..."
-                  rows={3}
-                  className="border-emerald-200 focus:border-emerald-500"
-                />
-              </div>
-
-              <Button onClick={handleCreateQuestion} className="w-full bg-emerald-600 hover:bg-emerald-700">
-                <Plus className="w-4 h-4 mr-2" />
-                Create Question
-              </Button>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="manage" className="space-y-6">
-          <Card className="shadow-lg border-0">
-            <CardContent className="p-4">
-              <div className="flex flex-col md:flex-row gap-4">
-                <div className="flex-1">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                  </div>
+                )}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="correctAnswer">Correct Answer *</Label>
+                    {newQuestion.type === 'MCQ' ? (
+                      <Select value={newQuestion.correctAnswer} onValueChange={(value) => setNewQuestion({...newQuestion, correctAnswer: value})}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select correct option" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {newQuestion.options.map((option, index) => (
+                            <SelectItem key={index} value={option} disabled={!option.trim()}>
+                              {String.fromCharCode(65 + index)}: {option || 'Empty option'}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <Input
+                        id="correctAnswer"
+                        value={newQuestion.correctAnswer}
+                        onChange={(e) => setNewQuestion({...newQuestion, correctAnswer: e.target.value})}
+                        placeholder="Enter correct answer"
+                      />
+                    )}
+                  </div>
+                  <div>
+                    <Label htmlFor="marks">Marks</Label>
                     <Input
-                      placeholder="Search questions..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-10"
+                      id="marks"
+                      type="number"
+                      value={newQuestion.marks}
+                      onChange={(e) => setNewQuestion({...newQuestion, marks: parseInt(e.target.value)})}
+                      min="1"
                     />
                   </div>
                 </div>
-                <div className="flex gap-2">
-                  <Select value={filterCourse} onValueChange={setFilterCourse}>
-                    <SelectTrigger className="w-[140px]">
-                      <SelectValue placeholder="Course" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Courses</SelectItem>
-                      {courses.map((course) => (
-                        <SelectItem key={course.id} value={course.id.toString()}>
-                          {course.name}
-                        </SelectItem>
+                <div>
+                  <Label htmlFor="explanation">Explanation</Label>
+                  <Textarea
+                    id="explanation"
+                    value={newQuestion.explanation}
+                    onChange={(e) => setNewQuestion({...newQuestion, explanation: e.target.value})}
+                    placeholder="Explain why this is the correct answer..."
+                    rows={2}
+                  />
+                </div>
+              </div>
+              <div className="flex justify-end space-x-2 mt-6">
+                <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
+                  Cancel
+                </Button>
+                <Button onClick={handleAddQuestion}>
+                  Add Question
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+        </div>
+      </div>
+
+      {/* Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Total Questions</p>
+                <p className="text-2xl font-bold">{questions.length}</p>
+              </div>
+              <HelpCircle className="w-8 h-8 text-blue-500" />
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">MCQ Questions</p>
+                <p className="text-2xl font-bold">{questions.filter(q => q.type === 'MCQ').length}</p>
+              </div>
+              <FileText className="w-8 h-8 text-green-500" />
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Hard Questions</p>
+                <p className="text-2xl font-bold">{questions.filter(q => q.difficulty === 'HARD').length}</p>
+              </div>
+              <HelpCircle className="w-8 h-8 text-red-500" />
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Subjects</p>
+                <p className="text-2xl font-bold">{new Set(questions.map(q => q.subject)).size}</p>
+              </div>
+              <FileText className="w-8 h-8 text-purple-500" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Filters */}
+      <Card>
+        <CardContent className="p-6">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <Input
+                placeholder="Search questions..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            <Select value={selectedSubject} onValueChange={setSelectedSubject}>
+              <SelectTrigger>
+                <SelectValue placeholder="All subjects" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">All subjects</SelectItem>
+                {subjects.map((subject) => (
+                  <SelectItem key={subject} value={subject}>
+                    {subject}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={selectedDifficulty} onValueChange={setSelectedDifficulty}>
+              <SelectTrigger>
+                <SelectValue placeholder="All difficulties" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">All difficulties</SelectItem>
+                {difficulties.map((difficulty) => (
+                  <SelectItem key={difficulty} value={difficulty}>
+                    {difficulty}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={selectedType} onValueChange={setSelectedType}>
+              <SelectTrigger>
+                <SelectValue placeholder="All types" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">All types</SelectItem>
+                {questionTypes.map((type) => (
+                  <SelectItem key={type} value={type}>
+                    {type.replace('_', ' ')}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button variant="outline" onClick={() => {
+              setSearchTerm('');
+              setSelectedSubject('');
+              setSelectedDifficulty('');
+              setSelectedType('');
+            }}>
+              Clear Filters
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Questions List */}
+      <div className="space-y-4">
+        {filteredQuestions.map((question) => (
+          <Card key={question.id} className="hover:shadow-lg transition-shadow">
+            <CardContent className="p-6">
+              <div className="flex items-start justify-between mb-4">
+                <div className="flex-1">
+                  <div className="flex items-center space-x-2 mb-2">
+                    <Badge className={getTypeColor(question.type)}>
+                      {question.type}
+                    </Badge>
+                    <Badge className={getDifficultyColor(question.difficulty)}>
+                      {question.difficulty}
+                    </Badge>
+                    <Badge variant="outline">
+                      {question.subject}
+                    </Badge>
+                    {question.topic && (
+                      <Badge variant="outline">
+                        {question.topic}
+                      </Badge>
+                    )}
+                    <span className="text-sm text-gray-500">
+                      {question.marks} {question.marks === 1 ? 'mark' : 'marks'}
+                    </span>
+                  </div>
+                  <h3 className="font-semibold text-gray-900 mb-2">{question.question}</h3>
+                  {question.type === 'MCQ' && question.options && (
+                    <div className="grid grid-cols-2 gap-2 mb-2">
+                      {question.options.map((option, index) => (
+                        <div key={index} className={`p-2 rounded border ${option === question.correctAnswer ? 'bg-green-50 border-green-200' : 'bg-gray-50 border-gray-200'}`}>
+                          <span className="font-medium">{String.fromCharCode(65 + index)}. </span>
+                          {option}
+                        </div>
                       ))}
-                    </SelectContent>
-                  </Select>
-                  <Select value={filterSubject} onValueChange={setFilterSubject}>
-                    <SelectTrigger className="w-[140px]">
-                      <SelectValue placeholder="Subject" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Subjects</SelectItem>
-                      {subjects.map((subject) => (
-                        <SelectItem key={subject.id} value={subject.id.toString()}>
-                          {subject.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Select value={filterType} onValueChange={setFilterType}>
-                    <SelectTrigger className="w-[140px]">
-                      <SelectValue placeholder="Type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Types</SelectItem>
-                      <SelectItem value="mcq">Multiple Choice</SelectItem>
-                      <SelectItem value="true-false">True/False</SelectItem>
-                      <SelectItem value="fill-blank">Fill Blanks</SelectItem>
-                      <SelectItem value="match">Match</SelectItem>
-                    </SelectContent>
-                  </Select>
+                    </div>
+                  )}
+                  {question.explanation && (
+                    <p className="text-sm text-gray-600 mt-2">
+                      <strong>Explanation:</strong> {question.explanation}
+                    </p>
+                  )}
+                </div>
+                <div className="flex space-x-1 ml-4">
+                  <Button variant="ghost" size="sm">
+                    <Edit className="w-4 h-4" />
+                  </Button>
+                  <Button variant="ghost" size="sm">
+                    <Trash2 className="w-4 h-4 text-red-500" />
+                  </Button>
                 </div>
               </div>
             </CardContent>
           </Card>
-
-          <div className="space-y-4">
-            {filteredQuestions.map((question) => (
-              <Card key={question.id} className="shadow-lg border-0 hover:shadow-xl transition-shadow">
-                <CardContent className="p-6">
-                  <div className="flex justify-between items-start mb-4">
-                    <div className="flex-1">
-                      <p className="font-medium text-gray-900 mb-3 text-lg">{question.text}</p>
-                      <div className="flex flex-wrap gap-2 mb-3">
-                        <Badge className={getTypeColor(question.type)}>
-                          {question.type.replace('-', ' ').toUpperCase()}
-                        </Badge>
-                        <Badge variant="outline">{question.course}</Badge>
-                        <Badge variant="outline">{question.subject}</Badge>
-                        <Badge className={getDifficultyColor(question.difficulty)}>
-                          {question.difficulty.toUpperCase()}
-                        </Badge>
-                      </div>
-                    </div>
-                    <div className="flex space-x-2">
-                      <Button variant="ghost" size="sm" className="text-blue-600 hover:bg-blue-50">
-                        <Edit className="w-4 h-4" />
-                      </Button>
-                      <Button variant="ghost" size="sm" className="text-red-600 hover:bg-red-50">
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </div>
-
-                  {/* Question Details */}
-                  {question.options && question.type === 'mcq' && (
-                    <div className="mb-3">
-                      <p className="text-sm font-medium text-gray-700 mb-2">Options:</p>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                        {question.options.map((option, index) => (
-                          <div key={index} className={`p-2 rounded text-sm ${index === question.correctAnswer ? 'bg-green-100 text-green-800 font-medium' : 'bg-gray-50'}`}>
-                            <span className="font-medium mr-2">{String.fromCharCode(65 + index)}.</span>
-                            {option}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {question.type === 'true-false' && question.options && (
-                    <div className="mb-3">
-                      <p className="text-sm font-medium text-gray-700 mb-2">Correct Answer:</p>
-                      <Badge className="bg-green-100 text-green-800">
-                        {question.options[question.correctAnswer as number]}
-                      </Badge>
-                    </div>
-                  )}
-
-                  {question.type === 'fill-blank' && Array.isArray(question.correctAnswer) && (
-                    <div className="mb-3">
-                      <p className="text-sm font-medium text-gray-700 mb-2">Correct Answers:</p>
-                      <div className="flex flex-wrap gap-2">
-                        {question.correctAnswer.map((answer, index) => (
-                          <Badge key={index} className="bg-green-100 text-green-800">
-                            Blank {index + 1}: {answer}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {question.type === 'match' && question.matchPairs && (
-                    <div className="mb-3">
-                      <p className="text-sm font-medium text-gray-700 mb-2">Match Pairs:</p>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                        {question.matchPairs.map((pair, index) => (
-                          <div key={index} className="p-2 bg-blue-50 rounded text-sm">
-                            <span className="font-medium">{pair.left}</span> → <span className="font-medium">{pair.right}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {question.explanation && (
-                    <div className="mt-3 p-3 bg-yellow-50 rounded-lg border border-yellow-200">
-                      <p className="text-sm font-medium text-yellow-800 mb-1">Explanation:</p>
-                      <p className="text-sm text-yellow-700">{question.explanation}</p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </TabsContent>
-      </Tabs>
+        ))}
+        {filteredQuestions.length === 0 && (
+          <Card>
+            <CardContent className="p-12 text-center">
+              <HelpCircle className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">No questions found</h3>
+              <p className="text-gray-600 mb-4">Try adjusting your filters or add some questions to get started.</p>
+              <Button onClick={() => setIsAddDialogOpen(true)}>
+                <Plus className="w-4 h-4 mr-2" />
+                Add Your First Question
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+      </div>
     </div>
   );
 };

@@ -4,462 +4,325 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { 
-  Send, 
-  Bell, 
-  Users, 
-  User, 
-  Calendar, 
-  Clock, 
-  AlertCircle, 
-  CheckCircle, 
-  Info,
-  Megaphone,
-  Mail,
-  MessageSquare
-} from 'lucide-react';
+import { Plus, Send, Bell, Users, MessageSquare, AlertCircle, CheckCircle } from 'lucide-react';
+import { useNotifications } from '@/hooks/api/useNotifications';
+import { useStudents } from '@/hooks/api/useAdmin';
 import { useToast } from '@/hooks/use-toast';
 
 const NotificationCenter = () => {
   const { toast } = useToast();
+  const { data: notificationsResponse, isLoading } = useNotifications();
+  const { data: studentsResponse } = useStudents();
   
-  const [notification, setNotification] = useState({
+  const notifications = notificationsResponse?.data || [];
+  const students = studentsResponse?.data || [];
+  
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [notificationData, setNotificationData] = useState({
     title: '',
     message: '',
-    type: 'info',
-    priority: 'medium',
-    targetType: 'all',
-    targetBatches: [],
-    targetStudents: [],
-    scheduledAt: '',
-    sendEmail: false,
-    sendSMS: false
+    type: 'GENERAL' as const,
+    targetType: 'ALL' as 'ALL' | 'SPECIFIC',
+    targetUsers: [] as string[]
   });
 
-  const batches = [
-    { id: 'neet-2024', name: 'NEET 2024', students: 234 },
-    { id: 'jee-2024', name: 'JEE Main 2024', students: 189 },
-    { id: 'neet-2025', name: 'NEET 2025', students: 156 },
-    { id: 'foundation', name: 'Foundation Course', students: 78 }
-  ];
-
-  const students = [
-    { id: '1', name: 'Priya Sharma', batch: 'NEET 2024', avatar: '' },
-    { id: '2', name: 'Arjun Kumar', batch: 'JEE 2024', avatar: '' },
-    { id: '3', name: 'Meera Patel', batch: 'NEET 2024', avatar: '' },
-    { id: '4', name: 'Raj Singh', batch: 'NEET 2025', avatar: '' },
-  ];
-
-  const recentNotifications = [
-    {
-      id: 1,
-      title: 'Exam Schedule Updated',
-      message: 'Mock test 3 has been rescheduled to next Monday',
-      type: 'warning',
-      sentTo: 'NEET 2024 Batch',
-      sentAt: '2024-06-14 10:30 AM',
-      status: 'sent'
-    },
-    {
-      id: 2,
-      title: 'New Study Material Available',
-      message: 'Chapter 5 Physics notes have been uploaded',
-      type: 'info',
-      sentTo: 'All Students',
-      sentAt: '2024-06-14 09:15 AM',
-      status: 'sent'
-    },
-    {
-      id: 3,
-      title: 'Holiday Announcement',
-      message: 'Classes will be closed on June 20th for public holiday',
-      type: 'info',
-      sentTo: 'All Students',
-      sentAt: '2024-06-13 05:30 PM',
-      status: 'sent'
-    }
-  ];
-
-  const handleSendNotification = () => {
-    if (!notification.title || !notification.message) {
+  const handleCreateNotification = async () => {
+    if (!notificationData.title || !notificationData.message) {
       toast({
-        title: "Error",
-        description: "Please fill in title and message",
-        variant: "destructive"
+        title: 'Error',
+        description: 'Please fill all required fields',
+        variant: 'destructive'
       });
       return;
     }
 
-    // Calculate recipient count
-    let recipientCount = 0;
-    if (notification.targetType === 'all') {
-      recipientCount = batches.reduce((sum, batch) => sum + batch.students, 0);
-    } else if (notification.targetType === 'batch') {
-      recipientCount = batches
-        .filter(batch => notification.targetBatches.includes(batch.id))
-        .reduce((sum, batch) => sum + batch.students, 0);
-    } else {
-      recipientCount = notification.targetStudents.length;
+    try {
+      const notificationPayload = {
+        title: notificationData.title,
+        message: notificationData.message,
+        type: notificationData.type,
+        ...(notificationData.targetType === 'SPECIFIC' && {
+          userId: notificationData.targetUsers[0]
+        })
+      };
+
+      // In real app, this would call notificationService
+      console.log('Creating notification:', notificationPayload);
+      
+      toast({
+        title: 'Success',
+        description: `Notification ${notificationData.targetType === 'ALL' ? 'broadcasted' : 'sent'} successfully`
+      });
+      
+      setIsCreateDialogOpen(false);
+      setNotificationData({
+        title: '',
+        message: '',
+        type: 'GENERAL',
+        targetType: 'ALL',
+        targetUsers: []
+      });
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to send notification',
+        variant: 'destructive'
+      });
     }
-
-    toast({
-      title: "Notification Sent!",
-      description: `Notification sent to ${recipientCount} recipient(s)`,
-    });
-
-    // Reset form
-    setNotification({
-      title: '',
-      message: '',
-      type: 'info',
-      priority: 'medium',
-      targetType: 'all',
-      targetBatches: [],
-      targetStudents: [],
-      scheduledAt: '',
-      sendEmail: false,
-      sendSMS: false
-    });
   };
 
   const getTypeIcon = (type: string) => {
     switch (type) {
-      case 'warning': return <AlertCircle className="w-4 h-4" />;
-      case 'success': return <CheckCircle className="w-4 h-4" />;
-      case 'info': 
-      default: return <Info className="w-4 h-4" />;
+      case 'QUIZ': return <MessageSquare className="w-4 h-4" />;
+      case 'VIDEO': return <Bell className="w-4 h-4" />;
+      case 'ANNOUNCEMENT': return <AlertCircle className="w-4 h-4" />;
+      case 'REMINDER': return <CheckCircle className="w-4 h-4" />;
+      default: return <Bell className="w-4 h-4" />;
     }
   };
 
   const getTypeColor = (type: string) => {
     switch (type) {
-      case 'warning': return 'text-yellow-600 bg-yellow-50 border-yellow-200';
-      case 'success': return 'text-green-600 bg-green-50 border-green-200';
-      case 'info': 
-      default: return 'text-blue-600 bg-blue-50 border-blue-200';
-    }
-  };
-
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'high': return 'bg-red-100 text-red-800';
-      case 'medium': return 'bg-yellow-100 text-yellow-800';
-      case 'low': return 'bg-green-100 text-green-800';
+      case 'QUIZ': return 'bg-blue-100 text-blue-800';
+      case 'VIDEO': return 'bg-purple-100 text-purple-800';
+      case 'ANNOUNCEMENT': return 'bg-orange-100 text-orange-800';
+      case 'REMINDER': return 'bg-green-100 text-green-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
 
-  return (
-    <div className="space-y-8 bg-gradient-to-br from-purple-50 to-pink-50 min-h-screen p-6">
-      <div className="bg-white rounded-xl shadow-lg p-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-              Notification Center
-            </h1>
-            <p className="text-gray-600 mt-2">Send announcements and notifications to students</p>
-          </div>
-          <div className="flex gap-3">
-            <div className="bg-purple-100 p-4 rounded-lg text-center">
-              <Megaphone className="w-6 h-6 text-purple-600 mx-auto mb-1" />
-              <p className="text-sm font-medium text-purple-800">Broadcast</p>
-            </div>
+  const notificationTypes = [
+    { value: 'GENERAL', label: 'General' },
+    { value: 'QUIZ', label: 'Quiz' },
+    { value: 'VIDEO', label: 'Video' },
+    { value: 'ANNOUNCEMENT', label: 'Announcement' },
+    { value: 'REMINDER', label: 'Reminder' }
+  ];
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="animate-pulse">
+          <div className="h-8 bg-gray-200 rounded w-1/4 mb-4"></div>
+          <div className="space-y-4">
+            {[...Array(5)].map((_, i) => (
+              <div key={i} className="h-20 bg-gray-200 rounded-lg"></div>
+            ))}
           </div>
         </div>
       </div>
+    );
+  }
 
-      <Tabs defaultValue="compose" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 bg-white shadow-md">
-          <TabsTrigger value="compose" className="data-[state=active]:bg-purple-500 data-[state=active]:text-white">
-            Compose Notification
-          </TabsTrigger>
-          <TabsTrigger value="history" className="data-[state=active]:bg-pink-500 data-[state=active]:text-white">
-            Notification History
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="compose" className="space-y-6">
-          <Card className="shadow-lg border-0 bg-gradient-to-r from-purple-50 to-purple-100">
-            <CardHeader className="bg-purple-500 text-white rounded-t-lg">
-              <CardTitle className="flex items-center">
-                <Send className="w-5 h-5 mr-2" />
-                Create New Notification
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-6 space-y-6">
-              {/* Basic Information */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label htmlFor="title" className="text-purple-700 font-medium">Title *</Label>
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Notification Center</h1>
+          <p className="text-gray-600 mt-1">Send and manage notifications to students</p>
+        </div>
+        
+        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+          <DialogTrigger asChild>
+            <Button className="bg-blue-600 hover:bg-blue-700">
+              <Plus className="w-4 h-4 mr-2" />
+              Create Notification
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Create New Notification</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 mt-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="title">Title *</Label>
                   <Input
                     id="title"
-                    value={notification.title}
-                    onChange={(e) => setNotification({ ...notification, title: e.target.value })}
-                    placeholder="Enter notification title..."
-                    className="border-purple-200 focus:border-purple-500"
+                    value={notificationData.title}
+                    onChange={(e) => setNotificationData({...notificationData, title: e.target.value})}
+                    placeholder="Notification title"
                   />
                 </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="type" className="text-purple-700 font-medium">Type</Label>
-                  <Select value={notification.type} onValueChange={(value) => setNotification({ ...notification, type: value })}>
-                    <SelectTrigger className="border-purple-200 focus:border-purple-500">
+                <div>
+                  <Label htmlFor="type">Type *</Label>
+                  <Select value={notificationData.type} onValueChange={(value: any) => setNotificationData({...notificationData, type: value})}>
+                    <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="info">Information</SelectItem>
-                      <SelectItem value="warning">Warning</SelectItem>
-                      <SelectItem value="success">Success</SelectItem>
+                      {notificationTypes.map((type) => (
+                        <SelectItem key={type.value} value={type.value}>
+                          {type.label}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
               </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="message" className="text-purple-700 font-medium">Message *</Label>
+              <div>
+                <Label htmlFor="message">Message *</Label>
                 <Textarea
                   id="message"
-                  value={notification.message}
-                  onChange={(e) => setNotification({ ...notification, message: e.target.value })}
+                  value={notificationData.message}
+                  onChange={(e) => setNotificationData({...notificationData, message: e.target.value})}
                   placeholder="Enter your notification message..."
                   rows={4}
-                  className="border-purple-200 focus:border-purple-500"
                 />
               </div>
-
-              {/* Targeting Options */}
-              <div className="space-y-4">
-                <Label className="text-purple-700 font-medium">Send To</Label>
-                <div className="space-y-3">
+              <div>
+                <Label>Target Audience</Label>
+                <div className="space-y-2 mt-2">
                   <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="all"
-                      checked={notification.targetType === 'all'}
-                      onCheckedChange={(checked) => 
-                        checked && setNotification({ ...notification, targetType: 'all', targetBatches: [], targetStudents: [] })
-                      }
+                    <input
+                      type="radio"
+                      id="all-students"
+                      name="target"
+                      checked={notificationData.targetType === 'ALL'}
+                      onChange={() => setNotificationData({...notificationData, targetType: 'ALL', targetUsers: []})}
                     />
-                    <Label htmlFor="all" className="flex items-center gap-2 cursor-pointer">
-                      <Users className="w-4 h-4" />
-                      All Students
-                    </Label>
+                    <Label htmlFor="all-students">All Students</Label>
                   </div>
-                  
                   <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="batch"
-                      checked={notification.targetType === 'batch'}
-                      onCheckedChange={(checked) => 
-                        checked && setNotification({ ...notification, targetType: 'batch', targetStudents: [] })
-                      }
+                    <input
+                      type="radio"
+                      id="specific-students"
+                      name="target"
+                      checked={notificationData.targetType === 'SPECIFIC'}
+                      onChange={() => setNotificationData({...notificationData, targetType: 'SPECIFIC'})}
                     />
-                    <Label htmlFor="batch" className="flex items-center gap-2 cursor-pointer">
-                      <User className="w-4 h-4" />
-                      Specific Batches
-                    </Label>
-                  </div>
-                  
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="individual"
-                      checked={notification.targetType === 'individual'}
-                      onCheckedChange={(checked) => 
-                        checked && setNotification({ ...notification, targetType: 'individual', targetBatches: [] })
-                      }
-                    />
-                    <Label htmlFor="individual" className="flex items-center gap-2 cursor-pointer">
-                      <User className="w-4 h-4" />
-                      Individual Students
-                    </Label>
+                    <Label htmlFor="specific-students">Specific Students</Label>
                   </div>
                 </div>
+                {notificationData.targetType === 'SPECIFIC' && (
+                  <div className="mt-2">
+                    <Select value={notificationData.targetUsers[0] || ''} onValueChange={(value) => setNotificationData({...notificationData, targetUsers: [value]})}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select student" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {students.map((student) => (
+                          <SelectItem key={student.id} value={student.id.toString()}>
+                            {student.name} ({student.email})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
               </div>
-
-              {/* Batch Selection */}
-              {notification.targetType === 'batch' && (
-                <div className="space-y-3">
-                  <Label className="text-purple-700 font-medium">Select Batches</Label>
-                  <div className="grid grid-cols-2 gap-3">
-                    {batches.map((batch) => (
-                      <div key={batch.id} className="flex items-center space-x-2">
-                        <Checkbox
-                          id={batch.id}
-                          checked={notification.targetBatches.includes(batch.id)}
-                          onCheckedChange={(checked) => {
-                            if (checked) {
-                              setNotification({
-                                ...notification,
-                                targetBatches: [...notification.targetBatches, batch.id]
-                              });
-                            } else {
-                              setNotification({
-                                ...notification,
-                                targetBatches: notification.targetBatches.filter(id => id !== batch.id)
-                              });
-                            }
-                          }}
-                        />
-                        <Label htmlFor={batch.id} className="cursor-pointer">
-                          {batch.name} ({batch.students} students)
-                        </Label>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Individual Student Selection */}
-              {notification.targetType === 'individual' && (
-                <div className="space-y-3">
-                  <Label className="text-purple-700 font-medium">Select Students</Label>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {students.map((student) => (
-                      <div key={student.id} className="flex items-center space-x-3 p-3 bg-white rounded-lg border">
-                        <Checkbox
-                          id={student.id}
-                          checked={notification.targetStudents.includes(student.id)}
-                          onCheckedChange={(checked) => {
-                            if (checked) {
-                              setNotification({
-                                ...notification,
-                                targetStudents: [...notification.targetStudents, student.id]
-                              });
-                            } else {
-                              setNotification({
-                                ...notification,
-                                targetStudents: notification.targetStudents.filter(id => id !== student.id)
-                              });
-                            }
-                          }}
-                        />
-                        <Avatar className="w-8 h-8">
-                          <AvatarImage src={student.avatar} alt={student.name} />
-                          <AvatarFallback>
-                            {student.name.split(' ').map(n => n[0]).join('')}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <Label htmlFor={student.id} className="cursor-pointer font-medium">
-                            {student.name}
-                          </Label>
-                          <p className="text-sm text-gray-500">{student.batch}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Additional Options */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label htmlFor="priority" className="text-purple-700 font-medium">Priority</Label>
-                  <Select value={notification.priority} onValueChange={(value) => setNotification({ ...notification, priority: value })}>
-                    <SelectTrigger className="border-purple-200 focus:border-purple-500">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="low">Low</SelectItem>
-                      <SelectItem value="medium">Medium</SelectItem>
-                      <SelectItem value="high">High</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="scheduledAt" className="text-purple-700 font-medium">Schedule (Optional)</Label>
-                  <Input
-                    id="scheduledAt"
-                    type="datetime-local"
-                    value={notification.scheduledAt}
-                    onChange={(e) => setNotification({ ...notification, scheduledAt: e.target.value })}
-                    className="border-purple-200 focus:border-purple-500"
-                  />
-                </div>
-              </div>
-
-              {/* Delivery Options */}
-              <div className="space-y-3">
-                <Label className="text-purple-700 font-medium">Delivery Options</Label>
-                <div className="flex flex-wrap gap-4">
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="sendEmail"
-                      checked={notification.sendEmail}
-                      onCheckedChange={(checked) => setNotification({ ...notification, sendEmail: !!checked })}
-                    />
-                    <Label htmlFor="sendEmail" className="flex items-center gap-2 cursor-pointer">
-                      <Mail className="w-4 h-4" />
-                      Send Email
-                    </Label>
-                  </div>
-                  
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="sendSMS"
-                      checked={notification.sendSMS}
-                      onCheckedChange={(checked) => setNotification({ ...notification, sendSMS: !!checked })}
-                    />
-                    <Label htmlFor="sendSMS" className="flex items-center gap-2 cursor-pointer">
-                      <MessageSquare className="w-4 h-4" />
-                      Send SMS
-                    </Label>
-                  </div>
-                </div>
-              </div>
-
-              <Button 
-                onClick={handleSendNotification} 
-                className="w-full bg-purple-600 hover:bg-purple-700 text-lg py-6"
-              >
-                <Send className="w-5 h-5 mr-2" />
-                {notification.scheduledAt ? 'Schedule Notification' : 'Send Notification'}
+            </div>
+            <div className="flex justify-end space-x-2 mt-6">
+              <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
+                Cancel
               </Button>
-            </CardContent>
-          </Card>
-        </TabsContent>
+              <Button onClick={handleCreateNotification}>
+                <Send className="w-4 h-4 mr-2" />
+                Send Notification
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      </div>
 
-        <TabsContent value="history" className="space-y-6">
+      {/* Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Total Sent</p>
+                <p className="text-2xl font-bold">{notifications.length}</p>
+              </div>
+              <Send className="w-8 h-8 text-blue-500" />
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">This Week</p>
+                <p className="text-2xl font-bold">{notifications.filter(n => {
+                  const weekAgo = new Date();
+                  weekAgo.setDate(weekAgo.getDate() - 7);
+                  return new Date(n.createdAt) > weekAgo;
+                }).length}</p>
+              </div>
+              <Bell className="w-8 h-8 text-green-500" />
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Read Rate</p>
+                <p className="text-2xl font-bold">85%</p>
+              </div>
+              <CheckCircle className="w-8 h-8 text-purple-500" />
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Active Users</p>
+                <p className="text-2xl font-bold">{students.filter(s => s.isActive).length}</p>
+              </div>
+              <Users className="w-8 h-8 text-orange-500" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Notifications List */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Recent Notifications</CardTitle>
+        </CardHeader>
+        <CardContent>
           <div className="space-y-4">
-            {recentNotifications.map((notif) => (
-              <Card key={notif.id} className="shadow-lg border-0 hover:shadow-xl transition-shadow">
-                <CardContent className="p-6">
-                  <div className="flex justify-between items-start">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <div className={`p-2 rounded-full ${getTypeColor(notif.type)}`}>
-                          {getTypeIcon(notif.type)}
-                        </div>
-                        <h3 className="font-semibold text-gray-900">{notif.title}</h3>
-                        <Badge className="bg-green-100 text-green-800">
-                          {notif.status}
-                        </Badge>
-                      </div>
-                      <p className="text-gray-700 mb-3">{notif.message}</p>
-                      <div className="flex items-center gap-4 text-sm text-gray-500">
-                        <span className="flex items-center gap-1">
-                          <Users className="w-4 h-4" />
-                          {notif.sentTo}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Clock className="w-4 h-4" />
-                          {notif.sentAt}
-                        </span>
-                      </div>
+            {notifications.map((notification) => (
+              <div key={notification.id} className="flex items-start space-x-4 p-4 border border-gray-200 rounded-lg">
+                <div className="p-2 bg-gray-100 rounded-lg">
+                  {getTypeIcon(notification.type)}
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center space-x-2">
+                      <h3 className="font-semibold text-gray-900">{notification.title}</h3>
+                      <Badge className={getTypeColor(notification.type)}>
+                        {notification.type}
+                      </Badge>
                     </div>
+                    <span className="text-sm text-gray-500">
+                      {new Date(notification.createdAt).toLocaleDateString()}
+                    </span>
                   </div>
-                </CardContent>
-              </Card>
+                  <p className="text-gray-600 mb-2">{notification.message}</p>
+                  <div className="flex items-center space-x-4 text-sm text-gray-500">
+                    <span>To: {notification.userId ? 'Specific User' : 'All Students'}</span>
+                    <span>•</span>
+                    <span>Status: {notification.isRead ? 'Read' : 'Unread'}</span>
+                  </div>
+                </div>
+              </div>
             ))}
+            {notifications.length === 0 && (
+              <div className="text-center py-8 text-gray-500">
+                No notifications sent yet
+              </div>
+            )}
           </div>
-        </TabsContent>
-      </Tabs>
+        </CardContent>
+      </Card>
     </div>
   );
 };
