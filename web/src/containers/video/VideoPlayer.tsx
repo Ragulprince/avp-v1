@@ -2,84 +2,199 @@
 import React, { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Play, Pause, Volume2, Settings, Download, Maximize } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Play, Pause, Volume2, VolumeX, Settings, Download, Maximize, ArrowLeft } from 'lucide-react';
+import { useVideo } from '@/hooks/api/useVideos';
+import { useDownloadVideo } from '@/hooks/api/useVideos';
 
-const VideoPlayer = () => {
+interface VideoPlayerProps {
+  videoId: string;
+  onBack: () => void;
+}
+
+const VideoPlayer: React.FC<VideoPlayerProps> = ({ videoId, onBack }) => {
   const [isPlaying, setIsPlaying] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
+  const [showSubtitles, setShowSubtitles] = useState(false);
+  
+  const { data: videoData, isLoading } = useVideo(videoId);
+  const downloadVideo = useDownloadVideo();
+  
+  const video = videoData?.data || {
+    id: videoId,
+    title: 'Physics - Newton\'s Laws of Motion',
+    subject: 'Physics',
+    topic: 'Mechanics',
+    duration: '45:30',
+    description: 'Comprehensive explanation of Newton\'s three laws of motion with real-world examples and applications.',
+    instructor: 'Dr. Ravi Sharma',
+    uploadDate: '2024-06-14'
+  };
 
-  return (
-    <Card className="overflow-hidden">
-      <div className="relative bg-black aspect-video">
-        <div className="absolute inset-0 flex items-center justify-center bg-gray-900">
-          <div className="text-center text-white">
-            <div className="w-20 h-20 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Play className="w-8 h-8 ml-1" />
-            </div>
-            <h3 className="text-lg font-semibold mb-2">Physics - Newton's Laws</h3>
-            <p className="text-gray-300 text-sm">Chapter 4: Motion and Forces</p>
-          </div>
-        </div>
-        
-        {/* Video Controls Overlay */}
-        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <Button
-                size="sm"
-                variant="ghost"
-                className="text-white hover:bg-white/20"
-                onClick={() => setIsPlaying(!isPlaying)}
-              >
-                {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
-              </Button>
-              <span className="text-white text-sm">15:30 / 45:20</span>
-            </div>
-            
-            <div className="flex items-center space-x-2">
-              <Button size="sm" variant="ghost" className="text-white hover:bg-white/20">
-                <Download className="w-4 h-4" />
-              </Button>
-              <Button size="sm" variant="ghost" className="text-white hover:bg-white/20">
-                <Volume2 className="w-4 h-4" />
-              </Button>
-              <Button size="sm" variant="ghost" className="text-white hover:bg-white/20">
-                <Settings className="w-4 h-4" />
-              </Button>
-              <Button size="sm" variant="ghost" className="text-white hover:bg-white/20">
-                <Maximize className="w-4 h-4" />
-              </Button>
-            </div>
-          </div>
-          
-          {/* Progress Bar */}
-          <div className="mt-2">
-            <div className="w-full bg-white/30 rounded-full h-1">
-              <div className="bg-blue-500 h-1 rounded-full" style={{ width: '34%' }}></div>
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      <CardContent className="p-4">
-        <div className="flex justify-between items-start">
-          <div>
-            <h3 className="font-semibold text-lg text-gray-900">Physics - Newton's Laws of Motion</h3>
-            <p className="text-gray-600 text-sm mt-1">Dr. Rajesh Kumar • Physics • 45 min</p>
-            <div className="flex items-center gap-4 mt-2 text-sm text-gray-500">
-              <span>Chapter 4</span>
-              <span>•</span>
-              <span>Beginner Level</span>
-              <span>•</span>
-              <span>1.2k views</span>
-            </div>
-          </div>
-          <Button variant="outline" size="sm">
-            <Download className="w-4 h-4 mr-2" />
-            Download
+  const handleDownload = () => {
+    downloadVideo.mutate(videoId);
+  };
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <Button variant="outline" onClick={onBack}>
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Videos
           </Button>
         </div>
-      </CardContent>
-    </Card>
+        <Card className="overflow-hidden bg-black animate-pulse">
+          <CardContent className="p-0">
+            <div className="aspect-video bg-gray-800"></div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex justify-between items-center">
+        <Button variant="outline" onClick={onBack}>
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          Back to Videos
+        </Button>
+        <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={handleDownload}
+            disabled={downloadVideo.isPending}
+          >
+            <Download className="w-4 h-4 mr-2" />
+            {downloadVideo.isPending ? 'Downloading...' : 'Download'}
+          </Button>
+          <Button variant="outline" size="sm">
+            <Settings className="w-4 h-4" />
+          </Button>
+        </div>
+      </div>
+
+      {/* Video Player */}
+      <Card className="overflow-hidden bg-black">
+        <CardContent className="p-0">
+          <div className="relative aspect-video bg-gray-900">
+            {/* Video placeholder */}
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="text-center text-white">
+                <div className="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                  {isPlaying ? (
+                    <Pause className="w-8 h-8" />
+                  ) : (
+                    <Play className="w-8 h-8" />
+                  )}
+                </div>
+                <p className="text-lg font-medium">DRM Protected Content</p>
+                <p className="text-sm opacity-75">Video playback is secure and protected</p>
+              </div>
+            </div>
+
+            {/* Video Controls */}
+            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-4">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setIsPlaying(!isPlaying)}
+                    className="text-white hover:bg-white/20"
+                  >
+                    {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setIsMuted(!isMuted)}
+                    className="text-white hover:bg-white/20"
+                  >
+                    {isMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
+                  </Button>
+                  <span className="text-white text-sm">15:30 / {video.duration}</span>
+                </div>
+                <div className="flex items-center space-x-4">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowSubtitles(!showSubtitles)}
+                    className={`text-white hover:bg-white/20 ${showSubtitles ? 'bg-white/20' : ''}`}
+                  >
+                    CC
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-white hover:bg-white/20"
+                  >
+                    <Maximize className="w-5 h-5" />
+                  </Button>
+                </div>
+              </div>
+              {/* Progress Bar */}
+              <div className="w-full bg-white/30 rounded-full h-1 mt-2">
+                <div className="bg-blue-500 h-1 rounded-full" style={{ width: '34%' }}></div>
+              </div>
+            </div>
+
+            {/* Subtitle overlay */}
+            {showSubtitles && (
+              <div className="absolute bottom-16 left-0 right-0 text-center">
+                <div className="inline-block bg-black/80 text-white px-4 py-2 rounded">
+                  Newton's first law states that an object at rest will remain at rest...
+                </div>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Video Info */}
+      <Card>
+        <CardContent className="p-6">
+          <div className="flex justify-between items-start mb-4">
+            <div className="flex-1">
+              <h1 className="text-2xl font-bold text-gray-900 mb-2">{video.title}</h1>
+              <div className="flex gap-2 mb-3">
+                <Badge variant="outline">{video.subject}</Badge>
+                <Badge variant="outline">{video.topic}</Badge>
+              </div>
+              <p className="text-gray-600 mb-4">{video.description}</p>
+              <div className="flex items-center gap-4 text-sm text-gray-600">
+                <span>Instructor: {video.instructor}</span>
+                <span>Duration: {video.duration}</span>
+                <span>Uploaded: {new Date(video.uploadDate || video.createdAt).toLocaleDateString()}</span>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Related Videos */}
+      <Card>
+        <CardContent className="p-6">
+          <h3 className="text-lg font-semibold mb-4">Related Videos</h3>
+          <div className="space-y-3">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="flex items-center space-x-4 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer">
+                <div className="w-20 h-12 bg-gray-200 rounded flex items-center justify-center">
+                  <Play className="w-4 h-4 text-gray-500" />
+                </div>
+                <div className="flex-1">
+                  <h4 className="font-medium text-gray-900">Physics - Motion in a Straight Line</h4>
+                  <p className="text-sm text-gray-600">Dr. Ravi Sharma • 38:15</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   );
 };
 
