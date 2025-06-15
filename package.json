@@ -1,0 +1,25 @@
+
+{
+  "name": "avp-academy-fullstack",
+  "version": "1.0.0",
+  "description": "AVP Academy - Full Stack EdTech Platform",
+  "private": true,
+  "workspaces": [
+    "web",
+    "backend"
+  ],
+  "scripts": {
+    "dev": "docker-compose up --build",
+    "dev:detached": "docker-compose up -d --build",
+    "stop": "docker-compose down",
+    "clean": "docker-compose down -v --remove-orphans",
+    "logs": "docker-compose logs -f",
+    "backend": "cd backend && npm run dev",
+    "web": "cd web && npm run dev",
+    "build": "docker-compose -f docker-compose.prod.yml build",
+    "start": "docker-compose -f docker-compose.prod.yml up -d"
+  },
+  "keywords": ["education", "edtech", "fullstack", "react", "nodejs"],
+  "author": "AVP Academy",
+  "license": "MIT"
+}
