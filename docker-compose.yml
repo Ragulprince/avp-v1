@@ -49,6 +49,7 @@ services:
         condition: service_started
     networks:
       - avp-network
+    restart: unless-stopped
 
   # PostgreSQL Database
   postgres:

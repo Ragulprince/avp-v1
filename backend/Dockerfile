@@ -3,8 +3,8 @@ FROM node:18-alpine
 
 WORKDIR /app
 
-# Install necessary packages
-RUN apk add --no-cache curl netcat-openbsd openssl
+# Install necessary packages including Python for native dependencies
+RUN apk add --no-cache curl netcat-openbsd openssl python3 make g++
 
 # Copy package files
 COPY package*.json ./
@@ -19,10 +19,7 @@ COPY . .
 # Generate Prisma client
 RUN npx prisma generate
 
-# Build TypeScript
-RUN npm run build
-
-# Create logs directory
+# Create logs and uploads directories
 RUN mkdir -p logs uploads
 
 # Expose port
@@ -32,20 +29,7 @@ EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
   CMD curl -f http://localhost:3000/health || exit 1
 
-# Create startup script
-RUN printf '#!/bin/sh\n\
-echo "Waiting for database..."\n\
-while ! nc -z postgres 5432; do\n\
-  sleep 1\n\
-done\n\
-echo "Database is ready!"\n\
-echo "Running Prisma migrations..."\n\
-npx prisma migrate deploy\n\
-echo "Running database seed..."\n\
-npm run db:seed || echo "Seed failed, continuing..."\n\
-echo "Starting application..."\n\
-exec "$@"\n' > /app/entrypoint.sh
-
+# Make entrypoint script executable
 RUN chmod +x /app/entrypoint.sh
 
 ENTRYPOINT ["/app/entrypoint.sh"]
