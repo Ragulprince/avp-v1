@@ -221,7 +221,7 @@ export const createCourse = async (req: AuthRequest, res: Response) => {
   }
 };
 
-export const getCourses = async (req: AuthRequest, res: Response) => {
+export const getCourses = async ( res: Response) => {
   try {
     const courses = await prisma.course.findMany({
       include: {

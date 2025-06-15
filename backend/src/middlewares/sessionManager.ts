@@ -1,6 +1,6 @@
 
-import { Request, Response, NextFunction } from 'express';
-import { prisma } from '../config/database';
+import { Response, NextFunction } from 'express';
+
 import { AuthRequest } from '../types';
 import { logger } from '../config/logger';
 import jwt from 'jsonwebtoken';
