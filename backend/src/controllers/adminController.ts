@@ -1,5 +1,5 @@
 
-import { Request, Response } from 'express';
+import { Response } from 'express';
 import { prisma } from '../config/database';
 import { AuthRequest } from '../types';
 import { hashPassword } from '../utils/password';
@@ -8,7 +8,7 @@ import crypto from 'crypto';
 import nodemailer from 'nodemailer';
 
 // Email configuration
-const transporter = nodemailer.createTransporter({
+const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST,
   port: parseInt(process.env.SMTP_PORT || '587'),
   secure: false,
