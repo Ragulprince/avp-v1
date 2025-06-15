@@ -226,17 +226,18 @@ export const serveFile = async (req: AuthRequest, res: Response): Promise<void> 
 };
 
 // Toggle material publish status
-export const toggleMaterialPublish = async (req: AuthRequest, res: Response) => {
+export const toggleMaterialPublish = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
     const { isPublished } = req.body;
     const materialId = parseInt(id);
 
     if (isNaN(materialId)) {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         message: 'Invalid material ID'
       });
+      return;
     }
 
     const material = await prisma.studyMaterial.update({
