@@ -13,11 +13,12 @@ COPY prisma ./prisma/
 # Install dependencies
 RUN npm ci 
 
+# Copy entrypoint script first and fix line endings
+COPY entrypoint.sh /app/entrypoint.sh
+RUN dos2unix /app/entrypoint.sh && chmod +x /app/entrypoint.sh
+
 # Copy source code
 COPY . .
-
-# Convert line endings and make entrypoint executable
-RUN dos2unix /app/entrypoint.sh && chmod +x /app/entrypoint.sh
 
 # Generate Prisma client
 RUN npx prisma generate
