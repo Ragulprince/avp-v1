@@ -68,8 +68,8 @@ export const getStudents = async (req: AuthRequest, res: Response) => {
 
     if (batchId || courseId) {
       where.studentProfile = {};
-      if (batchId) where.studentProfile.batchId = batchId;
-      if (courseId) where.studentProfile.courseId = courseId;
+      if (batchId) where.studentProfile.batchId = parseInt(batchId as string);
+      if (courseId) where.studentProfile.courseId = parseInt(courseId as string);
     }
 
     const [students, total] = await Promise.all([
@@ -109,10 +109,20 @@ export const getStudents = async (req: AuthRequest, res: Response) => {
 export const updateStudent = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
+    const studentId = parseInt(id);
+
+    if (isNaN(studentId)) {
+      res.status(400).json({
+        success: false,
+        message: 'Invalid student ID'
+      });
+      return;
+    }
+
     const { name, phone, batchId, courseId, address, emergencyContact, isActive } = req.body;
 
     const student = await prisma.user.update({
-      where: { id },
+      where: { id: studentId },
       data: {
         name,
         phone,
@@ -150,9 +160,18 @@ export const updateStudent = async (req: AuthRequest, res: Response) => {
 export const deleteStudent = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
+    const studentId = parseInt(id);
+
+    if (isNaN(studentId)) {
+      res.status(400).json({
+        success: false,
+        message: 'Invalid student ID'
+      });
+      return;
+    }
 
     await prisma.user.delete({
-      where: { id }
+      where: { id: studentId }
     });
 
     res.json({
@@ -223,10 +242,20 @@ export const getCourses = async ( res: Response) => {
 export const updateCourse = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
+    const courseId = parseInt(id);
+
+    if (isNaN(courseId)) {
+      res.status(400).json({
+        success: false,
+        message: 'Invalid course ID'
+      });
+      return;
+    }
+
     const { name, description, duration, fees, subjects, status } = req.body;
 
     const course = await prisma.course.update({
-      where: { id },
+      where: { id: courseId },
       data: {
         name,
         description,
@@ -251,9 +280,18 @@ export const updateCourse = async (req: AuthRequest, res: Response) => {
 export const deleteCourse = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
+    const courseId = parseInt(id);
+
+    if (isNaN(courseId)) {
+      res.status(400).json({
+        success: false,
+        message: 'Invalid course ID'
+      });
+      return;
+    }
 
     await prisma.course.delete({
-      where: { id }
+      where: { id: courseId }
     });
 
     res.json({
@@ -297,7 +335,7 @@ export const createBatch = async (req: AuthRequest, res: Response) => {
 export const getBatches = async (req: AuthRequest, res: Response) => {
   try {
     const { courseId } = req.query;
-    const where = courseId ? { courseId: courseId as string } : {};
+    const where = courseId ? { courseId: parseInt(courseId as string) } : {};
 
     const batches = await prisma.batch.findMany({
       where,
