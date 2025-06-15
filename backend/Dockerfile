@@ -32,7 +32,7 @@ EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
   CMD curl -f http://localhost:3000/health || exit 1
 
-# Create startup script with proper line breaks
+# Create startup script with proper line breaks _AFTER_ all COPY commands
 RUN printf '#!/bin/sh\n\
 echo "Waiting for database..."\n\
 while ! nc -z postgres 5432; do\n\
@@ -50,3 +50,4 @@ RUN chmod +x /app/entrypoint.sh
 
 ENTRYPOINT ["/app/entrypoint.sh"]
 CMD ["npm", "start"]
+
