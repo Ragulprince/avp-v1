@@ -104,9 +104,18 @@ export const updateQuestion = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
     const updateData = req.body;
+    const questionId = parseInt(id);
+
+    if (isNaN(questionId)) {
+      res.status(400).json({
+        success: false,
+        message: 'Invalid question ID'
+      });
+      return;
+    }
 
     const question = await prisma.question.update({
-      where: { id },
+      where: { id: questionId },
       data: updateData
     });
 
@@ -125,10 +134,19 @@ export const updateQuestion = async (req: AuthRequest, res: Response) => {
 export const deleteQuestion = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
+    const questionId = parseInt(id);
+
+    if (isNaN(questionId)) {
+      res.status(400).json({
+        success: false,
+        message: 'Invalid question ID'
+      });
+      return;
+    }
 
     // Check if question is used in any quiz
     const quizQuestion = await prisma.quizQuestion.findFirst({
-      where: { questionId: id }
+      where: { questionId: questionId }
     });
 
     if (quizQuestion) {
@@ -140,7 +158,7 @@ export const deleteQuestion = async (req: AuthRequest, res: Response): Promise<v
     }
 
     await prisma.question.delete({
-      where: { id }
+      where: { id: questionId }
     });
 
     res.json({
@@ -157,9 +175,18 @@ export const deleteQuestion = async (req: AuthRequest, res: Response): Promise<v
 export const getQuestionById = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
+    const questionId = parseInt(id);
+
+    if (isNaN(questionId)) {
+      res.status(400).json({
+        success: false,
+        message: 'Invalid question ID'
+      });
+      return;
+    }
 
     const question = await prisma.question.findUnique({
-      where: { id }
+      where: { id: questionId }
     });
 
     if (!question) {
