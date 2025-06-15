@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Eye, EyeOff, BookOpen } from 'lucide-react';
+import { useLogin } from '@/hooks/api/useAuth';
+import { useToast } from '@/hooks/use-toast';
 
 interface LoginProps {
   onLogin: (userType: 'student' | 'admin') => void;
@@ -14,21 +16,31 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const { toast } = useToast();
+  
+  const loginMutation = useLogin();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
     
-    // Mock login logic
-    setTimeout(() => {
-      if (email === 'admin@avp.com') {
-        onLogin('admin');
-      } else {
-        onLogin('student');
+    try {
+      const response = await loginMutation.mutateAsync({ email, password });
+      
+      if (response.success && response.data) {
+        const userRole = response.data.user.role;
+        if (userRole === 'ADMIN') {
+          onLogin('admin');
+        } else {
+          onLogin('student');
+        }
       }
-      setIsLoading(false);
-    }, 1000);
+    } catch (error: any) {
+      toast({
+        title: 'Login Failed',
+        description: error.message || 'Invalid credentials',
+        variant: 'destructive',
+      });
+    }
   };
 
   return (
@@ -95,17 +107,17 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
               <Button
                 type="submit"
-                disabled={isLoading}
+                disabled={loginMutation.isPending}
                 className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-xl transition-colors"
               >
-                {isLoading ? 'Signing in...' : 'Sign In'}
+                {loginMutation.isPending ? 'Signing in...' : 'Sign In'}
               </Button>
             </form>
 
             <div className="mt-6 text-center">
               <p className="text-sm text-gray-600">Demo Credentials:</p>
               <p className="text-xs text-gray-500 mt-1">
-                Student: student@avp.com | Admin: admin@avp.com
+                Student: student@example.com | Admin: admin@avpacademy.com
               </p>
             </div>
           </CardContent>

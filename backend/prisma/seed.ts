@@ -23,10 +23,10 @@ async function main() {
 
   // Create sample course
   const course = await prisma.course.upsert({
-    where: { id: 'course-1' },
+    where: { id: 1 },
     update: {},
     create: {
-      id: 'course-1',
+      id: 1,
       name: 'NEET Preparation Course',
       description: 'Complete NEET preparation with Physics, Chemistry, and Biology',
       duration: '12 months',
@@ -38,10 +38,10 @@ async function main() {
 
   // Create sample batch
   const batch = await prisma.batch.upsert({
-    where: { id: 'batch-1' },
+    where: { id: 1 },
     update: {},
     create: {
-      id: 'batch-1',
+      id: 1,
       name: 'Morning Batch',
       timing: '9:00 AM - 12:00 PM',
       capacity: 50,

@@ -15,7 +15,7 @@ datasource db {
 // =================================================================
 
 model User {
-  id        String   @id @default(uuid())
+  id        Int      @id @default(autoincrement())
   email     String   @unique
   phone     String?  @unique
   password  String
@@ -36,12 +36,12 @@ model User {
 }
 
 model StudentProfile {
-  id            String   @id @default(uuid())
-  userId        String   @unique
+  id            Int      @id @default(autoincrement())
+  userId        Int      @unique
   user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  batchId       String?
+  batchId       Int?
   batch         Batch?   @relation(fields: [batchId], references: [id])
-  courseId      String?
+  courseId      Int?
   course        Course?  @relation(fields: [courseId], references: [id])
   joinDate      DateTime @default(now())
   address       String?
@@ -63,7 +63,7 @@ model StudentProfile {
 // =================================================================
 
 model Course {
-  id          String    @id @default(uuid())
+  id          Int       @id @default(autoincrement())
   name        String
   description String
   duration    String
@@ -83,11 +83,11 @@ model Course {
 }
 
 model Batch {
-  id        String   @id @default(uuid())
+  id        Int      @id @default(autoincrement())
   name      String
   timing    String
   capacity  Int
-  courseId  String
+  courseId  Int
   course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
   students  StudentProfile[]
   createdAt DateTime @default(now())
@@ -97,7 +97,7 @@ model Batch {
 }
 
 model Video {
-  id          String   @id @default(uuid())
+  id          Int      @id @default(autoincrement())
   title       String
   description String?
   subject     String
@@ -105,7 +105,7 @@ model Video {
   duration    String?
   thumbnail   String?
   videoUrl    String
-  courseId    String
+  courseId    Int
   course      Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
   isPublished Boolean  @default(false)
   views       Int      @default(0)
@@ -118,10 +118,10 @@ model Video {
 }
 
 model VideoDownload {
-  id        String   @id @default(uuid())
-  userId    String
+  id        Int      @id @default(autoincrement())
+  userId    Int
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  videoId   String
+  videoId   Int
   video     Video    @relation(fields: [videoId], references: [id], onDelete: Cascade)
   expiresAt DateTime
   createdAt DateTime @default(now())
@@ -131,7 +131,7 @@ model VideoDownload {
 }
 
 model StudyMaterial {
-  id          String   @id @default(uuid())
+  id          Int      @id @default(autoincrement())
   title       String
   description String?
   type        MaterialType
@@ -140,7 +140,7 @@ model StudyMaterial {
   fileUrl     String
   fileName    String
   fileSize    String?
-  courseId    String
+  courseId    Int
   course      Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
   isPublished Boolean  @default(false)
   views       Int      @default(0)
@@ -158,7 +158,7 @@ model StudyMaterial {
 // =================================================================
 
 model Quiz {
-  id          String     @id @default(uuid())
+  id          Int        @id @default(autoincrement())
   title       String
   description String?
   subject     String
@@ -168,7 +168,7 @@ model Quiz {
   passingMarks Int
   negativeMarking Boolean @default(false)
   negativeMarks Float?
-  courseId    String
+  courseId    Int
   course      Course     @relation(fields: [courseId], references: [id], onDelete: Cascade)
   isPublished Boolean    @default(false)
   scheduledAt DateTime?
@@ -183,7 +183,7 @@ model Quiz {
 }
 
 model Question {
-  id          String       @id @default(uuid())
+  id          Int          @id @default(autoincrement())
   question    String
   type        QuestionType
   subject     String
@@ -202,10 +202,10 @@ model Question {
 }
 
 model QuizQuestion {
-  id         String   @id @default(uuid())
-  quizId     String
+  id         Int      @id @default(autoincrement())
+  quizId     Int
   quiz       Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
-  questionId String
+  questionId Int
   question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
   order      Int
 
@@ -214,10 +214,10 @@ model QuizQuestion {
 }
 
 model QuizAttempt {
-  id          String   @id @default(uuid())
-  userId      String
+  id          Int      @id @default(autoincrement())
+  userId      Int
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  quizId      String
+  quizId      Int
   quiz        Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
   answers     Json     // Store answers as JSON
   score       Int
@@ -240,8 +240,8 @@ model QuizAttempt {
 // =================================================================
 
 model Notification {
-  id        String           @id @default(uuid())
-  userId    String?
+  id        Int              @id @default(autoincrement())
+  userId    Int?
   user      User?            @relation(fields: [userId], references: [id], onDelete: Cascade)
   title     String
   message   String
@@ -254,8 +254,8 @@ model Notification {
 }
 
 model Leaderboard {
-  id        String   @id @default(uuid())
-  userId    String
+  id        Int      @id @default(autoincrement())
+  userId    Int
   userName  String
   userAvatar String?
   score     Int
