@@ -226,7 +226,7 @@ export const downloadVideo = async (req: AuthRequest, res: Response): Promise<vo
   }
 };
 
-export const getVideoSubjects = async (req: AuthRequest, res: Response) => {
+export const getVideoSubjects = async (res: Response) => {
   try {
     const subjects = await prisma.video.findMany({
       where: { isPublished: true },
