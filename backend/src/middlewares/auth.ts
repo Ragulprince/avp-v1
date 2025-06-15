@@ -1,8 +1,7 @@
-
 import { Response, NextFunction } from 'express';
 import { verifyToken } from '../utils/jwt';
 import { prisma } from '../config/database';
-import { AuthRequest } from '../types';
+import { AuthRequest, UserWithRelations } from '../types';
 import { logger } from '../config/logger';
 
 export const authenticate = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
@@ -40,7 +39,8 @@ export const authenticate = async (req: AuthRequest, res: Response, next: NextFu
       return;
     }
 
-    req.user = user;
+    // Type assertion to match our UserWithRelations type
+    req.user = user as UserWithRelations;
     next();
   } catch (error) {
     logger.error('Authentication error:', error);

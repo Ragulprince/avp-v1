@@ -1,4 +1,3 @@
-
 import { PrismaClient } from '@prisma/client';
 import { hash } from 'bcryptjs';
 
@@ -9,7 +8,7 @@ async function main() {
 
   // Create admin user
   const adminPassword = await hash('admin123', 12);
-  const admin = await prisma.user.upsert({
+  await prisma.user.upsert({
     where: { email: 'admin@avpacademy.com' },
     update: {},
     create: {
@@ -131,7 +130,7 @@ async function main() {
   });
 
   // Create sample questions
-  const questions = await prisma.question.createMany({
+  await prisma.question.createMany({
     data: [
       {
         question: 'What is the SI unit of force?',
