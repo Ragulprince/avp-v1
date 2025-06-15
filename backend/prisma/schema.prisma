@@ -5,7 +5,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = "postgresql://postgres:password@postgres:5432/avp_academy"
+  url      = env("DATABASE_URL")
 }
 
 model User {

@@ -23,7 +23,7 @@ RUN npx prisma generate
 RUN npm run build
 
 # Create logs directory
-RUN mkdir -p logs
+RUN mkdir -p logs uploads
 
 # Expose port
 EXPOSE 3000
@@ -32,7 +32,7 @@ EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
   CMD curl -f http://localhost:3000/health || exit 1
 
-# Create startup script with proper line breaks _AFTER_ all COPY commands
+# Create startup script
 RUN printf '#!/bin/sh\n\
 echo "Waiting for database..."\n\
 while ! nc -z postgres 5432; do\n\
@@ -42,7 +42,7 @@ echo "Database is ready!"\n\
 echo "Running Prisma migrations..."\n\
 npx prisma migrate deploy\n\
 echo "Running database seed..."\n\
-npm run db:seed\n\
+npm run db:seed || echo "Seed failed, continuing..."\n\
 echo "Starting application..."\n\
 exec "$@"\n' > /app/entrypoint.sh
 
@@ -50,4 +50,3 @@ RUN chmod +x /app/entrypoint.sh
 
 ENTRYPOINT ["/app/entrypoint.sh"]
 CMD ["npm", "start"]
-
