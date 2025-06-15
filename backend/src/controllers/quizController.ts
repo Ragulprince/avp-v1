@@ -92,9 +92,18 @@ export const getQuizzes = async (req: AuthRequest, res: Response) => {
 export const getQuizById = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
+    const quizId = parseInt(id);
+
+    if (isNaN(quizId)) {
+      res.status(400).json({
+        success: false,
+        message: 'Invalid quiz ID'
+      });
+      return;
+    }
 
     const quiz = await prisma.quiz.findUnique({
-      where: { id },
+      where: { id: quizId },
       include: {
         course: {
           select: {
@@ -145,9 +154,9 @@ export const getQuizById = async (req: AuthRequest, res: Response): Promise<void
 };
 
 export const submitQuizValidation = [
-  body('quizId').isUUID().withMessage('Invalid quiz ID'),
+  body('quizId').isString().withMessage('Invalid quiz ID'),
   body('answers').isArray().withMessage('Answers must be an array'),
-  body('answers.*.questionId').isUUID().withMessage('Invalid question ID'),
+  body('answers.*.questionId').isString().withMessage('Invalid question ID'),
   body('answers.*.answer').notEmpty().withMessage('Answer is required'),
   body('totalTimeTaken').isInt({ min: 0 }).withMessage('Invalid time taken')
 ];
@@ -156,9 +165,18 @@ export const submitQuiz = async (req: AuthRequest, res: Response): Promise<void>
   try {
     const { quizId, answers, totalTimeTaken }: QuizSubmission = req.body;
     const userId = req.user!.id;
+    const quizIdInt = parseInt(quizId);
+
+    if (isNaN(quizIdInt)) {
+      res.status(400).json({
+        success: false,
+        message: 'Invalid quiz ID'
+      });
+      return;
+    }
 
     const quiz = await prisma.quiz.findUnique({
-      where: { id: quizId },
+      where: { id: quizIdInt },
       include: {
         questions: {
           include: {
@@ -180,7 +198,7 @@ export const submitQuiz = async (req: AuthRequest, res: Response): Promise<void>
     const existingAttempt = await prisma.quizAttempt.findFirst({
       where: {
         userId,
-        quizId,
+        quizId: quizIdInt,
         isCompleted: true
       }
     });
@@ -222,7 +240,7 @@ export const submitQuiz = async (req: AuthRequest, res: Response): Promise<void>
     const attempt = await prisma.quizAttempt.create({
       data: {
         userId,
-        quizId,
+        quizId: quizIdInt,
         answers: JSON.stringify(answers),
         score,
         totalQuestions: quiz.questions.length,
