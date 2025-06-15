@@ -1,5 +1,5 @@
 
-import { Request, Response } from 'express';
+import { Response } from 'express';
 import { prisma } from '../config/database';
 import { AuthRequest } from '../types';
 import { logger } from '../config/logger';

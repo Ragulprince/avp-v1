@@ -14,7 +14,7 @@ export const generateToken = (user: User): string => {
       name: user.name
     },
     JWT_SECRET,
-    { expiresIn: JWT_EXPIRES_IN }
+    { expiresIn: JWT_EXPIRES_IN } as jwt.SignOptions
   );
 };
 
