@@ -4,7 +4,7 @@ FROM node:18-alpine
 WORKDIR /app
 
 # Install necessary packages
-RUN apk add --no-cache curl
+RUN apk add --no-cache curl netcat-openbsd openssl
 
 # Copy package files
 COPY package*.json ./
@@ -32,8 +32,8 @@ EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
   CMD curl -f http://localhost:3000/health || exit 1
 
-# Create startup script
-RUN echo '#!/bin/sh\n\
+# Create startup script with proper line breaks
+RUN printf '#!/bin/sh\n\
 echo "Waiting for database..."\n\
 while ! nc -z postgres 5432; do\n\
   sleep 1\n\
@@ -41,8 +41,10 @@ done\n\
 echo "Database is ready!"\n\
 echo "Running Prisma migrations..."\n\
 npx prisma migrate deploy\n\
+echo "Running database seed..."\n\
+npm run db:seed\n\
 echo "Starting application..."\n\
-exec "$@"' > /app/entrypoint.sh
+exec "$@"\n' > /app/entrypoint.sh
 
 RUN chmod +x /app/entrypoint.sh
 
