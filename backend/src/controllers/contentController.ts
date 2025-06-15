@@ -230,9 +230,17 @@ export const toggleMaterialPublish = async (req: AuthRequest, res: Response) => 
   try {
     const { id } = req.params;
     const { isPublished } = req.body;
+    const materialId = parseInt(id);
+
+    if (isNaN(materialId)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid material ID'
+      });
+    }
 
     const material = await prisma.studyMaterial.update({
-      where: { id },
+      where: { id: materialId },
       data: { isPublished }
     });
 
