@@ -1,8 +1,9 @@
 import jwt from 'jsonwebtoken';
 import { User } from '@prisma/client';
 
-const JWT_SECRET: string = process.env.JWT_SECRET || 'your-super-secret-jwt-key';
-const JWT_EXPIRES_IN: string | number = process.env.JWT_EXPIRES_IN || '7d';
+// Ensure JWT_SECRET is a string and throw an error if not defined
+const JWT_SECRET: string = process.env.JWT_SECRET ?? throwError('JWT_SECRET is not defined');
+const JWT_EXPIRES_IN: string = process.env.JWT_EXPIRES_IN || '7d';
 
 export interface JWTPayload {
   id: number;
@@ -14,12 +15,12 @@ export const generateToken = (user: User): string => {
   const payload: JWTPayload = {
     id: user.id,
     email: user.email,
-    role: user.role
+    role: user.role,
   };
 
   return jwt.sign(payload, JWT_SECRET, {
     expiresIn: JWT_EXPIRES_IN,
-  });
+  } as jwt.SignOptions); // Explicitly cast to SignOptions
 };
 
 export const verifyToken = (token: string): JWTPayload => {
@@ -29,3 +30,8 @@ export const verifyToken = (token: string): JWTPayload => {
     throw new Error('Invalid token');
   }
 };
+
+// Helper function to throw error for missing environment variables
+function throwError(message: string): never {
+  throw new Error(message);
+}

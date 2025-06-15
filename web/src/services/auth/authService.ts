@@ -1,6 +1,4 @@
 
-import { apiClient } from '../api';
-
 export interface LoginCredentials {
   email: string;
   password: string;
@@ -14,45 +12,77 @@ export interface RegisterData {
   role?: 'STUDENT' | 'ADMIN';
 }
 
+export interface User {
+  id: number;
+  email: string;
+  name: string;
+  role: string;
+  avatar?: string;
+  studentProfile?: any;
+}
+
 export interface AuthResponse {
   success: boolean;
   message: string;
   data: {
-    user: {
-      id: string;
-      email: string;
-      name: string;
-      role: string;
-      avatar?: string;
-      studentProfile?: any;
-    };
+    user: User;
     token: string;
   };
 }
 
 export const authService = {
-  login: async (credentials: LoginCredentials): Promise<AuthResponse> => {
-    const response = await apiClient.post('/auth/login', credentials);
-    if (response.data?.token) {
-      localStorage.setItem('authToken', response.data.token);
+  async login(credentials: LoginCredentials): Promise<AuthResponse> {
+    const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/login`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(credentials),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Login failed');
     }
-    return response;
+
+    return response.json();
   },
 
-  register: async (userData: RegisterData): Promise<AuthResponse> => {
-    const response = await apiClient.post('/auth/register', userData);
-    if (response.data?.token) {
-      localStorage.setItem('authToken', response.data.token);
+  async register(userData: RegisterData): Promise<AuthResponse> {
+    const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/register`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(userData),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Registration failed');
     }
-    return response;
+
+    return response.json();
   },
 
-  getProfile: async () => {
-    return await apiClient.get('/auth/profile');
-  },
+  async getProfile(): Promise<{ success: boolean; data: User }> {
+    const token = localStorage.getItem('authToken');
+    
+    if (!token) {
+      throw new Error('No authentication token found');
+    }
 
-  logout: () => {
-    localStorage.removeItem('authToken');
-    window.location.href = '/login';
-  }
+    const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/profile`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to get profile');
+    }
+
+    return response.json();
+  },
 };
