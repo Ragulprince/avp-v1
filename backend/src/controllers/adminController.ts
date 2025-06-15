@@ -4,18 +4,6 @@ import { AuthRequest } from '../types';
 import { hashPassword } from '../utils/password';
 import { logger } from '../config/logger';
 import crypto from 'crypto';
-import nodemailer from 'nodemailer';
-
-// Email configuration
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST,
-  port: parseInt(process.env.SMTP_PORT || '587'),
-  secure: false,
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS
-  }
-});
 
 // Student Management
 export const createStudent = async (req: AuthRequest, res: Response) => {
@@ -53,27 +41,10 @@ export const createStudent = async (req: AuthRequest, res: Response) => {
       }
     });
 
-    // Send email with credentials
-    await transporter.sendMail({
-      from: process.env.SMTP_USER,
-      to: email,
-      subject: 'Welcome to AVP Academy - Your Login Credentials',
-      html: `
-        <h2>Welcome to AVP Academy!</h2>
-        <p>Dear ${name},</p>
-        <p>Your account has been created successfully.</p>
-        <p><strong>Login Credentials:</strong></p>
-        <p>Email: ${email}</p>
-        <p>Password: ${randomPassword}</p>
-        <p>Please change your password after first login.</p>
-        <p>Best regards,<br>AVP Academy Team</p>
-      `
-    });
-
     res.status(201).json({
       success: true,
-      message: 'Student created and credentials sent via email',
-      data: student
+      message: 'Student created successfully',
+      data: { ...student, tempPassword: randomPassword }
     });
   } catch (error) {
     logger.error('Create student error:', error);
@@ -370,27 +341,10 @@ export const createStaff = async (req: AuthRequest, res: Response) => {
       }
     });
 
-    // Send email with credentials
-    await transporter.sendMail({
-      from: process.env.SMTP_USER,
-      to: email,
-      subject: 'AVP Academy - Staff Account Created',
-      html: `
-        <h2>Welcome to AVP Academy Team!</h2>
-        <p>Dear ${name},</p>
-        <p>Your staff account has been created.</p>
-        <p><strong>Login Credentials:</strong></p>
-        <p>Email: ${email}</p>
-        <p>Password: ${randomPassword}</p>
-        <p>Role: ${role}</p>
-        <p>Please change your password after first login.</p>
-      `
-    });
-
     res.status(201).json({
       success: true,
-      message: 'Staff created and credentials sent via email',
-      data: staff
+      message: 'Staff created successfully',
+      data: { ...staff, tempPassword: randomPassword }
     });
   } catch (error) {
     logger.error('Create staff error:', error);
