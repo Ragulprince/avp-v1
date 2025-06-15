@@ -1,0 +1,300 @@
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  phone     String?  @unique
+  password  String
+  name      String
+  avatar    String?
+  role      Role     @default(STUDENT)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Student specific fields
+  studentProfile StudentProfile?
+  quizAttempts   QuizAttempt[]
+  videoDownloads VideoDownload[]
+  notifications  Notification[]
+
+  @@map("users")
+}
+
+model StudentProfile {
+  id            String   @id @default(uuid())
+  userId        String   @unique
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  batchId       String?
+  batch         Batch?   @relation(fields: [batchId], references: [id])
+  courseId      String?
+  course        Course?  @relation(fields: [courseId], references: [id])
+  joinDate      DateTime @default(now())
+  address       String?
+  emergencyContact String?
+  bio           String?
+  totalScore    Int      @default(0)
+  rank          Int?
+  videosWatched Int      @default(0)
+  testsCompleted Int     @default(0)
+
+  @@map("student_profiles")
+}
+
+model Course {
+  id          String    @id @default(uuid())
+  name        String
+  description String
+  duration    String
+  fees        Int
+  status      CourseStatus @default(DRAFT)
+  subjects    String[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  batches     Batch[]
+  students    StudentProfile[]
+  videos      Video[]
+  materials   StudyMaterial[]
+  quizzes     Quiz[]
+
+  @@map("courses")
+}
+
+model Batch {
+  id        String   @id @default(uuid())
+  name      String
+  timing    String
+  capacity  Int
+  courseId  String
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  students  StudentProfile[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("batches")
+}
+
+model Video {
+  id          String   @id @default(uuid())
+  title       String
+  description String?
+  subject     String
+  topic       String
+  duration    String?
+  thumbnail   String?
+  videoUrl    String
+  courseId    String
+  course      Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  isPublished Boolean  @default(false)
+  views       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  downloads VideoDownload[]
+
+  @@map("videos")
+}
+
+model VideoDownload {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  videoId   String
+  video     Video    @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@unique([userId, videoId])
+  @@map("video_downloads")
+}
+
+model StudyMaterial {
+  id          String   @id @default(uuid())
+  title       String
+  description String?
+  type        MaterialType
+  subject     String
+  topic       String
+  fileUrl     String
+  fileName    String
+  fileSize    String?
+  courseId    String
+  course      Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  isPublished Boolean  @default(false)
+  views       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("study_materials")
+}
+
+model Quiz {
+  id          String     @id @default(uuid())
+  title       String
+  description String?
+  subject     String
+  type        QuizType   @default(PRACTICE)
+  duration    Int        // in minutes
+  totalMarks  Int
+  passingMarks Int
+  negativeMarking Boolean @default(false)
+  negativeMarks Float?
+  courseId    String
+  course      Course     @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  isPublished Boolean    @default(false)
+  scheduledAt DateTime?
+  expiresAt   DateTime?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  questions QuizQuestion[]
+  attempts  QuizAttempt[]
+
+  @@map("quizzes")
+}
+
+model Question {
+  id          String       @id @default(uuid())
+  question    String
+  type        QuestionType
+  subject     String
+  topic       String
+  difficulty  Difficulty   @default(MEDIUM)
+  options     Json?        // For MCQ, store as JSON array
+  correctAnswer String
+  explanation String?
+  marks       Int          @default(1)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  quizQuestions QuizQuestion[]
+
+  @@map("questions")
+}
+
+model QuizQuestion {
+  id         String   @id @default(uuid())
+  quizId     String
+  quiz       Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  questionId String
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  order      Int
+
+  @@unique([quizId, questionId])
+  @@map("quiz_questions")
+}
+
+model QuizAttempt {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  quizId      String
+  quiz        Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  answers     Json     // Store answers as JSON
+  score       Int
+  totalQuestions Int
+  correctAnswers Int
+  wrongAnswers   Int
+  timeTaken      Int    // in seconds
+  isCompleted    Boolean @default(false)
+  startedAt      DateTime @default(now())
+  completedAt    DateTime?
+
+  @@map("quiz_attempts")
+}
+
+model Notification {
+  id        String           @id @default(uuid())
+  userId    String?
+  user      User?            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  message   String
+  type      NotificationType @default(GENERAL)
+  isRead    Boolean          @default(false)
+  data      Json?            // Additional data as JSON
+  createdAt DateTime         @default(now())
+
+  @@map("notifications")
+}
+
+model Leaderboard {
+  id        String   @id @default(uuid())
+  userId    String
+  userName  String
+  userAvatar String?
+  score     Int
+  rank      Int
+  subject   String?
+  type      LeaderboardType @default(OVERALL)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, type, subject])
+  @@map("leaderboards")
+}
+
+enum Role {
+  STUDENT
+  ADMIN
+  TEACHER
+}
+
+enum CourseStatus {
+  DRAFT
+  ACTIVE
+  INACTIVE
+}
+
+enum MaterialType {
+  PDF
+  PPT
+  DOC
+  IMAGE
+  OTHER
+}
+
+enum QuizType {
+  PRACTICE
+  MOCK
+  DAILY
+  SUBJECT_WISE
+  CUSTOM
+}
+
+enum QuestionType {
+  MCQ
+  FILL_BLANKS
+  TRUE_FALSE
+  MATCH
+  CHOICE_BASED
+}
+
+enum Difficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
+enum NotificationType {
+  GENERAL
+  QUIZ
+  VIDEO
+  ANNOUNCEMENT
+  REMINDER
+}
+
+enum LeaderboardType {
+  OVERALL
+  SUBJECT_WISE
+  MONTHLY
+  WEEKLY
+}
