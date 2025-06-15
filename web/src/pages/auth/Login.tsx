@@ -17,27 +17,23 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const { toast } = useToast();
-  
   const loginMutation = useLogin();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
     try {
       const response = await loginMutation.mutateAsync({ email, password });
-      
-      if (response.success && response.data) {
-        const userRole = response.data.user.role;
-        if (userRole === 'ADMIN') {
-          onLogin('admin');
-        } else {
-          onLogin('student');
-        }
+      if (response && response.success && response.data) {
+        // Save token
+        localStorage.setItem('authToken', response.data.token);
+        // Call onLogin callback with the user role
+        const userRole = response.data.user.role === 'ADMIN' ? 'admin' : 'student';
+        onLogin(userRole);
       }
     } catch (error: any) {
       toast({
         title: 'Login Failed',
-        description: error.message || 'Invalid credentials',
+        description: error?.message || 'Invalid credentials',
         variant: 'destructive',
       });
     }
@@ -74,7 +70,6 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                   required
                 />
               </div>
-
               <div className="space-y-2">
                 <Label htmlFor="password" className="text-sm font-medium text-gray-700">
                   Password
@@ -128,3 +123,4 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
 };
 
 export default Login;
+
