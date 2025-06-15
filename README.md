@@ -8,8 +8,14 @@ A comprehensive educational technology platform built with React, Node.js, Postg
 ```
 avp-academy/
 ├── web/                    # React Frontend (Vite + TypeScript)
+│   ├── Dockerfile         # Web container configuration
+│   ├── docker-compose.yml # Web service
+│   └── Makefile          # Web commands
 ├── backend/               # Node.js API (Express + TypeScript)
-├── docker-compose.yml     # Docker services configuration
+│   ├── Dockerfile         # Backend container configuration
+│   ├── docker-compose.yml # Backend + DB services
+│   └── Makefile          # Backend commands
+├── Makefile              # Root commands for both services
 └── README.md             # This file
 ```
 
@@ -18,208 +24,152 @@ avp-academy/
 ### Prerequisites
 
 - Docker and Docker Compose
+- Make (optional, for easier commands)
 - Node.js 18+ (for local development)
-- Git
 
-### 1. Clone and Start
+### 1. Setup Everything
 
 ```bash
+# Clone and setup
 git clone <repository-url>
 cd avp-academy
-npm run dev
+
+# Setup network and install dependencies
+make setup
+
+# Run both services
+make run-all
 ```
 
-This will start all services:
-- **Frontend**: http://localhost:5173
-- **Backend API**: http://localhost:3000
-- **API Documentation**: http://localhost:3000/api-docs
-- **Database Management**: http://localhost:8080 (Adminer)
-- **PostgreSQL**: localhost:5432
-- **Redis**: localhost:6379
+### 2. Individual Service Commands
 
-### 2. Database Management with Adminer
-
-Access Adminer at http://localhost:8080
-
-**Connection Details:**
-- **System**: PostgreSQL
-- **Server**: postgres
-- **Username**: postgres
-- **Password**: password
-- **Database**: avp_academy
-
-## 🛠️ Development
-
-### Local Development (without Docker)
-
+**Backend Only (includes PostgreSQL, Redis, Adminer):**
 ```bash
-# Install dependencies
-npm install
-
-# Start backend
 cd backend
-npm install
-npm run dev
-
-# Start frontend (in another terminal)
-cd web
-npm install
-npm run dev
+make run
 ```
 
-### Docker Commands
+**Web Only:**
+```bash
+cd web
+make run
+```
+
+## 📋 Available Services
+
+| Service | URL | Description |
+|---------|-----|-------------|
+| Frontend | http://localhost:5173 | React application |
+| Backend API | http://localhost:3000 | Express API server |
+| Adminer | http://localhost:8080 | Database management |
+| PostgreSQL | localhost:5432 | Database |
+| Redis | localhost:6379 | Cache |
+
+## 🛠️ Development Commands
+
+### Root Commands (from project root)
 
 ```bash
-# Start all services
-npm run dev
-
-# Start in detached mode
-npm run dev:detached
-
-# View logs
-npm run logs
-
-# Stop services
-npm run stop
-
-# Clean up (remove containers and volumes)
-npm run clean
-
-# Production build
-npm run build
-npm run start
+make setup          # Initial setup with network and dependencies
+make run-all         # Start both web and backend
+make run-web         # Start only web service
+make run-backend     # Start only backend service
+make stop-all        # Stop all services
+make clean-all       # Clean all containers and volumes
+make install-all     # Install dependencies for both services
 ```
+
+### Web Commands (from web/ directory)
+
+```bash
+make install         # Install dependencies
+make run            # Start development server
+make run-detached   # Start in background
+make build          # Build for production
+make stop           # Stop service
+make clean          # Clean containers
+make logs           # View logs
+make shell          # Access container shell
+```
+
+### Backend Commands (from backend/ directory)
+
+```bash
+make install         # Install dependencies
+make run            # Start all backend services
+make run-detached   # Start in background
+make build          # Build for production
+make stop           # Stop all services
+make clean          # Clean containers and volumes
+make logs           # View all logs
+make logs-backend   # View backend logs only
+make logs-db        # View database logs only
+make shell          # Access backend container shell
+make db-reset       # Reset database (removes all data)
+make db-seed        # Seed database with sample data
+make db-migrate     # Run database migrations
+make db-studio      # Open Prisma Studio
+```
+
+## 🔧 Database Management
+
+**Using Adminer (Recommended):**
+- Access: http://localhost:8080
+- System: PostgreSQL
+- Server: postgres
+- Username: postgres
+- Password: password
+- Database: avp_academy
+
+**Using Make Commands:**
+```bash
+cd backend
+make db-reset     # Reset database
+make db-seed      # Add sample data
+make db-studio    # Open Prisma Studio
+```
+
+## 🐳 Docker Network
+
+All services use a shared Docker network called `avp-network` for inter-service communication. The network is automatically created when running any service.
 
 ## 📚 API Documentation
 
-- **Swagger UI**: http://localhost:3000/api-docs
-- **API JSON**: http://localhost:3000/api-docs.json
 - **Health Check**: http://localhost:3000/health
+- **API Endpoints**: See backend/README.md for detailed API documentation
 
-## 🏷️ Services Overview
+## 🔐 Demo Credentials
 
-### Frontend (web/)
-- **Framework**: React 18 + TypeScript
-- **Build Tool**: Vite
-- **UI Library**: Radix UI + Tailwind CSS
-- **State Management**: TanStack Query
-- **Routing**: React Router DOM
-- **Port**: 5173
+- **Admin**: admin@avpacademy.com / admin123
+- **Student**: student@example.com / student123
 
-### Backend (backend/)
-- **Runtime**: Node.js + TypeScript
-- **Framework**: Express.js
-- **Database ORM**: Prisma
-- **Authentication**: JWT
-- **File Upload**: Multer
-- **Documentation**: Swagger
-- **Port**: 3000
+## 🧹 Cleanup
 
-### Database
-- **Primary DB**: PostgreSQL 15
-- **Cache**: Redis 7
-- **Management**: Adminer
-- **Port**: 5432 (PostgreSQL), 6379 (Redis), 8080 (Adminer)
+```bash
+# Stop and remove everything
+make clean-all
 
-## 🔧 Environment Variables
-
-### Backend (.env)
-```env
-NODE_ENV=development
-DATABASE_URL=postgresql://postgres:password@postgres:5432/avp_academy
-JWT_SECRET=your-super-secret-jwt-key
-FRONTEND_URL=http://localhost:5173
-REDIS_URL=redis://redis:6379
-SMTP_HOST=smtp.gmail.com
-SMTP_PORT=587
-SMTP_USER=your-email@gmail.com
-SMTP_PASS=your-app-password
+# Remove Docker network
+docker network rm avp-network
 ```
 
-### Frontend (.env)
-```env
-VITE_API_URL=http://localhost:3000/api
-```
+## 🔍 Troubleshooting
 
-## 📋 Features
+**Port conflicts:**
+- Stop any services running on ports 3000, 5173, 5432, 6379, 8080
 
-### Student Features
-- 🎓 Course enrollment and management
-- 📹 Video learning with download capabilities
-- 📝 Interactive quizzes and tests
-- 📊 Progress tracking and analytics
-- 🔔 Notifications and announcements
-- 👤 Profile management
+**Docker issues:**
+- Ensure Docker is running
+- Try `docker system prune` to clean up
 
-### Admin Features
-- 👥 Student and staff management
-- 📚 Course and batch management
-- 🎬 Content upload (videos, materials)
-- ❓ Question bank management
-- 📊 Comprehensive reporting
-- ⚙️ System settings
+**Network issues:**
+- Manually create network: `docker network create avp-network`
 
-### Technical Features
-- 🔐 JWT-based authentication
-- 📱 Responsive design
-- 🐳 Docker containerization
-- 📖 API documentation (Swagger)
-- 🗄️ Database management (Adminer)
-- 📧 Email notifications
-- 🚀 File upload and management
-
-## 🔗 API Endpoints
-
-### Authentication
-- `POST /api/auth/register` - User registration
-- `POST /api/auth/login` - User login
-- `GET /api/auth/profile` - Get user profile
-
-### Student
-- `GET /api/student/dashboard` - Student dashboard
-- `GET /api/student/videos` - Available videos
-- `GET /api/student/materials` - Study materials
-- `PUT /api/student/profile` - Update profile
-
-### Admin
-- `GET /api/admin/students` - Student management
-- `POST /api/admin/courses` - Course creation
-- `GET /api/admin/analytics` - System analytics
-
-### Content
-- `POST /api/content/materials/upload` - Upload study material
-- `POST /api/content/videos/upload` - Upload video
-- `GET /api/content/files/:filename` - Serve protected files
-
-## 🐳 Docker Services
-
-| Service | Port | Description |
-|---------|------|-------------|
-| web | 5173 | React frontend |
-| backend | 3000 | Node.js API |
-| postgres | 5432 | PostgreSQL database |
-| redis | 6379 | Redis cache |
-| adminer | 8080 | Database management |
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Test thoroughly
-5. Submit a pull request
-
-## 📄 License
-
-This project is licensed under the MIT License.
-
-## 🆘 Support
-
-For support and questions:
-- Create an issue in the repository
-- Check the API documentation at `/api-docs`
-- Review the Docker logs: `npm run logs`
+**Database connection issues:**
+- Wait for database to be ready (health check in docker-compose)
+- Check logs: `cd backend && make logs-db`
 
 ---
 
 **Happy Learning! 🎓**
+
