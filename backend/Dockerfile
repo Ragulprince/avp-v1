@@ -3,8 +3,8 @@ FROM node:18-alpine
 
 WORKDIR /app
 
-# Install necessary packages
-RUN apk add --no-cache curl netcat-openbsd openssl
+# Install necessary packages including Python for native dependencies
+RUN apk add --no-cache curl netcat-openbsd openssl python3 make g++ dos2unix
 
 # Copy package files
 COPY package*.json ./
@@ -13,16 +13,17 @@ COPY prisma ./prisma/
 # Install dependencies
 RUN npm ci 
 
+# Copy entrypoint script first and fix line endings
+COPY entrypoint.sh /app/entrypoint.sh
+RUN dos2unix /app/entrypoint.sh && chmod +x /app/entrypoint.sh
+
 # Copy source code
 COPY . .
 
 # Generate Prisma client
 RUN npx prisma generate
 
-# Build TypeScript
-RUN npm run build
-
-# Create logs directory
+# Create logs and uploads directories
 RUN mkdir -p logs uploads
 
 # Expose port

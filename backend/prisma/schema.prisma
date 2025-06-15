@@ -8,6 +8,12 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// =================================================================
+//
+//                         USER & PROFILE MODELS
+//
+// =================================================================
+
 model User {
   id        String   @id @default(uuid())
   email     String   @unique
@@ -48,6 +54,13 @@ model StudentProfile {
 
   @@map("student_profiles")
 }
+
+
+// =================================================================
+//
+//                         COURSE & CONTENT MODELS
+//
+// =================================================================
 
 model Course {
   id          String    @id @default(uuid())
@@ -137,6 +150,13 @@ model StudyMaterial {
   @@map("study_materials")
 }
 
+
+// =================================================================
+//
+//                      QUIZ & ASSESSMENT MODELS
+//
+// =================================================================
+
 model Quiz {
   id          String     @id @default(uuid())
   title       String
@@ -212,6 +232,13 @@ model QuizAttempt {
   @@map("quiz_attempts")
 }
 
+
+// =================================================================
+//
+//                         UTILITY MODELS
+//
+// =================================================================
+
 model Notification {
   id        String           @id @default(uuid())
   userId    String?
@@ -241,6 +268,13 @@ model Leaderboard {
   @@unique([userId, type, subject])
   @@map("leaderboards")
 }
+
+
+// =================================================================
+//
+//                              ENUMS
+//
+// =================================================================
 
 enum Role {
   STUDENT
