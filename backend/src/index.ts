@@ -5,6 +5,7 @@ import helmet from 'helmet';
 import compression from 'compression';
 import rateLimit from 'express-rate-limit';
 import { logger } from './config/logger';
+import { connectDatabase } from './config/database';
 import swaggerUi from 'swagger-ui-express';
 import { specs } from './config/swagger';
 
@@ -90,7 +91,7 @@ app.use('/api/content', contentRoutes);
 app.use('/api/notifications', notificationRoutes);
 
 // Error handling middleware
-app.use((err: any, res: express.Response, _next: express.NextFunction): void => {
+app.use((err: any, _req: any, res: express.Response, _next: express.NextFunction): void => {
   logger.error('Unhandled error:', err);
   
   res.status(err.statusCode || 500).json({
@@ -108,10 +109,21 @@ app.use((_req, res: express.Response) => {
   });
 });
 
-// Start server
-app.listen(PORT, () => {
-  logger.info(`Server running on port ${PORT}`);
-  logger.info(`API Documentation available at http://localhost:${PORT}/api-docs`);
-});
+// Start server with database connection
+const startServer = async () => {
+  try {
+    await connectDatabase();
+    
+    app.listen(PORT, () => {
+      logger.info(`Server running on port ${PORT}`);
+      logger.info(`API Documentation available at http://localhost:${PORT}/api-docs`);
+    });
+  } catch (error) {
+    logger.error('Failed to start server:', error);
+    process.exit(1);
+  }
+};
+
+startServer();
 
 export default app;

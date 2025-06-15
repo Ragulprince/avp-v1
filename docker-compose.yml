@@ -49,6 +49,7 @@ services:
         condition: service_started
     networks:
       - avp-network
+    command: sh -c "npx prisma migrate deploy && npm run dev"
 
   # PostgreSQL Database
   postgres:
@@ -61,7 +62,6 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./backend/init.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
