@@ -1,23 +1,28 @@
 
 import React, { useState } from 'react';
-import { useStudent } from '@/contexts/StudentContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Clock, Users, Award, BookOpen, Play, Target } from 'lucide-react';
 import QuizInterface from './QuizInterface';
+import { useQuizzes, useQuizAttempts } from '@/hooks/api/useQuizzes';
 
 const QuizCenter = () => {
-  const { quizzes } = useStudent();
   const [selectedQuiz, setSelectedQuiz] = useState<string | null>(null);
+  const { data: quizzesData, isLoading: quizzesLoading } = useQuizzes();
+  const { data: attemptsData, isLoading: attemptsLoading } = useQuizAttempts();
+
+  const quizzes = quizzesData?.data?.quizzes || [];
+  const attempts = attemptsData?.data?.attempts || [];
+  const stats = attemptsData?.data?.stats || {};
 
   if (selectedQuiz) {
     return <QuizInterface quizId={selectedQuiz} onBack={() => setSelectedQuiz(null)} />;
   }
 
   const getDifficultyColor = (difficulty: string) => {
-    switch (difficulty) {
+    switch (difficulty?.toLowerCase()) {
       case 'easy': return 'bg-green-100 text-green-800';
       case 'medium': return 'bg-yellow-100 text-yellow-800';
       case 'hard': return 'bg-red-100 text-red-800';
@@ -25,9 +30,17 @@ const QuizCenter = () => {
     }
   };
 
-  const mockTests = quizzes.filter(q => q.title.includes('Mock'));
-  const dailyTests = quizzes.filter(q => q.title.includes('Daily'));
-  const subjectTests = quizzes.filter(q => !q.title.includes('Mock') && !q.title.includes('Daily'));
+  const mockTests = quizzes.filter((q: any) => q.type === 'MOCK');
+  const dailyTests = quizzes.filter((q: any) => q.type === 'DAILY');
+  const subjectTests = quizzes.filter((q: any) => q.type === 'SUBJECT_WISE');
+
+  if (quizzesLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-lg">Loading quizzes...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -41,28 +54,28 @@ const QuizCenter = () => {
         <Card>
           <CardContent className="p-4 text-center">
             <Target className="w-8 h-8 text-blue-500 mx-auto mb-2" />
-            <p className="text-2xl font-bold text-gray-900">28</p>
+            <p className="text-2xl font-bold text-gray-900">{stats.totalAttempts || '0'}</p>
             <p className="text-sm text-gray-600">Tests Taken</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4 text-center">
             <Award className="w-8 h-8 text-green-500 mx-auto mb-2" />
-            <p className="text-2xl font-bold text-gray-900">85%</p>
+            <p className="text-2xl font-bold text-gray-900">{stats.avgScore || '0'}%</p>
             <p className="text-sm text-gray-600">Avg Score</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4 text-center">
             <Users className="w-8 h-8 text-purple-500 mx-auto mb-2" />
-            <p className="text-2xl font-bold text-gray-900">#42</p>
+            <p className="text-2xl font-bold text-gray-900">#{stats.rank || 'N/A'}</p>
             <p className="text-sm text-gray-600">Rank</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4 text-center">
             <Clock className="w-8 h-8 text-orange-500 mx-auto mb-2" />
-            <p className="text-2xl font-bold text-gray-900">45h</p>
+            <p className="text-2xl font-bold text-gray-900">{stats.practiceTime || '0h'}</p>
             <p className="text-sm text-gray-600">Practice Time</p>
           </CardContent>
         </Card>
@@ -79,7 +92,7 @@ const QuizCenter = () => {
 
         <TabsContent value="all" className="space-y-4">
           <div className="grid gap-4">
-            {quizzes.map((quiz) => (
+            {quizzes.map((quiz: any) => (
               <Card key={quiz.id} className="hover:shadow-lg transition-shadow">
                 <CardContent className="p-6">
                   <div className="flex justify-between items-start mb-4">
@@ -88,13 +101,13 @@ const QuizCenter = () => {
                       <div className="flex flex-wrap gap-2 mb-3">
                         <Badge variant="outline">{quiz.subject}</Badge>
                         <Badge className={getDifficultyColor(quiz.difficulty)}>
-                          {quiz.difficulty}
+                          {quiz.difficulty || 'Medium'}
                         </Badge>
                       </div>
                       <div className="flex items-center gap-4 text-sm text-gray-600">
                         <span className="flex items-center">
                           <BookOpen className="w-4 h-4 mr-1" />
-                          {quiz.questions} Questions
+                          {quiz.totalQuestions} Questions
                         </span>
                         <span className="flex items-center">
                           <Clock className="w-4 h-4 mr-1" />
@@ -126,7 +139,7 @@ const QuizCenter = () => {
 
         <TabsContent value="mock" className="space-y-4">
           <div className="grid gap-4">
-            {mockTests.map((quiz) => (
+            {mockTests.map((quiz: any) => (
               <Card key={quiz.id} className="hover:shadow-lg transition-shadow">
                 <CardContent className="p-6">
                   <div className="flex justify-between items-start">
@@ -135,11 +148,11 @@ const QuizCenter = () => {
                       <div className="flex flex-wrap gap-2 mb-3">
                         <Badge variant="outline">{quiz.subject}</Badge>
                         <Badge className={getDifficultyColor(quiz.difficulty)}>
-                          {quiz.difficulty}
+                          {quiz.difficulty || 'Medium'}
                         </Badge>
                       </div>
                       <div className="flex items-center gap-4 text-sm text-gray-600">
-                        <span>{quiz.questions} Questions</span>
+                        <span>{quiz.totalQuestions} Questions</span>
                         <span>{quiz.duration} mins</span>
                       </div>
                     </div>
@@ -156,7 +169,7 @@ const QuizCenter = () => {
 
         <TabsContent value="daily" className="space-y-4">
           <div className="grid gap-4">
-            {dailyTests.map((quiz) => (
+            {dailyTests.map((quiz: any) => (
               <Card key={quiz.id} className="hover:shadow-lg transition-shadow">
                 <CardContent className="p-6">
                   <div className="flex justify-between items-start">
@@ -165,11 +178,11 @@ const QuizCenter = () => {
                       <div className="flex flex-wrap gap-2 mb-3">
                         <Badge variant="outline">{quiz.subject}</Badge>
                         <Badge className={getDifficultyColor(quiz.difficulty)}>
-                          {quiz.difficulty}
+                          {quiz.difficulty || 'Medium'}
                         </Badge>
                       </div>
                       <div className="flex items-center gap-4 text-sm text-gray-600">
-                        <span>{quiz.questions} Questions</span>
+                        <span>{quiz.totalQuestions} Questions</span>
                         <span>{quiz.duration} mins</span>
                       </div>
                     </div>
@@ -186,7 +199,7 @@ const QuizCenter = () => {
 
         <TabsContent value="subject" className="space-y-4">
           <div className="grid gap-4">
-            {subjectTests.map((quiz) => (
+            {subjectTests.map((quiz: any) => (
               <Card key={quiz.id} className="hover:shadow-lg transition-shadow">
                 <CardContent className="p-6">
                   <div className="flex justify-between items-start">
@@ -195,11 +208,11 @@ const QuizCenter = () => {
                       <div className="flex flex-wrap gap-2 mb-3">
                         <Badge variant="outline">{quiz.subject}</Badge>
                         <Badge className={getDifficultyColor(quiz.difficulty)}>
-                          {quiz.difficulty}
+                          {quiz.difficulty || 'Medium'}
                         </Badge>
                       </div>
                       <div className="flex items-center gap-4 text-sm text-gray-600">
-                        <span>{quiz.questions} Questions</span>
+                        <span>{quiz.totalQuestions} Questions</span>
                         <span>{quiz.duration} mins</span>
                       </div>
                     </div>

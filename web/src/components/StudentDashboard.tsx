@@ -1,25 +1,55 @@
 
 import React from 'react';
-import { useStudent } from '@/contexts/StudentContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Play, Clock, BookOpen, Award, Bell, Download } from 'lucide-react';
 import LanguageSelector from './LanguageSelector';
+import { useStudentDashboard, useStudentVideos } from '@/hooks/api/useStudent';
+import { useDownloadVideo } from '@/hooks/api/useVideos';
+import { useDownloadFile } from '@/hooks/api/useContent';
 
 const StudentDashboard = () => {
-  const { student, videos, language } = useStudent();
+  const { data: dashboardData, isLoading: dashboardLoading } = useStudentDashboard();
+  const { data: videosData, isLoading: videosLoading } = useStudentVideos();
+  const downloadVideo = useDownloadVideo();
+  const downloadFile = useDownloadFile();
+
+  const student = dashboardData?.data?.student || { 
+    name: 'Student', 
+    batch: 'Loading...' 
+  };
+  
+  const videos = videosData?.data?.videos || [];
+  const stats = dashboardData?.data?.stats || {};
 
   const motivationalVideo = {
     title: 'Daily Motivation - Believe in Yourself',
     thumbnail: 'https://images.unsplash.com/photo-1500673922987-e212871fec22?w=400&h=225&fit=crop'
   };
 
-  const announcements = [
+  const announcements = dashboardData?.data?.announcements || [
     'New Physics lecture uploaded: Quantum Mechanics',
     'Mock test scheduled for tomorrow at 10 AM',
     'Study materials updated for Chemistry'
   ];
+
+  const handleVideoWatch = (videoId: string) => {
+    console.log('Watching video:', videoId);
+    // Navigate to video player
+  };
+
+  const handleVideoDownload = (videoId: string) => {
+    downloadVideo.mutate(videoId);
+  };
+
+  if (dashboardLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-lg">Loading dashboard...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -71,43 +101,56 @@ const StudentDashboard = () => {
           <h2 className="text-xl font-semibold text-gray-900">Latest Lectures</h2>
           <Button variant="ghost" size="sm">View All</Button>
         </div>
-        <div className="flex space-x-4 overflow-x-auto pb-4">
-          {videos.map((video) => (
-            <Card key={video.id} className="flex-shrink-0 w-80 hover:shadow-lg transition-shadow">
-              <CardContent className="p-0">
-                <div className="relative">
-                  <img 
-                    src={video.thumbnail} 
-                    alt={video.title}
-                    className="w-full h-44 object-cover rounded-t-lg"
-                  />
-                  {video.isNew && (
-                    <Badge className="absolute top-2 left-2 bg-green-500">New</Badge>
-                  )}
-                  <div className="absolute bottom-2 right-2 bg-black/70 text-white px-2 py-1 rounded text-sm">
-                    {video.duration}
+        {videosLoading ? (
+          <div className="text-center py-8">Loading videos...</div>
+        ) : (
+          <div className="flex space-x-4 overflow-x-auto pb-4">
+            {videos.slice(0, 5).map((video: any) => (
+              <Card key={video.id} className="flex-shrink-0 w-80 hover:shadow-lg transition-shadow">
+                <CardContent className="p-0">
+                  <div className="relative">
+                    <img 
+                      src={video.thumbnail || 'https://images.unsplash.com/photo-1501594907352-04cda38ebc29?w=400&h=225&fit=crop'} 
+                      alt={video.title}
+                      className="w-full h-44 object-cover rounded-t-lg"
+                    />
+                    {video.isNew && (
+                      <Badge className="absolute top-2 left-2 bg-green-500">New</Badge>
+                    )}
+                    <div className="absolute bottom-2 right-2 bg-black/70 text-white px-2 py-1 rounded text-sm">
+                      {video.duration || '45:00'}
+                    </div>
                   </div>
-                </div>
-                <div className="p-4">
-                  <div className="flex justify-between items-start mb-2">
-                    <Badge variant="outline" className="text-xs">{video.subject}</Badge>
-                    <Button variant="ghost" size="sm">
-                      <Download className="w-4 h-4" />
+                  <div className="p-4">
+                    <div className="flex justify-between items-start mb-2">
+                      <Badge variant="outline" className="text-xs">{video.subject}</Badge>
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => handleVideoDownload(video.id)}
+                        disabled={downloadVideo.isPending}
+                      >
+                        <Download className="w-4 h-4" />
+                      </Button>
+                    </div>
+                    <h3 className="font-medium text-gray-900 mb-2 line-clamp-2">
+                      {video.title}
+                    </h3>
+                    <p className="text-sm text-gray-600 mb-3">{video.topic}</p>
+                    <Button 
+                      className="w-full" 
+                      size="sm"
+                      onClick={() => handleVideoWatch(video.id)}
+                    >
+                      <Play className="w-4 h-4 mr-2" />
+                      Watch Now
                     </Button>
                   </div>
-                  <h3 className="font-medium text-gray-900 mb-2 line-clamp-2">
-                    {video.title}
-                  </h3>
-                  <p className="text-sm text-gray-600 mb-3">{video.topic}</p>
-                  <Button className="w-full" size="sm">
-                    <Play className="w-4 h-4 mr-2" />
-                    Watch Now
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Quick Stats */}
@@ -115,28 +158,28 @@ const StudentDashboard = () => {
         <Card>
           <CardContent className="p-4 text-center">
             <Clock className="w-8 h-8 text-blue-500 mx-auto mb-2" />
-            <p className="text-2xl font-bold text-gray-900">24h</p>
+            <p className="text-2xl font-bold text-gray-900">{stats.studyTime || '24h'}</p>
             <p className="text-sm text-gray-600">Study Time</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4 text-center">
             <BookOpen className="w-8 h-8 text-green-500 mx-auto mb-2" />
-            <p className="text-2xl font-bold text-gray-900">12</p>
+            <p className="text-2xl font-bold text-gray-900">{stats.videosWatched || '12'}</p>
             <p className="text-sm text-gray-600">Videos Watched</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4 text-center">
             <Award className="w-8 h-8 text-yellow-500 mx-auto mb-2" />
-            <p className="text-2xl font-bold text-gray-900">85%</p>
+            <p className="text-2xl font-bold text-gray-900">{stats.avgScore || '85'}%</p>
             <p className="text-sm text-gray-600">Avg Score</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4 text-center">
             <Play className="w-8 h-8 text-purple-500 mx-auto mb-2" />
-            <p className="text-2xl font-bold text-gray-900">8</p>
+            <p className="text-2xl font-bold text-gray-900">{stats.testsTaken || '8'}</p>
             <p className="text-sm text-gray-600">Tests Taken</p>
           </CardContent>
         </Card>
@@ -152,7 +195,7 @@ const StudentDashboard = () => {
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            {announcements.map((announcement, index) => (
+            {announcements.map((announcement: string, index: number) => (
               <div key={index} className="flex items-start p-3 bg-blue-50 rounded-lg">
                 <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 mr-3"></div>
                 <p className="text-sm text-gray-700">{announcement}</p>
