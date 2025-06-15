@@ -5,9 +5,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { useStudent } from '@/contexts/StudentContext';
 import { User, Lock, Bell, Save } from 'lucide-react';
 import BottomNavigation from '@/components/common/BottomNavigation';
+import { useProfile } from '@/hooks/api/useAuth';
+import { useStudentProfile, useUpdateStudentProfile, useChangePassword } from '@/hooks/api/useStudent';
+import { useToast } from '@/hooks/use-toast';
 
 interface SettingsProps {
   activeTab: string;
@@ -15,14 +17,22 @@ interface SettingsProps {
 }
 
 const Settings: React.FC<SettingsProps> = ({ activeTab, onTabChange }) => {
-  const { student } = useStudent();
+  const { toast } = useToast();
+  
+  // API calls
+  const { data: profileData } = useProfile();
+  const { data: studentProfileData } = useStudentProfile();
+  const updateProfileMutation = useUpdateStudentProfile();
+  const changePasswordMutation = useChangePassword();
+
+  const user = profileData?.data;
+  const studentProfile = studentProfileData?.data;
   
   // Profile state
-  const [profileData, setProfileData] = useState({
-    name: student.name,
-    email: student.email,
-    batch: student.batch,
-    phone: '+91 98765 43210'
+  const [profileData_local, setProfileData_local] = useState({
+    name: user?.name || '',
+    email: user?.email || '',
+    phone: user?.phone || '',
   });
 
   // Password state
@@ -41,21 +51,57 @@ const Settings: React.FC<SettingsProps> = ({ activeTab, onTabChange }) => {
     newContentAlerts: true
   });
 
+  React.useEffect(() => {
+    if (user) {
+      setProfileData_local({
+        name: user.name || '',
+        email: user.email || '',
+        phone: user.phone || '',
+      });
+    }
+  }, [user]);
+
   const handleProfileSave = () => {
-    console.log('Profile updated successfully');
+    updateProfileMutation.mutate({
+      name: profileData_local.name,
+      phone: profileData_local.phone,
+    });
   };
 
   const handlePasswordChange = () => {
     if (passwordData.newPassword !== passwordData.confirmPassword) {
-      console.log('New passwords do not match');
+      toast({
+        title: 'Error',
+        description: 'New passwords do not match',
+        variant: 'destructive',
+      });
       return;
     }
-    console.log('Password changed successfully');
-    setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+
+    if (passwordData.newPassword.length < 6) {
+      toast({
+        title: 'Error',
+        description: 'Password must be at least 6 characters long',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    changePasswordMutation.mutate({
+      currentPassword: passwordData.currentPassword,
+      newPassword: passwordData.newPassword,
+    }, {
+      onSuccess: () => {
+        setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+      }
+    });
   };
 
   const handleNotificationSave = () => {
-    console.log('Notification preferences updated');
+    toast({
+      title: 'Success',
+      description: 'Notification preferences updated',
+    });
   };
 
   return (
@@ -77,8 +123,8 @@ const Settings: React.FC<SettingsProps> = ({ activeTab, onTabChange }) => {
                 <Label htmlFor="name">Full Name</Label>
                 <Input
                   id="name"
-                  value={profileData.name}
-                  onChange={(e) => setProfileData({...profileData, name: e.target.value})}
+                  value={profileData_local.name}
+                  onChange={(e) => setProfileData_local({...profileData_local, name: e.target.value})}
                 />
               </div>
               <div>
@@ -86,30 +132,36 @@ const Settings: React.FC<SettingsProps> = ({ activeTab, onTabChange }) => {
                 <Input
                   id="email"
                   type="email"
-                  value={profileData.email}
-                  onChange={(e) => setProfileData({...profileData, email: e.target.value})}
-                />
-              </div>
-              <div>
-                <Label htmlFor="batch">Batch</Label>
-                <Input
-                  id="batch"
-                  value={profileData.batch}
-                  onChange={(e) => setProfileData({...profileData, batch: e.target.value})}
+                  value={profileData_local.email}
+                  onChange={(e) => setProfileData_local({...profileData_local, email: e.target.value})}
+                  disabled
+                  className="bg-gray-100"
                 />
               </div>
               <div>
                 <Label htmlFor="phone">Phone Number</Label>
                 <Input
                   id="phone"
-                  value={profileData.phone}
-                  onChange={(e) => setProfileData({...profileData, phone: e.target.value})}
+                  value={profileData_local.phone}
+                  onChange={(e) => setProfileData_local({...profileData_local, phone: e.target.value})}
+                />
+              </div>
+              <div>
+                <Label htmlFor="batch">Batch</Label>
+                <Input
+                  id="batch"
+                  value={studentProfile?.studentProfile?.batch?.name || 'NEET 2024'}
+                  disabled
+                  className="bg-gray-100"
                 />
               </div>
             </div>
-            <Button onClick={handleProfileSave}>
+            <Button 
+              onClick={handleProfileSave}
+              disabled={updateProfileMutation.isPending}
+            >
               <Save className="w-4 h-4 mr-2" />
-              Save Profile
+              {updateProfileMutation.isPending ? 'Saving...' : 'Save Profile'}
             </Button>
           </CardContent>
         </Card>
@@ -150,9 +202,12 @@ const Settings: React.FC<SettingsProps> = ({ activeTab, onTabChange }) => {
                 onChange={(e) => setPasswordData({...passwordData, confirmPassword: e.target.value})}
               />
             </div>
-            <Button onClick={handlePasswordChange}>
+            <Button 
+              onClick={handlePasswordChange}
+              disabled={changePasswordMutation.isPending}
+            >
               <Save className="w-4 h-4 mr-2" />
-              Change Password
+              {changePasswordMutation.isPending ? 'Changing...' : 'Change Password'}
             </Button>
           </CardContent>
         </Card>

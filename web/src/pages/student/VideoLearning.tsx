@@ -1,6 +1,5 @@
 
 import React, { useState } from 'react';
-import { useStudent } from '@/contexts/StudentContext';
 import VideoHeader from '@/containers/video/VideoHeader';
 import BottomNavigation from '@/components/common/BottomNavigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -18,9 +17,10 @@ import {
   Video,
   File,
   Clock,
-  Eye,
-  Filter
+  Eye
 } from 'lucide-react';
+import { useStudentVideos, useStudentMaterials } from '@/hooks/api/useStudent';
+import { useDownloadVideo } from '@/hooks/api/useVideos';
 import { useToast } from '@/hooks/use-toast';
 
 interface VideoLearningProps {
@@ -28,70 +28,49 @@ interface VideoLearningProps {
   onTabChange: (tab: string) => void;
 }
 
-interface LearningMaterial {
-  id: string;
-  title: string;
-  type: 'video' | 'pdf' | 'ppt' | 'doc' | 'image';
-  subject: string;
-  topic: string;
-  duration?: string;
-  size?: string;
-  thumbnail: string;
-  url: string;
-  description: string;
-  uploadDate: string;
-  views: number;
-  isNew?: boolean;
-}
-
 const VideoLearning: React.FC<VideoLearningProps> = ({ activeTab, onTabChange }) => {
-  const { videos } = useStudent();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedSubject, setSelectedSubject] = useState('all');
-  const [currentMaterial, setCurrentMaterial] = useState<string | null>(null);
   const { toast } = useToast();
 
-  const learningMaterials: LearningMaterial[] = [
-    {
-      id: '1',
-      title: 'Newton\'s Laws of Motion',
+  // API calls
+  const { data: videosData, isLoading: videosLoading } = useStudentVideos();
+  const { data: materialsData, isLoading: materialsLoading } = useStudentMaterials();
+  const downloadVideoMutation = useDownloadVideo();
+
+  const videos = videosData?.data || [];
+  const materials = materialsData?.data || [];
+
+  // Combine videos and materials for display
+  const learningMaterials = [
+    ...videos.map((video: any) => ({
+      id: video.id,
+      title: video.title,
       type: 'video',
-      subject: 'Physics',
-      topic: 'Classical Mechanics',
-      duration: '45:30',
-      thumbnail: 'https://images.unsplash.com/photo-1635070041078-e363dbe005cb?w=400&h=225&fit=crop',
-      url: '#',
-      description: 'Comprehensive explanation of Newton\'s three laws of motion with practical examples.',
-      uploadDate: '2024-01-15',
-      views: 1250,
-      isNew: true
-    },
-    {
-      id: '2',
-      title: 'Organic Chemistry Notes',
-      type: 'pdf',
-      subject: 'Chemistry',
-      topic: 'Organic Chemistry',
-      size: '2.5 MB',
-      thumbnail: 'https://images.unsplash.com/photo-1596178065887-1198b6148b2b?w=400&h=225&fit=crop',
-      url: '#',
-      description: 'Complete notes on organic chemistry covering all important reactions.',
-      uploadDate: '2024-01-14',
-      views: 890
-    },
-    {
-      id: '3',
-      title: 'Cell Structure Presentation',
-      type: 'ppt',
-      subject: 'Biology',
-      topic: 'Cell Biology',
-      size: '8.1 MB',
-      thumbnail: 'https://images.unsplash.com/photo-1559757148-5c350d0d3c56?w=400&h=225&fit=crop',
-      url: '#',
-      description: 'Detailed presentation on cell structure and organelles.',
-      uploadDate: '2024-01-13',
-      views: 654
-    }
+      subject: video.subject || 'General',
+      topic: video.topic || 'General',
+      duration: video.duration || '00:00',
+      thumbnail: video.thumbnail || 'https://images.unsplash.com/photo-1635070041078-e363dbe005cb?w=400&h=225&fit=crop',
+      url: video.url || '#',
+      description: video.description || 'Video description',
+      uploadDate: video.createdAt || new Date().toISOString(),
+      views: video.views || 0,
+      isNew: false
+    })),
+    ...materials.map((material: any) => ({
+      id: material.id,
+      title: material.title,
+      type: material.type || 'pdf',
+      subject: material.subject || 'General',
+      topic: material.topic || 'General',
+      size: material.size || '1.0 MB',
+      thumbnail: material.thumbnail || 'https://images.unsplash.com/photo-1596178065887-1198b6148b2b?w=400&h=225&fit=crop',
+      url: material.url || '#',
+      description: material.description || 'Study material description',
+      uploadDate: material.createdAt || new Date().toISOString(),
+      views: material.views || 0,
+      isNew: false
+    }))
   ];
 
   const filteredMaterials = learningMaterials.filter(material => {
@@ -123,11 +102,30 @@ const VideoLearning: React.FC<VideoLearningProps> = ({ activeTab, onTabChange })
     }
   };
 
-  const handleMaterialClick = (material: LearningMaterial) => {
-    setCurrentMaterial(material.id);
+  const handleMaterialClick = (material: any) => {
+    if (material.type === 'video') {
+      downloadVideoMutation.mutate(material.id);
+    } else {
+      // Handle other material types
+      toast({
+        title: 'Opening Material',
+        description: `Opening ${material.title}`,
+      });
+    }
   };
 
   const subjects = ['all', ...Array.from(new Set(learningMaterials.map(m => m.subject)))];
+
+  if (videosLoading || materialsLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 pb-20 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading learning materials...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
@@ -233,6 +231,7 @@ const VideoLearning: React.FC<VideoLearningProps> = ({ activeTab, onTabChange })
                         variant="ghost" 
                         size="sm"
                         className="opacity-0 group-hover:opacity-100 transition-opacity p-1 h-auto"
+                        onClick={() => handleMaterialClick(material)}
                       >
                         <Download className="w-4 h-4" />
                       </Button>
@@ -258,11 +257,12 @@ const VideoLearning: React.FC<VideoLearningProps> = ({ activeTab, onTabChange })
                       className="w-full" 
                       size="sm"
                       onClick={() => handleMaterialClick(material)}
+                      disabled={downloadVideoMutation.isPending}
                     >
                       {material.type === 'video' ? (
                         <>
                           <Play className="w-4 h-4 mr-2" />
-                          Watch
+                          {downloadVideoMutation.isPending ? 'Loading...' : 'Watch'}
                         </>
                       ) : (
                         <>
@@ -282,7 +282,6 @@ const VideoLearning: React.FC<VideoLearningProps> = ({ activeTab, onTabChange })
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
                 {filteredMaterials.filter(m => m.type === type).map((material) => (
                   <Card key={material.id} className="group hover:shadow-lg transition-all duration-200 hover:-translate-y-1">
-                    {/* Same card content as above */}
                     <div className="relative overflow-hidden rounded-t-lg">
                       <img 
                         src={material.thumbnail} 
