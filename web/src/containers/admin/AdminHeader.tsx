@@ -1,16 +1,11 @@
 
-import React, { useState } from 'react';
-import { Menu, Bell, Search, User } from 'lucide-react';
+import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuTrigger 
-} from '@/components/ui/dropdown-menu';
+import { Badge } from '@/components/ui/badge';
+import { Menu, Bell, Search, User } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { useProfile } from '@/hooks/api/useAuth';
 
 interface AdminHeaderProps {
   onMenuClick: () => void;
@@ -18,16 +13,11 @@ interface AdminHeaderProps {
 }
 
 const AdminHeader: React.FC<AdminHeaderProps> = ({ onMenuClick, onProfileClick }) => {
-  const [isNotificationOpen, setIsNotificationOpen] = useState(false);
-
-  const notifications = [
-    { id: 1, title: 'New student registration', time: '5 minutes ago', type: 'info' },
-    { id: 2, title: 'Server maintenance scheduled', time: '1 hour ago', type: 'warning' },
-    { id: 3, title: 'Monthly report ready', time: '2 hours ago', type: 'success' }
-  ];
+  const { data: profileData } = useProfile();
+  const adminUser = profileData?.data;
 
   return (
-    <header className="bg-white border-b border-gray-200 px-4 py-3 lg:px-6">
+    <header className="bg-white border-b border-gray-200 px-4 py-3">
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
           <Button
@@ -38,60 +28,42 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ onMenuClick, onProfileClick }
           >
             <Menu className="w-5 h-5" />
           </Button>
-          <div>
-            <h1 className="text-xl font-semibold text-gray-900">Admin Dashboard</h1>
-            <p className="text-sm text-gray-600">Manage your academy</p>
+          
+          <div className="hidden lg:flex items-center space-x-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <Input
+                placeholder="Search students, courses..."
+                className="pl-10 w-80"
+              />
+            </div>
           </div>
         </div>
 
-        <div className="flex items-center space-x-3">
-          <Button variant="outline" size="sm" className="hidden sm:flex">
-            <Search className="w-4 h-4 mr-2" />
-            Search
+        <div className="flex items-center space-x-4">
+          <Button variant="ghost" size="sm" className="relative">
+            <Bell className="w-5 h-5" />
+            <Badge className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-red-500 text-white text-xs flex items-center justify-center">
+              3
+            </Badge>
           </Button>
 
-          <Popover open={isNotificationOpen} onOpenChange={setIsNotificationOpen}>
-            <PopoverTrigger asChild>
-              <Button variant="outline" size="sm" className="relative">
-                <Bell className="w-4 h-4" />
-                {notifications.length > 0 && (
-                  <Badge className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center p-0">
-                    {notifications.length}
-                  </Badge>
-                )}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-80 p-0 mr-4" align="end" sideOffset={5}>
-              <div className="p-4 border-b">
-                <h3 className="font-semibold">Notifications</h3>
-              </div>
-              <div className="max-h-64 overflow-y-auto">
-                {notifications.map((notification) => (
-                  <div key={notification.id} className="p-3 border-b last:border-b-0 hover:bg-gray-50 cursor-pointer">
-                    <p className="text-sm font-medium text-gray-900">{notification.title}</p>
-                    <p className="text-xs text-gray-500 mt-1">{notification.time}</p>
-                  </div>
-                ))}
-              </div>
-            </PopoverContent>
-          </Popover>
-
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-                <Avatar className="h-8 w-8">
-                  <AvatarImage src="/avatars/admin.png" alt="Admin" />
-                  <AvatarFallback>AD</AvatarFallback>
-                </Avatar>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-56" align="end" forceMount>
-              <DropdownMenuItem onClick={onProfileClick} className="cursor-pointer">
-                <User className="mr-2 h-4 w-4" />
-                <span>Profile</span>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <Button
+            variant="ghost"
+            className="flex items-center space-x-2"
+            onClick={onProfileClick}
+          >
+            <Avatar className="w-8 h-8">
+              <AvatarImage src={adminUser?.avatar || ''} />
+              <AvatarFallback>
+                {adminUser?.name ? adminUser.name.split(' ').map(n => n[0]).join('') : 'A'}
+              </AvatarFallback>
+            </Avatar>
+            <div className="hidden md:block text-left">
+              <p className="text-sm font-medium">{adminUser?.name || 'Admin'}</p>
+              <p className="text-xs text-gray-500">{adminUser?.role || 'Administrator'}</p>
+            </div>
+          </Button>
         </div>
       </div>
     </header>

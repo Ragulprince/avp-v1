@@ -5,115 +5,105 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Settings, User, Bell, Shield, Database, Mail } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Settings, Shield, Bell, Globe, Database, Key } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 const AdminSettings = () => {
-  const [generalSettings, setGeneralSettings] = useState({
-    instituteName: 'Academy Learning Platform',
-    instituteEmail: 'admin@academy.com',
-    institutePhone: '+91 9876543210',
-    address: 'Education City, Academy Campus',
-    timezone: 'Asia/Kolkata',
-    language: 'English'
-  });
-
-  const [systemSettings, setSystemSettings] = useState({
-    allowRegistration: true,
-    emailVerification: true,
-    twoFactorAuth: false,
-    sessionTimeout: '60',
-    maxLoginAttempts: '5',
-    passwordMinLength: '8'
-  });
-
-  const [notificationSettings, setNotificationSettings] = useState({
+  const { toast } = useToast();
+  
+  // Mock settings data - in real app, this would come from an API
+  const [settings, setSettings] = useState({
+    siteName: 'AVP Academy',
+    maxVideoDownloads: 5,
+    videoExpiryDays: 7,
+    negativeMarkingEnabled: true,
+    sessionTimeout: 30,
+    maxConcurrentSessions: 1,
     emailNotifications: true,
     smsNotifications: false,
-    pushNotifications: true,
-    reminderEmails: true,
-    reportEmails: true
+    maintenanceMode: false,
+    autoBackup: true,
+    backupFrequency: 'daily'
   });
 
+  const handleSaveSettings = () => {
+    // In real app, this would call an API
+    toast({
+      title: "Settings Saved",
+      description: "Your settings have been updated successfully.",
+    });
+  };
+
+  const handleSettingChange = (key: string, value: any) => {
+    setSettings(prev => ({
+      ...prev,
+      [key]: value
+    }));
+  };
+
   return (
-    <div className="space-y-6 p-4 lg:p-6">
-      <div className="flex items-center space-x-3">
-        <Settings className="w-8 h-8 text-blue-600" />
-        <div>
-          <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">System Settings</h1>
-          <p className="text-gray-600">Manage academy configuration and preferences</p>
-        </div>
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold text-gray-900">Settings</h1>
+        <p className="text-gray-600 mt-1">Manage academy settings and configurations</p>
       </div>
 
       <Tabs defaultValue="general" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 lg:grid-cols-4">
-          <TabsTrigger value="general" className="text-xs lg:text-sm">General</TabsTrigger>
-          <TabsTrigger value="security" className="text-xs lg:text-sm">Security</TabsTrigger>
-          <TabsTrigger value="notifications" className="text-xs lg:text-sm">Notifications</TabsTrigger>
-          <TabsTrigger value="backup" className="text-xs lg:text-sm">Backup</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-5">
+          <TabsTrigger value="general">General</TabsTrigger>
+          <TabsTrigger value="security">Security</TabsTrigger>
+          <TabsTrigger value="notifications">Notifications</TabsTrigger>
+          <TabsTrigger value="system">System</TabsTrigger>
+          <TabsTrigger value="backup">Backup</TabsTrigger>
         </TabsList>
 
         <TabsContent value="general" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center">
-                <User className="w-5 h-5 mr-2" />
-                Institute Information
+              <CardTitle className="flex items-center gap-2">
+                <Settings className="w-5 h-5" />
+                General Settings
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <CardContent className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <Label htmlFor="instituteName">Institute Name</Label>
+                  <Label htmlFor="siteName">Site Name</Label>
                   <Input
-                    id="instituteName"
-                    value={generalSettings.instituteName}
-                    onChange={(e) => setGeneralSettings({...generalSettings, instituteName: e.target.value})}
+                    id="siteName"
+                    value={settings.siteName}
+                    onChange={(e) => handleSettingChange('siteName', e.target.value)}
                   />
                 </div>
                 <div>
-                  <Label htmlFor="instituteEmail">Institute Email</Label>
+                  <Label htmlFor="maxVideoDownloads">Max Video Downloads per Student</Label>
                   <Input
-                    id="instituteEmail"
-                    type="email"
-                    value={generalSettings.instituteEmail}
-                    onChange={(e) => setGeneralSettings({...generalSettings, instituteEmail: e.target.value})}
+                    id="maxVideoDownloads"
+                    type="number"
+                    value={settings.maxVideoDownloads}
+                    onChange={(e) => handleSettingChange('maxVideoDownloads', parseInt(e.target.value))}
                   />
                 </div>
                 <div>
-                  <Label htmlFor="institutePhone">Phone Number</Label>
+                  <Label htmlFor="videoExpiryDays">Video Expiry Days</Label>
                   <Input
-                    id="institutePhone"
-                    value={generalSettings.institutePhone}
-                    onChange={(e) => setGeneralSettings({...generalSettings, institutePhone: e.target.value})}
+                    id="videoExpiryDays"
+                    type="number"
+                    value={settings.videoExpiryDays}
+                    onChange={(e) => handleSettingChange('videoExpiryDays', parseInt(e.target.value))}
                   />
                 </div>
-                <div>
-                  <Label htmlFor="timezone">Timezone</Label>
-                  <Select value={generalSettings.timezone} onValueChange={(value) => setGeneralSettings({...generalSettings, timezone: value})}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Asia/Kolkata">Asia/Kolkata</SelectItem>
-                      <SelectItem value="UTC">UTC</SelectItem>
-                      <SelectItem value="America/New_York">America/New_York</SelectItem>
-                    </SelectContent>
-                  </Select>
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="negativeMarking"
+                    checked={settings.negativeMarkingEnabled}
+                    onCheckedChange={(checked) => handleSettingChange('negativeMarkingEnabled', checked)}
+                  />
+                  <Label htmlFor="negativeMarking">Enable Negative Marking</Label>
                 </div>
               </div>
-              <div>
-                <Label htmlFor="address">Address</Label>
-                <Textarea
-                  id="address"
-                  value={generalSettings.address}
-                  onChange={(e) => setGeneralSettings({...generalSettings, address: e.target.value})}
-                  rows={3}
-                />
-              </div>
-              <Button>Save General Settings</Button>
             </CardContent>
           </Card>
         </TabsContent>
@@ -121,70 +111,40 @@ const AdminSettings = () => {
         <TabsContent value="security" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center">
-                <Shield className="w-5 h-5 mr-2" />
+              <CardTitle className="flex items-center gap-2">
+                <Shield className="w-5 h-5" />
                 Security Settings
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="allowRegistration">Allow Student Registration</Label>
-                    <Switch
-                      id="allowRegistration"
-                      checked={systemSettings.allowRegistration}
-                      onCheckedChange={(checked) => setSystemSettings({...systemSettings, allowRegistration: checked})}
-                    />
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="emailVerification">Email Verification Required</Label>
-                    <Switch
-                      id="emailVerification"
-                      checked={systemSettings.emailVerification}
-                      onCheckedChange={(checked) => setSystemSettings({...systemSettings, emailVerification: checked})}
-                    />
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="twoFactorAuth">Two-Factor Authentication</Label>
-                    <Switch
-                      id="twoFactorAuth"
-                      checked={systemSettings.twoFactorAuth}
-                      onCheckedChange={(checked) => setSystemSettings({...systemSettings, twoFactorAuth: checked})}
-                    />
-                  </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <Label htmlFor="sessionTimeout">Session Timeout (minutes)</Label>
+                  <Input
+                    id="sessionTimeout"
+                    type="number"
+                    value={settings.sessionTimeout}
+                    onChange={(e) => handleSettingChange('sessionTimeout', parseInt(e.target.value))}
+                  />
                 </div>
-                <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="sessionTimeout">Session Timeout (minutes)</Label>
-                    <Input
-                      id="sessionTimeout"
-                      type="number"
-                      value={systemSettings.sessionTimeout}
-                      onChange={(e) => setSystemSettings({...systemSettings, sessionTimeout: e.target.value})}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="maxLoginAttempts">Max Login Attempts</Label>
-                    <Input
-                      id="maxLoginAttempts"
-                      type="number"
-                      value={systemSettings.maxLoginAttempts}
-                      onChange={(e) => setSystemSettings({...systemSettings, maxLoginAttempts: e.target.value})}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="passwordMinLength">Password Min Length</Label>
-                    <Input
-                      id="passwordMinLength"
-                      type="number"
-                      value={systemSettings.passwordMinLength}
-                      onChange={(e) => setSystemSettings({...systemSettings, passwordMinLength: e.target.value})}
-                    />
-                  </div>
+                <div>
+                  <Label htmlFor="maxSessions">Max Concurrent Sessions</Label>
+                  <Input
+                    id="maxSessions"
+                    type="number"
+                    value={settings.maxConcurrentSessions}
+                    onChange={(e) => handleSettingChange('maxConcurrentSessions', parseInt(e.target.value))}
+                  />
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="maintenanceMode"
+                    checked={settings.maintenanceMode}
+                    onCheckedChange={(checked) => handleSettingChange('maintenanceMode', checked)}
+                  />
+                  <Label htmlFor="maintenanceMode">Maintenance Mode</Label>
                 </div>
               </div>
-              <Button>Save Security Settings</Button>
             </CardContent>
           </Card>
         </TabsContent>
@@ -192,27 +152,79 @@ const AdminSettings = () => {
         <TabsContent value="notifications" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center">
-                <Bell className="w-5 h-5 mr-2" />
-                Notification Preferences
+              <CardTitle className="flex items-center gap-2">
+                <Bell className="w-5 h-5" />
+                Notification Settings
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              {Object.entries(notificationSettings).map(([key, value]) => (
-                <div key={key} className="flex items-center justify-between">
-                  <Label htmlFor={key} className="flex-1">
-                    {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
-                  </Label>
+            <CardContent className="space-y-6">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="font-medium">Email Notifications</h3>
+                    <p className="text-sm text-gray-600">Send notifications via email</p>
+                  </div>
                   <Switch
-                    id={key}
-                    checked={value}
-                    onCheckedChange={(checked) => 
-                      setNotificationSettings({...notificationSettings, [key]: checked})
-                    }
+                    checked={settings.emailNotifications}
+                    onCheckedChange={(checked) => handleSettingChange('emailNotifications', checked)}
                   />
                 </div>
-              ))}
-              <Button>Save Notification Settings</Button>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="font-medium">SMS Notifications</h3>
+                    <p className="text-sm text-gray-600">Send notifications via SMS</p>
+                  </div>
+                  <Switch
+                    checked={settings.smsNotifications}
+                    onCheckedChange={(checked) => handleSettingChange('smsNotifications', checked)}
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="system" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Globe className="w-5 h-5" />
+                System Settings
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <Label>System Status</Label>
+                  <div className="flex items-center space-x-2 mt-2">
+                    <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                    <span className="text-sm text-green-600">Online</span>
+                  </div>
+                </div>
+                <div>
+                  <Label>Database Status</Label>
+                  <div className="flex items-center space-x-2 mt-2">
+                    <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                    <span className="text-sm text-green-600">Connected</span>
+                  </div>
+                </div>
+                <div>
+                  <Label>API Status</Label>
+                  <div className="flex items-center space-x-2 mt-2">
+                    <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                    <span className="text-sm text-green-600">Active</span>
+                  </div>
+                </div>
+                <div>
+                  <Label>Storage</Label>
+                  <div className="mt-2">
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div className="bg-blue-600 h-2 rounded-full" style={{ width: '65%' }}></div>
+                    </div>
+                    <span className="text-sm text-gray-600">65% used</span>
+                  </div>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
@@ -220,39 +232,58 @@ const AdminSettings = () => {
         <TabsContent value="backup" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center">
-                <Database className="w-5 h-5 mr-2" />
-                Backup & Data Management
+              <CardTitle className="flex items-center gap-2">
+                <Database className="w-5 h-5" />
+                Backup Settings
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                <Button variant="outline" className="h-20 flex flex-col">
-                  <Database className="w-6 h-6 mb-2" />
-                  Create Backup
-                </Button>
-                <Button variant="outline" className="h-20 flex flex-col">
-                  <Database className="w-6 h-6 mb-2" />
-                  Restore Backup
-                </Button>
-                <Button variant="outline" className="h-20 flex flex-col">
-                  <Mail className="w-6 h-6 mb-2" />
-                  Export Data
-                </Button>
-                <Button variant="outline" className="h-20 flex flex-col">
-                  <Settings className="w-6 h-6 mb-2" />
-                  System Logs
-                </Button>
+            <CardContent className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="autoBackup"
+                    checked={settings.autoBackup}
+                    onCheckedChange={(checked) => handleSettingChange('autoBackup', checked)}
+                  />
+                  <Label htmlFor="autoBackup">Enable Auto Backup</Label>
+                </div>
+                <div>
+                  <Label htmlFor="backupFrequency">Backup Frequency</Label>
+                  <Select 
+                    value={settings.backupFrequency} 
+                    onValueChange={(value) => handleSettingChange('backupFrequency', value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="hourly">Hourly</SelectItem>
+                      <SelectItem value="daily">Daily</SelectItem>
+                      <SelectItem value="weekly">Weekly</SelectItem>
+                      <SelectItem value="monthly">Monthly</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
-              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                <h4 className="font-medium text-yellow-800 mb-2">Automatic Backups</h4>
-                <p className="text-sm text-yellow-700">Last backup: Today at 3:00 AM</p>
-                <p className="text-sm text-yellow-700">Next scheduled: Tomorrow at 3:00 AM</p>
+              <div className="space-y-4">
+                <Button variant="outline" className="w-full">
+                  <Database className="w-4 h-4 mr-2" />
+                  Create Manual Backup
+                </Button>
+                <Button variant="outline" className="w-full">
+                  <Key className="w-4 h-4 mr-2" />
+                  Download Backup
+                </Button>
               </div>
             </CardContent>
           </Card>
         </TabsContent>
       </Tabs>
+
+      <div className="flex justify-end space-x-2">
+        <Button variant="outline">Reset to Defaults</Button>
+        <Button onClick={handleSaveSettings}>Save Settings</Button>
+      </div>
     </div>
   );
 };
