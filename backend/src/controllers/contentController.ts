@@ -9,14 +9,14 @@ import fs from 'fs';
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
+  destination: (_, __, cb) => {
     const uploadPath = path.join(__dirname, '../../uploads');
     if (!fs.existsSync(uploadPath)) {
       fs.mkdirSync(uploadPath, { recursive: true });
     }
     cb(null, uploadPath);
   },
-  filename: (req, file, cb) => {
+  filename: (_, file, cb) => {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
     cb(null, uniqueSuffix + path.extname(file.originalname));
   }
@@ -54,20 +54,21 @@ export const upload = multer({
 });
 
 // Upload Study Material
-export const uploadStudyMaterial = async (req: AuthRequest, res: Response) => {
+export const uploadStudyMaterial = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { title, description, subject, topic, courseId } = req.body;
     const file = req.file;
 
     if (!file) {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         message: 'File is required'
       });
+      return;
     }
 
     // Determine material type based on mime type
-    let type = 'OTHER';
+    let type: 'PDF' | 'PPT' | 'DOC' | 'IMAGE' | 'OTHER' = 'OTHER';
     if (file.mimetype === 'application/pdf') type = 'PDF';
     else if (file.mimetype.includes('powerpoint') || file.mimetype.includes('presentation')) type = 'PPT';
     else if (file.mimetype.includes('word') || file.mimetype.includes('document')) type = 'DOC';
@@ -100,16 +101,17 @@ export const uploadStudyMaterial = async (req: AuthRequest, res: Response) => {
 };
 
 // Upload Video
-export const uploadVideo = async (req: AuthRequest, res: Response) => {
+export const uploadVideo = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { title, description, subject, topic, courseId } = req.body;
     const file = req.file;
 
     if (!file) {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         message: 'Video file is required'
       });
+      return;
     }
 
     const video = await prisma.video.create({
@@ -184,7 +186,7 @@ export const getStudyMaterials = async (req: AuthRequest, res: Response) => {
 };
 
 // Serve protected file
-export const serveFile = async (req: AuthRequest, res: Response) => {
+export const serveFile = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { filename } = req.params;
     const userId = req.user?.id;
@@ -198,19 +200,21 @@ export const serveFile = async (req: AuthRequest, res: Response) => {
     });
 
     if (!student?.studentProfile?.courseId) {
-      return res.status(403).json({
+      res.status(403).json({
         success: false,
         message: 'Access denied'
       });
+      return;
     }
 
     const filePath = path.join(__dirname, '../../uploads', filename);
     
     if (!fs.existsSync(filePath)) {
-      return res.status(404).json({
+      res.status(404).json({
         success: false,
         message: 'File not found'
       });
+      return;
     }
 
     // Set appropriate headers for file serving

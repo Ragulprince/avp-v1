@@ -1,3 +1,4 @@
+
 import { Response } from 'express';
 import { prisma } from '../config/database';
 import { AuthRequest } from '../types';
@@ -27,13 +28,13 @@ export const getStudentDashboard = async (req: AuthRequest, res: Response) => {
       prisma.quizAttempt.count({ where: { userId, isCompleted: true } }),
       prisma.video.count({ 
         where: { 
-          courseId: student?.studentProfile?.courseId,
+          courseId: student?.studentProfile?.courseId || undefined,
           isPublished: true 
         } 
       }),
       prisma.quiz.count({ 
         where: { 
-          courseId: student?.studentProfile?.courseId,
+          courseId: student?.studentProfile?.courseId || undefined,
           isPublished: true,
           OR: [
             { expiresAt: null },
@@ -46,7 +47,7 @@ export const getStudentDashboard = async (req: AuthRequest, res: Response) => {
     // Get recent activities
     const recentVideos = await prisma.video.findMany({
       where: { 
-        courseId: student?.studentProfile?.courseId,
+        courseId: student?.studentProfile?.courseId || undefined,
         isPublished: true 
       },
       take: 5,
@@ -55,7 +56,7 @@ export const getStudentDashboard = async (req: AuthRequest, res: Response) => {
 
     const upcomingTests = await prisma.quiz.findMany({
       where: {
-        courseId: student?.studentProfile?.courseId,
+        courseId: student?.studentProfile?.courseId || undefined,
         isPublished: true,
         scheduledAt: { gt: new Date() }
       },
@@ -97,15 +98,6 @@ export const getStudentProfile = async (req: AuthRequest, res: Response) => {
             course: true
           }
         }
-      },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        phone: true,
-        avatar: true,
-        createdAt: true,
-        studentProfile: true
       }
     });
 
@@ -160,7 +152,7 @@ export const updateStudentProfile = async (req: AuthRequest, res: Response) => {
 };
 
 // Change Password
-export const changePassword = async (req: AuthRequest, res: Response) => {
+export const changePassword = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const userId = req.user?.id;
     const { currentPassword, newPassword } = req.body;
@@ -170,10 +162,11 @@ export const changePassword = async (req: AuthRequest, res: Response) => {
     });
 
     if (!user) {
-      return res.status(404).json({
+      res.status(404).json({
         success: false,
         message: 'User not found'
       });
+      return;
     }
 
     // Verify current password
@@ -181,10 +174,11 @@ export const changePassword = async (req: AuthRequest, res: Response) => {
     const isValidPassword = await bcrypt.compare(currentPassword, user.password);
 
     if (!isValidPassword) {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         message: 'Current password is incorrect'
       });
+      return;
     }
 
     // Hash new password
@@ -220,7 +214,7 @@ export const getStudentVideos = async (req: AuthRequest, res: Response) => {
     });
 
     const where: any = {
-      courseId: student?.studentProfile?.courseId,
+      courseId: student?.studentProfile?.courseId || undefined,
       isPublished: true
     };
 
@@ -269,7 +263,7 @@ export const getStudentMaterials = async (req: AuthRequest, res: Response) => {
     });
 
     const where: any = {
-      courseId: student?.studentProfile?.courseId,
+      courseId: student?.studentProfile?.courseId || undefined,
       isPublished: true
     };
 

@@ -1,7 +1,6 @@
 
-import swaggerJSDoc from 'swagger-jsdoc';
-import swaggerUi from 'swagger-ui-express';
-import { Express } from 'express';
+import swaggerJsdoc from 'swagger-jsdoc';
+import { Request, Response } from 'express';
 
 const options = {
   definition: {
@@ -9,132 +8,142 @@ const options = {
     info: {
       title: 'AVP Academy API',
       version: '1.0.0',
-      description: 'AVP Academy EdTech Platform API Documentation',
-      contact: {
-        name: 'AVP Academy',
-        email: 'support@avpacademy.com'
-      }
+      description: 'API documentation for AVP Academy EdTech Platform',
     },
     servers: [
       {
-        url: 'http://localhost:3000',
-        description: 'Development server'
+        url: process.env.NODE_ENV === 'production' 
+          ? 'https://your-domain.com/api' 
+          : 'http://localhost:3000/api',
+        description: process.env.NODE_ENV === 'production' ? 'Production server' : 'Development server',
       },
-      {
-        url: 'https://api.avpacademy.com',
-        description: 'Production server'
-      }
     ],
     components: {
       securitySchemes: {
         bearerAuth: {
           type: 'http',
           scheme: 'bearer',
-          bearerFormat: 'JWT'
-        }
+          bearerFormat: 'JWT',
+        },
       },
-      schemas: {
-        User: {
-          type: 'object',
-          properties: {
-            id: { type: 'string', format: 'uuid' },
-            email: { type: 'string', format: 'email' },
-            name: { type: 'string' },
-            phone: { type: 'string' },
-            role: { type: 'string', enum: ['STUDENT', 'TEACHER', 'ADMIN'] },
-            avatar: { type: 'string' },
-            isActive: { type: 'boolean' },
-            createdAt: { type: 'string', format: 'date-time' }
-          }
-        },
-        Course: {
-          type: 'object',
-          properties: {
-            id: { type: 'string', format: 'uuid' },
-            name: { type: 'string' },
-            description: { type: 'string' },
-            duration: { type: 'string' },
-            fees: { type: 'number' },
-            subjects: { type: 'array', items: { type: 'string' } },
-            status: { type: 'string', enum: ['DRAFT', 'PUBLISHED', 'ARCHIVED'] }
-          }
-        },
-        Quiz: {
-          type: 'object',
-          properties: {
-            id: { type: 'string', format: 'uuid' },
-            title: { type: 'string' },
-            description: { type: 'string' },
-            subject: { type: 'string' },
-            type: { type: 'string', enum: ['PRACTICE', 'MOCK', 'DAILY', 'SUBJECT_WISE', 'CUSTOM'] },
-            duration: { type: 'integer' },
-            totalMarks: { type: 'integer' },
-            passingMarks: { type: 'integer' },
-            isPublished: { type: 'boolean' }
-          }
-        },
-        Video: {
-          type: 'object',
-          properties: {
-            id: { type: 'string', format: 'uuid' },
-            title: { type: 'string' },
-            description: { type: 'string' },
-            subject: { type: 'string' },
-            topic: { type: 'string' },
-            videoUrl: { type: 'string' },
-            duration: { type: 'integer' },
-            views: { type: 'integer' },
-            isPublished: { type: 'boolean' }
-          }
-        },
-        ApiResponse: {
-          type: 'object',
-          properties: {
-            success: { type: 'boolean' },
-            message: { type: 'string' },
-            data: { type: 'object' },
-            meta: {
-              type: 'object',
-              properties: {
-                total: { type: 'integer' },
-                page: { type: 'integer' },
-                limit: { type: 'integer' },
-                totalPages: { type: 'integer' }
-              }
-            }
-          }
-        },
-        Error: {
-          type: 'object',
-          properties: {
-            success: { type: 'boolean', example: false },
-            message: { type: 'string' },
-            errors: { type: 'array', items: { type: 'string' } }
-          }
-        }
-      }
     },
     security: [
       {
-        bearerAuth: []
-      }
-    ]
+        bearerAuth: [],
+      },
+    ],
   },
-  apis: ['./src/routes/*.ts', './src/controllers/*.ts']
+  apis: ['./src/routes/*.ts'], // paths to files containing OpenAPI definitions
 };
 
-const specs = swaggerJSDoc(options);
+export const specs = swaggerJsdoc(options);
 
-export const setupSwagger = (app: Express) => {
-  app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs, {
-    explorer: true,
-    customCss: '.swagger-ui .topbar { display: none }',
-    customSiteTitle: 'AVP Academy API Documentation'
-  }));
+// Custom CSS for swagger UI
+export const customCss = `
+  .swagger-ui .topbar { display: none }
+  .swagger-ui .info { margin: 50px 0 }
+  .swagger-ui .scheme-container { 
+    background: #fafafa; 
+    padding: 30px 0; 
+    border-bottom: 1px solid #ebebeb 
+  }
+`;
+
+// Swagger UI options
+export const swaggerUiOptions = {
+  customCss,
+  customSiteTitle: 'AVP Academy API Documentation',
+  customfavIcon: '/favicon.ico',
+  swaggerOptions: {
+    persistAuthorization: true,
+    displayRequestDuration: true,
+    docExpansion: 'none',
+    filter: true,
+    showRequestHeaders: true,
+  }
+};
+
+// API Documentation endpoint
+export const serveApiDocs = (res: Response) => {
+  const html = `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <title>AVP Academy API Docs</title>
+        <link rel="stylesheet" type="text/css" href="/swagger-ui-bundle.css" />
+        <style>
+          html { box-sizing: border-box; overflow: -moz-scrollbars-vertical; overflow-y: scroll; }
+          *, *:before, *:after { box-sizing: inherit; }
+          body { margin:0; background: #fafafa; }
+        </style>
+      </head>
+      <body>
+        <div id="swagger-ui"></div>
+        <script src="/swagger-ui-bundle.js"></script>
+        <script>
+          SwaggerUIBundle({
+            url: '/api-docs.json',
+            dom_id: '#swagger-ui',
+            deepLinking: true,
+            presets: [
+              SwaggerUIBundle.presets.apis,
+              SwaggerUIBundle.presets.standalone
+            ],
+            plugins: [
+              SwaggerUIBundle.plugins.DownloadUrl
+            ],
+            layout: "StandaloneLayout"
+          });
+        </script>
+      </body>
+    </html>
+  `;
   
-  // Serve swagger.json
-  app.get('/api-docs.json', (req, res) => {
-    res.setHeader('Content-Type', 'application/json');
-    res.send(specs);
+  res.send(html);
+};
+
+// Health check documentation
+export const healthCheckDocs = {
+  '/health': {
+    get: {
+      summary: 'Health Check',
+      description: 'Check if the API is running',
+      responses: {
+        200: {
+          description: 'API is healthy',
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                properties: {
+                  status: {
+                    type: 'string',
+                    example: 'OK'
+                  },
+                  timestamp: {
+                    type: 'string',
+                    format: 'date-time'
+                  },
+                  uptime: {
+                    type: 'number'
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+};
+
+// API info endpoint
+export const getApiInfo = (res: Response) => {
+  res.json({
+    name: 'AVP Academy API',
+    version: '1.0.0',
+    description: 'EdTech Platform API',
+    documentation: '/api-docs',
+    health: '/health'
   });
 };

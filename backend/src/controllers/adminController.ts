@@ -1,4 +1,3 @@
-
 import { Response } from 'express';
 import { prisma } from '../config/database';
 import { AuthRequest } from '../types';
@@ -399,7 +398,7 @@ export const createStaff = async (req: AuthRequest, res: Response) => {
   }
 };
 
-export const getStaff = async (req: AuthRequest, res: Response) => {
+export const getStaff = async (res: Response) => {
   try {
     const staff = await prisma.user.findMany({
       where: {
@@ -428,7 +427,7 @@ export const getStaff = async (req: AuthRequest, res: Response) => {
 };
 
 // Admin Settings
-export const getAdminSettings = async (req: AuthRequest, res: Response) => {
+export const getAdminSettings = async (res: Response) => {
   try {
     // Return system settings (can be stored in database or config)
     const settings = {

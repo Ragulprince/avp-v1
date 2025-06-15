@@ -1,6 +1,6 @@
 
 import { Response } from 'express';
-import { query, body } from 'express-validator';
+import { query } from 'express-validator';
 import { prisma } from '../config/database';
 import { AuthRequest, ApiResponse, SearchQuery } from '../types';
 import { logger } from '../config/logger';
@@ -34,8 +34,13 @@ export const getVideos = async (req: AuthRequest, res: Response) => {
     }
 
     // Filter by user's course if student
-    if (req.user?.role === 'STUDENT' && req.user.studentProfile?.courseId) {
-      where.courseId = req.user.studentProfile.courseId;
+    const user = await prisma.user.findUnique({
+      where: { id: req.user?.id },
+      include: { studentProfile: true }
+    });
+
+    if (user?.role === 'STUDENT' && user.studentProfile?.courseId) {
+      where.courseId = user.studentProfile.courseId;
     }
 
     const [videos, total] = await Promise.all([
@@ -78,7 +83,7 @@ export const getVideos = async (req: AuthRequest, res: Response) => {
   }
 };
 
-export const getVideoById = async (req: AuthRequest, res: Response) => {
+export const getVideoById = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
 
@@ -95,10 +100,11 @@ export const getVideoById = async (req: AuthRequest, res: Response) => {
     });
 
     if (!video || !video.isPublished) {
-      return res.status(404).json({
+      res.status(404).json({
         success: false,
         message: 'Video not found'
       });
+      return;
     }
 
     // Update view count
@@ -123,7 +129,7 @@ export const getVideoById = async (req: AuthRequest, res: Response) => {
   }
 };
 
-export const downloadVideo = async (req: AuthRequest, res: Response) => {
+export const downloadVideo = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
     const userId = req.user!.id;
@@ -133,10 +139,11 @@ export const downloadVideo = async (req: AuthRequest, res: Response) => {
     });
 
     if (!video || !video.isPublished) {
-      return res.status(404).json({
+      res.status(404).json({
         success: false,
         message: 'Video not found'
       });
+      return;
     }
 
     // Check if user already has active download
@@ -150,14 +157,17 @@ export const downloadVideo = async (req: AuthRequest, res: Response) => {
     });
 
     if (existingDownload && existingDownload.expiresAt > new Date()) {
-      return res.json({
+      res.json({
         success: true,
         message: 'Download link already active',
         data: {
           downloadUrl: video.videoUrl,
-          expiresAt: existingDownload.expiresAt
+          expires
+
+: existingDownload.expiresAt
         }
       });
+      return;
     }
 
     // Create new download record with 24-hour expiry
@@ -200,7 +210,7 @@ export const downloadVideo = async (req: AuthRequest, res: Response) => {
   }
 };
 
-export const getVideoSubjects = async (req: AuthRequest, res: Response) => {
+export const getVideoSubjects = async (res: Response) => {
   try {
     const subjects = await prisma.video.findMany({
       where: { isPublished: true },

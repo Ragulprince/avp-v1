@@ -1,5 +1,5 @@
 
-import { Request, Response } from 'express';
+import { Response } from 'express';
 import { prisma } from '../config/database';
 import { AuthRequest } from '../types';
 import { logger } from '../config/logger';
@@ -122,7 +122,7 @@ export const updateQuestion = async (req: AuthRequest, res: Response) => {
 };
 
 // Delete Question
-export const deleteQuestion = async (req: AuthRequest, res: Response) => {
+export const deleteQuestion = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
 
@@ -132,10 +132,11 @@ export const deleteQuestion = async (req: AuthRequest, res: Response) => {
     });
 
     if (quizQuestion) {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         message: 'Cannot delete question as it is used in tests'
       });
+      return;
     }
 
     await prisma.question.delete({
@@ -153,7 +154,7 @@ export const deleteQuestion = async (req: AuthRequest, res: Response) => {
 };
 
 // Get Question by ID
-export const getQuestionById = async (req: AuthRequest, res: Response) => {
+export const getQuestionById = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
 
@@ -162,10 +163,11 @@ export const getQuestionById = async (req: AuthRequest, res: Response) => {
     });
 
     if (!question) {
-      return res.status(404).json({
+      res.status(404).json({
         success: false,
         message: 'Question not found'
       });
+      return;
     }
 
     res.json({
@@ -179,15 +181,16 @@ export const getQuestionById = async (req: AuthRequest, res: Response) => {
 };
 
 // Bulk Import Questions
-export const bulkImportQuestions = async (req: AuthRequest, res: Response) => {
+export const bulkImportQuestions = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { questions } = req.body;
 
     if (!Array.isArray(questions) || questions.length === 0) {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         message: 'Questions array is required'
       });
+      return;
     }
 
     const createdQuestions = await prisma.question.createMany({

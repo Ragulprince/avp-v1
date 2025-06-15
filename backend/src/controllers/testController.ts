@@ -1,5 +1,5 @@
 
-import { Request, Response } from 'express';
+import { Response } from 'express';
 import { prisma } from '../config/database';
 import { AuthRequest } from '../types';
 import { logger } from '../config/logger';
@@ -20,9 +20,7 @@ export const createTest = async (req: AuthRequest, res: Response) => {
       courseId,
       scheduledAt,
       expiresAt,
-      questions,
-      shuffleQuestions,
-      shuffleOptions
+      questions
     } = req.body;
 
     const quiz = await prisma.quiz.create({
@@ -141,7 +139,7 @@ export const getTests = async (req: AuthRequest, res: Response) => {
 };
 
 // Add Question to Test (Manual or from Question Bank)
-export const addQuestionToTest = async (req: AuthRequest, res: Response) => {
+export const addQuestionToTest = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { testId } = req.params;
     const { questionId, questionData } = req.body;
@@ -155,10 +153,11 @@ export const addQuestionToTest = async (req: AuthRequest, res: Response) => {
       });
       
       if (!question) {
-        return res.status(404).json({
+        res.status(404).json({
           success: false,
           message: 'Question not found in question bank'
         });
+        return;
       }
     } else if (questionData) {
       // Creating new question manually
@@ -176,10 +175,11 @@ export const addQuestionToTest = async (req: AuthRequest, res: Response) => {
         }
       });
     } else {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         message: 'Either questionId or questionData is required'
       });
+      return;
     }
 
     // Get next order number
@@ -211,7 +211,7 @@ export const addQuestionToTest = async (req: AuthRequest, res: Response) => {
 };
 
 // Test Reports - Test-wise
-export const getTestReport = async (req: AuthRequest, res: Response) => {
+export const getTestReport = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { testId } = req.params;
 
@@ -241,10 +241,11 @@ export const getTestReport = async (req: AuthRequest, res: Response) => {
     });
 
     if (!test) {
-      return res.status(404).json({
+      res.status(404).json({
         success: false,
         message: 'Test not found'
       });
+      return;
     }
 
     // Calculate analytics
@@ -296,7 +297,7 @@ export const getTestReport = async (req: AuthRequest, res: Response) => {
 };
 
 // Student-wise Test Report
-export const getStudentTestReport = async (req: AuthRequest, res: Response) => {
+export const getStudentTestReport = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { studentId, testId } = req.params;
 
@@ -327,10 +328,11 @@ export const getStudentTestReport = async (req: AuthRequest, res: Response) => {
     });
 
     if (!attempt) {
-      return res.status(404).json({
+      res.status(404).json({
         success: false,
         message: 'Test attempt not found'
       });
+      return;
     }
 
     // Question-wise analysis

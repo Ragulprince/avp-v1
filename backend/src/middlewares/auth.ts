@@ -1,19 +1,20 @@
 
-import { Request, Response, NextFunction } from 'express';
+import { Response, NextFunction } from 'express';
 import { verifyToken } from '../utils/jwt';
 import { prisma } from '../config/database';
 import { AuthRequest } from '../types';
 import { logger } from '../config/logger';
 
-export const authenticate = async (req: AuthRequest, res: Response, next: NextFunction) => {
+export const authenticate = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
     const authHeader = req.headers.authorization;
     
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return res.status(401).json({
+      res.status(401).json({
         success: false,
         message: 'Access token required'
       });
+      return;
     }
 
     const token = authHeader.substring(7);
@@ -32,17 +33,18 @@ export const authenticate = async (req: AuthRequest, res: Response, next: NextFu
     });
 
     if (!user || !user.isActive) {
-      return res.status(401).json({
+      res.status(401).json({
         success: false,
         message: 'Invalid or inactive user'
       });
+      return;
     }
 
     req.user = user;
     next();
   } catch (error) {
     logger.error('Authentication error:', error);
-    return res.status(401).json({
+    res.status(401).json({
       success: false,
       message: 'Invalid token'
     });
@@ -50,19 +52,21 @@ export const authenticate = async (req: AuthRequest, res: Response, next: NextFu
 };
 
 export const authorize = (...roles: string[]) => {
-  return (req: AuthRequest, res: Response, next: NextFunction) => {
+  return (req: AuthRequest, res: Response, next: NextFunction): void => {
     if (!req.user) {
-      return res.status(401).json({
+      res.status(401).json({
         success: false,
         message: 'User not authenticated'
       });
+      return;
     }
 
     if (!roles.includes(req.user.role)) {
-      return res.status(403).json({
+      res.status(403).json({
         success: false,
         message: 'Insufficient permissions'
       });
+      return;
     }
 
     next();

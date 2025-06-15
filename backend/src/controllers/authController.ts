@@ -19,7 +19,7 @@ export const loginValidation = [
   body('password').notEmpty().withMessage('Password is required')
 ];
 
-export const register = async (req: Request, res: Response) => {
+export const register = async (req: Request, res: Response): Promise<void> => {
   try {
     const { email, password, name, phone, role = 'STUDENT' } = req.body;
 
@@ -34,10 +34,11 @@ export const register = async (req: Request, res: Response) => {
     });
 
     if (existingUser) {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         message: 'User already exists with this email or phone'
       });
+      return;
     }
 
     const hashedPassword = await hashPassword(password);
@@ -86,7 +87,7 @@ export const register = async (req: Request, res: Response) => {
   }
 };
 
-export const login = async (req: Request, res: Response) => {
+export const login = async (req: Request, res: Response): Promise<void> => {
   try {
     const { email, password } = req.body;
 
@@ -103,19 +104,21 @@ export const login = async (req: Request, res: Response) => {
     });
 
     if (!user || !user.isActive) {
-      return res.status(401).json({
+      res.status(401).json({
         success: false,
         message: 'Invalid credentials or inactive account'
       });
+      return;
     }
 
     const isPasswordValid = await comparePassword(password, user.password);
 
     if (!isPasswordValid) {
-      return res.status(401).json({
+      res.status(401).json({
         success: false,
         message: 'Invalid credentials'
       });
+      return;
     }
 
     const token = generateToken(user);

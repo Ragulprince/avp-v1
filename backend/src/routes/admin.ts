@@ -1,8 +1,6 @@
 
 import { Router } from 'express';
 import { authenticate, authorize } from '../middlewares/auth';
-import { validateRequest } from '../middlewares/validation';
-import { body, query } from 'express-validator';
 import {
   createStudent,
   getStudents,
@@ -21,88 +19,30 @@ import {
 
 const router = Router();
 
+// All admin routes require authentication and ADMIN role
+router.use(authenticate, authorize('ADMIN'));
+
 // Student Management
-router.post('/students', 
-  authenticate, 
-  authorize('ADMIN'),
-  [
-    body('email').isEmail().withMessage('Valid email is required'),
-    body('name').notEmpty().withMessage('Name is required'),
-    body('phone').optional().isMobilePhone('any'),
-    body('batchId').optional().isUUID(),
-    body('courseId').optional().isUUID()
-  ],
-  validateRequest,
-  createStudent
-);
-
-router.get('/students', authenticate, authorize('ADMIN'), getStudents);
-
-router.put('/students/:id',
-  authenticate,
-  authorize('ADMIN'),
-  [
-    body('name').optional().notEmpty(),
-    body('phone').optional().isMobilePhone('any'),
-    body('isActive').optional().isBoolean()
-  ],
-  validateRequest,
-  updateStudent
-);
-
-router.delete('/students/:id', authenticate, authorize('ADMIN'), deleteStudent);
+router.post('/students', createStudent);
+router.get('/students', getStudents);
+router.put('/students/:id', updateStudent);
+router.delete('/students/:id', deleteStudent);
 
 // Course Management
-router.post('/courses',
-  authenticate,
-  authorize('ADMIN'),
-  [
-    body('name').notEmpty().withMessage('Course name is required'),
-    body('description').notEmpty().withMessage('Description is required'),
-    body('duration').notEmpty().withMessage('Duration is required'),
-    body('fees').isNumeric().withMessage('Valid fees amount is required'),
-    body('subjects').isArray().withMessage('Subjects array is required')
-  ],
-  validateRequest,
-  createCourse
-);
-
-router.get('/courses', authenticate, authorize('ADMIN'), getCourses);
-router.put('/courses/:id', authenticate, authorize('ADMIN'), updateCourse);
-router.delete('/courses/:id', authenticate, authorize('ADMIN'), deleteCourse);
+router.post('/courses', createCourse);
+router.get('/courses', getCourses);
+router.put('/courses/:id', updateCourse);
+router.delete('/courses/:id', deleteCourse);
 
 // Batch Management
-router.post('/batches',
-  authenticate,
-  authorize('ADMIN'),
-  [
-    body('name').notEmpty().withMessage('Batch name is required'),
-    body('timing').notEmpty().withMessage('Timing is required'),
-    body('capacity').isNumeric().withMessage('Valid capacity is required'),
-    body('courseId').isUUID().withMessage('Valid course ID is required')
-  ],
-  validateRequest,
-  createBatch
-);
-
-router.get('/batches', authenticate, authorize('ADMIN'), getBatches);
+router.post('/batches', createBatch);
+router.get('/batches', getBatches);
 
 // Staff Management
-router.post('/staff',
-  authenticate,
-  authorize('ADMIN'),
-  [
-    body('email').isEmail().withMessage('Valid email is required'),
-    body('name').notEmpty().withMessage('Name is required'),
-    body('role').isIn(['ADMIN', 'TEACHER']).withMessage('Valid role is required')
-  ],
-  validateRequest,
-  createStaff
-);
-
-router.get('/staff', authenticate, authorize('ADMIN'), getStaff);
+router.post('/staff', createStaff);
+router.get('/staff', (req, res) => getStaff(res));
 
 // Settings
-router.get('/settings', authenticate, authorize('ADMIN'), getAdminSettings);
+router.get('/settings', (req, res) => getAdminSettings(res));
 
 export default router;

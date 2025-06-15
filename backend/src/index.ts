@@ -3,21 +3,21 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import compression from 'compression';
-import { connectDatabase } from './config/database';
+import rateLimit from 'express-rate-limit';
 import { logger } from './config/logger';
-import { sessionManager } from './middlewares/sessionManager';
-import { setupSwagger } from './config/swagger';
+import swaggerUi from 'swagger-ui-express';
+import { specs } from './config/swagger';
 
 // Import routes
 import authRoutes from './routes/auth';
 import videoRoutes from './routes/videos';
 import quizRoutes from './routes/quizzes';
+import studentRoutes from './routes/student';
 import adminRoutes from './routes/admin';
 import testRoutes from './routes/tests';
 import questionBankRoutes from './routes/questionBank';
-import notificationRoutes from './routes/notifications';
-import studentRoutes from './routes/student';
 import contentRoutes from './routes/content';
+import notificationRoutes from './routes/notifications';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -32,110 +32,86 @@ app.use(helmet({
       scriptSrc: ["'self'"],
       imgSrc: ["'self'", "data:", "https:"],
     },
-  }
+  },
 }));
 
+// CORS configuration
 app.use(cors({
   origin: process.env.FRONTEND_URL || 'http://localhost:5173',
-  credentials: true
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
-app.use(compression());
+
+// Rate limiting
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // limit each IP to 100 requests per windowMs
+  message: {
+    success: false,
+    message: 'Too many requests, please try again later'
+  }
+});
+
+app.use('/api/', limiter);
 
 // Body parsing middleware
+app.use(compression());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Session management
-app.use(sessionManager);
+// Request logging
+app.use((req, res, next) => {
+  logger.info(`${req.method} ${req.path} - ${req.ip}`);
+  next();
+});
 
-// Serve static files (uploads)
-app.use('/uploads', express.static('uploads'));
-
-// Setup Swagger documentation
-setupSwagger(app);
-
-// Health check
+// Health check endpoint
 app.get('/health', (req, res) => {
-  res.json({ 
-    success: true, 
-    message: 'AVP Academy API is running',
+  res.status(200).json({
+    status: 'OK',
     timestamp: new Date().toISOString(),
-    version: '1.0.0',
-    environment: process.env.NODE_ENV || 'development'
+    uptime: process.uptime()
   });
 });
+
+// API Documentation
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs));
 
 // API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/videos', videoRoutes);
 app.use('/api/quizzes', quizRoutes);
+app.use('/api/student', studentRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/tests', testRoutes);
 app.use('/api/question-bank', questionBankRoutes);
-app.use('/api/notifications', notificationRoutes);
-app.use('/api/student', studentRoutes);
 app.use('/api/content', contentRoutes);
+app.use('/api/notifications', notificationRoutes);
 
-// Global error handler
-app.use((error: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
-  logger.error('Global error handler:', error);
+// Error handling middleware
+app.use((err: any, res: express.Response, next: express.NextFunction): void => {
+  logger.error('Unhandled error:', err);
   
-  if (error.code === 'LIMIT_FILE_SIZE') {
-    return res.status(400).json({
-      success: false,
-      message: 'File size too large'
-    });
-  }
-
-  res.status(500).json({
+  res.status(err.statusCode || 500).json({
     success: false,
-    message: process.env.NODE_ENV === 'production' ? 'Internal server error' : error.message
+    message: err.message || 'Internal server error',
+    ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
   });
 });
 
 // 404 handler
-app.use('*', (req, res) => {
+app.use((res: express.Response) => {
   res.status(404).json({
     success: false,
-    message: 'API endpoint not found',
-    availableEndpoints: {
-      documentation: '/api-docs',
-      health: '/health',
-      auth: '/api/auth',
-      videos: '/api/videos',
-      quizzes: '/api/quizzes',
-      admin: '/api/admin',
-      student: '/api/student'
-    }
+    message: 'Route not found'
   });
 });
 
 // Start server
-const startServer = async () => {
-  try {
-    await connectDatabase();
-    
-    app.listen(PORT, () => {
-      logger.info(`🚀 AVP Academy API Server running on port ${PORT}`);
-      logger.info(`📚 API Documentation: http://localhost:${PORT}/api-docs`);
-      logger.info(`🏥 Health Check: http://localhost:${PORT}/health`);
-      logger.info(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
-    });
-  } catch (error) {
-    logger.error('Failed to start server:', error);
-    process.exit(1);
-  }
-};
-
-startServer();
-
-// Graceful shutdown
-process.on('SIGTERM', () => {
-  logger.info('SIGTERM received, shutting down gracefully');
-  process.exit(0);
+app.listen(PORT, () => {
+  logger.info(`Server running on port ${PORT}`);
+  logger.info(`API Documentation available at http://localhost:${PORT}/api-docs`);
 });
 
-process.on('SIGINT', () => {
-  logger.info('SIGINT received, shutting down gracefully');
-  process.exit(0);
-});
+export default app;

@@ -30,8 +30,13 @@ export const getQuizzes = async (req: AuthRequest, res: Response) => {
     }
 
     // Filter by user's course if student
-    if (req.user?.role === 'STUDENT' && req.user.studentProfile?.courseId) {
-      where.courseId = req.user.studentProfile.courseId;
+    const user = await prisma.user.findUnique({
+      where: { id: req.user?.id },
+      include: { studentProfile: true }
+    });
+
+    if (user?.role === 'STUDENT' && user.studentProfile?.courseId) {
+      where.courseId = user.studentProfile.courseId;
     }
 
     const [quizzes, total] = await Promise.all([
@@ -84,7 +89,7 @@ export const getQuizzes = async (req: AuthRequest, res: Response) => {
   }
 };
 
-export const getQuizById = async (req: AuthRequest, res: Response) => {
+export const getQuizById = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
 
@@ -116,10 +121,11 @@ export const getQuizById = async (req: AuthRequest, res: Response) => {
     });
 
     if (!quiz || !quiz.isPublished) {
-      return res.status(404).json({
+      res.status(404).json({
         success: false,
         message: 'Quiz not found'
       });
+      return;
     }
 
     const response: ApiResponse = {
@@ -146,7 +152,7 @@ export const submitQuizValidation = [
   body('totalTimeTaken').isInt({ min: 0 }).withMessage('Invalid time taken')
 ];
 
-export const submitQuiz = async (req: AuthRequest, res: Response) => {
+export const submitQuiz = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { quizId, answers, totalTimeTaken }: QuizSubmission = req.body;
     const userId = req.user!.id;
@@ -163,10 +169,11 @@ export const submitQuiz = async (req: AuthRequest, res: Response) => {
     });
 
     if (!quiz || !quiz.isPublished) {
-      return res.status(404).json({
+      res.status(404).json({
         success: false,
         message: 'Quiz not found'
       });
+      return;
     }
 
     // Check if user already attempted this quiz
@@ -179,10 +186,11 @@ export const submitQuiz = async (req: AuthRequest, res: Response) => {
     });
 
     if (existingAttempt) {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         message: 'Quiz already completed'
       });
+      return;
     }
 
     // Calculate score
@@ -215,7 +223,7 @@ export const submitQuiz = async (req: AuthRequest, res: Response) => {
       data: {
         userId,
         quizId,
-        answers: answers,
+        answers: JSON.stringify(answers),
         score,
         totalQuestions: quiz.questions.length,
         correctAnswers,
