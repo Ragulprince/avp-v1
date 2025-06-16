@@ -298,8 +298,8 @@ const Profile: React.FC<ProfileProps> = ({ activeTab, onTabChange }) => {
                 {/* Class 10th */}
                 <div className="bg-blue-50 p-4 rounded-lg border border-blue-200ქ
 
-System: 200">
-                    border-blue-200">
+System: 200  border-blue-200">
+                   
                   <h4 className="font-semibold text-blue-900 mb-3 flex items-center">
                     <GraduationCap className="w-4 h-4 mr-2" />
                     Class 10th
