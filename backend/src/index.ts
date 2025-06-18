@@ -4,7 +4,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import compression from 'compression';
 import rateLimit from 'express-rate-limit';
-import { logger } from './config/logger';
+import { logger,requestLogger } from './config/logger';
 import { connectDatabase } from './config/database';
 import swaggerUi from 'swagger-ui-express';
 import { specs } from './config/swagger';
@@ -53,6 +53,9 @@ const limiter = rateLimit({
     message: 'Too many requests, please try again later'
   }
 });
+
+
+app.use(requestLogger)
 
 app.use('/api/', limiter);
 

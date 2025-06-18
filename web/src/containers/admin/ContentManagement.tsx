@@ -42,6 +42,7 @@ const ContentManagement = () => {
   const [selectedMaterial, setSelectedMaterial] = useState<any>(null);
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [isCompressing, setIsCompressing] = useState(false);
+  const [contentUrl, setContentUrl] = useState<string>('');
   const [uploadData, setUploadData] = useState<UploadData>({
     title: '',
     description: '',
@@ -52,7 +53,7 @@ const ContentManagement = () => {
 
   const filteredMaterials = materials.filter(material => {
     const matchesSearch = material.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         material.topic.toLowerCase().includes(searchTerm.toLowerCase());
+                         (material.description && material.description.toLowerCase().includes(searchTerm.toLowerCase()));
     const matchesSubject = !selectedSubject || material.subject === selectedSubject;
     const matchesType = !selectedType || material.type === selectedType;
     return matchesSearch && matchesSubject && matchesType;
@@ -130,42 +131,81 @@ const ContentManagement = () => {
       formData.append('file', uploadFile);
       formData.append('title', uploadData.title);
       formData.append('description', uploadData.description);
-      formData.append('subject', uploadData.subject || '');
-      formData.append('topic', uploadData.topic || '');
-      formData.append('courseId', uploadData.courseId);
+      formData.append('courseId', uploadData.courseId.toString());
       formData.append('type', uploadData.type);
 
-      // In real app, this would call contentService.uploadStudyMaterial(formData)
-      console.log('Uploading material:', uploadData);
-      
-      toast({
-        title: 'Success',
-        description: 'Material uploaded successfully',
+      // Call the actual API
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/content`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+        },
+        body: formData,
       });
+
+      if (!response.ok) {
+        throw new Error('Upload failed');
+      }
+
+      const result = await response.json();
+      
+      if (result.success) {
+        toast({
+          title: 'Success',
+          description: 'Material uploaded successfully',
+        });
+        
+        // Refresh the materials list
+        window.location.reload();
+      } else {
+        throw new Error(result.message || 'Upload failed');
+      }
       
       setIsUploadDialogOpen(false);
       setUploadFile(null);
       setUploadData({
         title: '',
         description: '',
-        subject: '',
-        topic: '',
-        courseId: undefined,
         type: MaterialType.PDF,
         status: MaterialStatus.DRAFT,
+        courseId: undefined,
       });
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: 'Error',
-        description: 'Failed to upload material',
+        description: error.message || 'Failed to upload material',
         variant: 'destructive',
       });
     }
   };
 
-  const handleViewMaterial = (material: any) => {
-    setSelectedMaterial(material);
-    setIsViewerOpen(true);
+  const handleViewMaterial = async (material: any) => {
+    try {
+      // Fetch the content with authentication
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/content/view/${material.id}`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to load content');
+      }
+
+      // Create a blob URL for the content
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      setContentUrl(url);
+      setSelectedMaterial(material);
+      setIsViewerOpen(true);
+    } catch (error) {
+      console.error('Error loading content:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to load content. Please check your authentication.',
+        variant: 'destructive',
+      });
+    }
   };
 
   const getTypeIcon = (type: string) => {
@@ -234,27 +274,20 @@ const ContentManagement = () => {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="course">Course *</Label>
-                  <Select 
-                    value={uploadData.courseId || ''} 
-                    onValueChange={(value) => setUploadData({...uploadData, courseId: value})}
+                  <Label htmlFor="course">Course</Label>
+                  <Select
+                    value={uploadData.courseId || ''}
+                    onValueChange={(value) => setUploadData({ ...uploadData, courseId: value })}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Select course" />
+                      <SelectValue placeholder="Select a course" />
                     </SelectTrigger>
                     <SelectContent>
                       {courses.map((course) => {
-                        const courseId = course.course_id || course.id;
-                        if (!courseId) {
-                          console.warn('Course missing ID:', course);
-                          return null;
-                        }
+                        const courseId = (course.course_id || course.id).toString();
                         return (
-                          <SelectItem 
-                            key={courseId} 
-                            value={courseId.toString()}
-                          >
-                            {course.name || 'Unnamed Course'}
+                          <SelectItem key={courseId} value={courseId}>
+                            {course.name}
                           </SelectItem>
                         );
                       })}
@@ -454,7 +487,7 @@ const ContentManagement = () => {
       {/* Materials Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredMaterials.map((material) => (
-          <Card key={material.id} className="hover:shadow-lg transition-shadow">
+          <Card key={String(material.id ?? Math.random())} className="hover:shadow-lg transition-shadow">
             <CardContent className="p-6">
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center space-x-3">
@@ -511,32 +544,50 @@ const ContentManagement = () => {
       </div>
 
       {/* Material Viewer Dialog */}
-      <Dialog open={isViewerOpen} onOpenChange={setIsViewerOpen}>
+      <Dialog open={isViewerOpen} onOpenChange={(open) => {
+        setIsViewerOpen(open);
+        if (!open) {
+          // Clean up blob URL when dialog closes
+          if (contentUrl) {
+            URL.revokeObjectURL(contentUrl);
+            setContentUrl('');
+          }
+          setSelectedMaterial(null);
+        }
+      }}>
         <DialogContent className="max-w-4xl h-[80vh]">
           <DialogHeader>
             <DialogTitle>{selectedMaterial?.title}</DialogTitle>
           </DialogHeader>
           <div className="flex-1 overflow-auto">
-            {selectedMaterial?.type === 'PDF' && (
+            {selectedMaterial?.type === 'PDF' && contentUrl && (
               <iframe
-                src={`/api/content/view/${selectedMaterial.id}`}
+                src={contentUrl}
                 className="w-full h-full"
                 title={selectedMaterial.title}
               />
             )}
-            {selectedMaterial?.type === 'IMAGE' && (
+            {selectedMaterial?.type === 'IMAGE' && contentUrl && (
               <img
-                src={`/api/content/view/${selectedMaterial.id}`}
+                src={contentUrl}
                 alt={selectedMaterial.title}
                 className="max-w-full h-auto"
               />
             )}
-            {selectedMaterial?.type === 'VIDEO' && (
+            {selectedMaterial?.type === 'VIDEO' && contentUrl && (
               <video
-                src={`/api/content/view/${selectedMaterial.id}`}
+                src={contentUrl}
                 controls
                 className="w-full"
               />
+            )}
+            {!contentUrl && selectedMaterial && (
+              <div className="flex items-center justify-center h-64">
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                  <p className="text-gray-600">Loading content...</p>
+                </div>
+              </div>
             )}
             {/* Add other content type viewers as needed */}
           </div>

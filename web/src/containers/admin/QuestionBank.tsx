@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -38,8 +37,9 @@ const QuestionBank = () => {
   });
 
   const filteredQuestions = questions.filter(question => {
-    const matchesSearch = question.question.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         question.topic.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch =
+      (question.question && question.question.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (question.topic && question.topic.toLowerCase().includes(searchTerm.toLowerCase()));
     const matchesSubject = !selectedSubject || question.subject === selectedSubject;
     const matchesDifficulty = !selectedDifficulty || question.difficulty === selectedDifficulty;
     const matchesType = !selectedType || question.type === selectedType;
@@ -169,7 +169,7 @@ const QuestionBank = () => {
                         <SelectValue placeholder="Select subject" />
                       </SelectTrigger>
                       <SelectContent>
-                        {subjects.map((subject) => (
+                        {subjects.filter(Boolean).map((subject) => (
                           <SelectItem key={subject} value={subject}>
                             {subject}
                           </SelectItem>
@@ -192,7 +192,7 @@ const QuestionBank = () => {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {questionTypes.map((type) => (
+                        {questionTypes.filter(Boolean).map((type) => (
                           <SelectItem key={type} value={type}>
                             {type.replace('_', ' ')}
                           </SelectItem>
@@ -207,7 +207,7 @@ const QuestionBank = () => {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {difficulties.map((difficulty) => (
+                        {difficulties.filter(Boolean).map((difficulty) => (
                           <SelectItem key={difficulty} value={difficulty}>
                             {difficulty}
                           </SelectItem>
@@ -258,11 +258,14 @@ const QuestionBank = () => {
                           <SelectValue placeholder="Select correct option" />
                         </SelectTrigger>
                         <SelectContent>
-                          {newQuestion.options.map((option, index) => (
-                            <SelectItem key={index} value={option} disabled={!option.trim()}>
-                              {String.fromCharCode(65 + index)}: {option || 'Empty option'}
-                            </SelectItem>
-                          ))}
+                          {newQuestion.options
+                            .map((option, index) => ({ option, index }))
+                            .filter(({ option }) => option && option.trim() !== '')
+                            .map(({ option, index }) => (
+                              <SelectItem key={option + '-' + index} value={option}>
+                                {String.fromCharCode(65 + index)}: {option}
+                              </SelectItem>
+                            ))}
                         </SelectContent>
                       </Select>
                     ) : (
@@ -375,7 +378,7 @@ const QuestionBank = () => {
                 <SelectValue placeholder="All subjects" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All subjects</SelectItem>
+                <SelectItem value="all">All subjects</SelectItem>
                 {subjects.map((subject) => (
                   <SelectItem key={subject} value={subject}>
                     {subject}
@@ -388,7 +391,7 @@ const QuestionBank = () => {
                 <SelectValue placeholder="All difficulties" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All difficulties</SelectItem>
+                <SelectItem value="all">All difficulties</SelectItem>
                 {difficulties.map((difficulty) => (
                   <SelectItem key={difficulty} value={difficulty}>
                     {difficulty}
@@ -401,7 +404,7 @@ const QuestionBank = () => {
                 <SelectValue placeholder="All types" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All types</SelectItem>
+                <SelectItem value="all">All types</SelectItem>
                 {questionTypes.map((type) => (
                   <SelectItem key={type} value={type}>
                     {type.replace('_', ' ')}
@@ -424,7 +427,7 @@ const QuestionBank = () => {
       {/* Questions List */}
       <div className="space-y-4">
         {filteredQuestions.map((question) => (
-          <Card key={question.id} className="hover:shadow-lg transition-shadow">
+          <Card key={question.id || question.question} className="hover:shadow-lg transition-shadow">
             <CardContent className="p-6">
               <div className="flex items-start justify-between mb-4">
                 <div className="flex-1">
@@ -448,7 +451,7 @@ const QuestionBank = () => {
                     </span>
                   </div>
                   <h3 className="font-semibold text-gray-900 mb-2">{question.question}</h3>
-                  {question.type === 'MCQ' && question.options && (
+                  {question.type === 'MCQ' && Array.isArray(question.options) && question.options.length > 0 && (
                     <div className="grid grid-cols-2 gap-2 mb-2">
                       {question.options.map((option, index) => (
                         <div key={index} className={`p-2 rounded border ${option === question.correctAnswer ? 'bg-green-50 border-green-200' : 'bg-gray-50 border-gray-200'}`}>

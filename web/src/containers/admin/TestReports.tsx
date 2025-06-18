@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -24,7 +23,7 @@ const TestReports = () => {
   const [dateRange, setDateRange] = useState('30');
 
   const filteredTests = tests.filter(test => {
-    const matchesSearch = test.title.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = test.title?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCourse = !selectedCourse || test.courseId === parseInt(selectedCourse);
     return matchesSearch && matchesCourse && test.status === 'COMPLETED';
   });
@@ -71,7 +70,7 @@ const TestReports = () => {
     );
   }
 
-  const totalAttempts = tests.reduce((sum, test) => sum + (test._count?.attempts || 0), 0);
+  const totalAttempts = tests.reduce((sum, test) => sum + (test?._count?.attempts || 0), 0);
   const averageScore = 76; // Mock data
   const passRate = 85; // Mock data
   const topPerformer = 'John Doe'; // Mock data
@@ -178,10 +177,10 @@ const TestReports = () => {
                 <SelectValue placeholder="All courses" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All courses</SelectItem>
-                {courses.map((course) => (
+                <SelectItem value="all">All courses</SelectItem>
+                {courses.filter(course => course.id).map((course) => (
                   <SelectItem key={course.id} value={course.id.toString()}>
-                    {course.name}
+                    {course.name || "Unnamed Course"}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -191,10 +190,10 @@ const TestReports = () => {
                 <SelectValue placeholder="All tests" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All tests</SelectItem>
-                {filteredTests.map((test) => (
+                <SelectItem value="all">All tests</SelectItem>
+                {filteredTests.filter(test => test.id).map((test) => (
                   <SelectItem key={test.id} value={test.id.toString()}>
-                    {test.title}
+                    {test.title || "Untitled Test"}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -380,7 +379,7 @@ const TestReports = () => {
                       </div>
                       <div>
                         <span className="text-gray-600">Attempts:</span>
-                        <span className="font-medium ml-1">{test._count?.attempts || 0}</span>
+                        <span className="font-medium ml-1">{test?._count?.attempts || 0}</span>
                       </div>
                       <div>
                         <span className="text-gray-600">Avg Score:</span>

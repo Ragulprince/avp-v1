@@ -57,7 +57,7 @@ export const upload = multer({
 // Upload Study Material
 export const uploadStudyMaterial = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const { title, description, subject, courseId } = req.body;
+    const { title, description, courseId, type } = req.body;
     const file = req.file;
 
     if (!file) {
@@ -68,24 +68,29 @@ export const uploadStudyMaterial = async (req: AuthRequest, res: Response): Prom
       return;
     }
 
-    // Determine material type based on mime type
-    let type: 'PDF' | 'PPT' | 'DOC' | 'IMAGE' | 'OTHER' = 'OTHER';
-    if (file.mimetype === 'application/pdf') type = 'PDF';
-    else if (file.mimetype.includes('powerpoint') || file.mimetype.includes('presentation')) type = 'PPT';
-    else if (file.mimetype.includes('word') || file.mimetype.includes('document')) type = 'DOC';
-    else if (file.mimetype.includes('image')) type = 'IMAGE';
+    // Determine material type based on mime type if not provided
+    let materialType: 'PDF' | 'PPT' | 'DOC' | 'IMAGE' | 'OTHER' = type || 'OTHER';
+    if (!type) {
+      if (file.mimetype === 'application/pdf') materialType = 'PDF';
+      else if (file.mimetype.includes('powerpoint') || file.mimetype.includes('presentation')) materialType = 'PPT';
+      else if (file.mimetype.includes('word') || file.mimetype.includes('document')) materialType = 'DOC';
+      else if (file.mimetype.includes('image')) materialType = 'IMAGE';
+    }
 
     const material = await prisma.studyMaterial.create({
       data: {
         title,
         description,
-        subject,
-        file_type: type,
+        file_type: materialType,
         file_url: `/uploads/${file.filename}`,
         file_name: file.originalname,
         file_size: `${(file.size / 1024 / 1024).toFixed(2)} MB`,
-        course_id: courseId,
+        course_id: courseId ? parseInt(courseId) : null,
         is_published: false
+      },
+      include: {
+        course: true,
+        subject: true
       }
     });
 
@@ -261,6 +266,8 @@ export const getContentStream = async (req: AuthRequest, res: Response) => {
     const { id } = req.params;
     const userId = req.user?.user_id;
 
+    console.log('getContentStream called with id:', id, 'userId:', userId);
+
     // Get the material and verify access
     const material = await prisma.studyMaterial.findUnique({
       where: { material_id: parseInt(id) },
@@ -275,7 +282,10 @@ export const getContentStream = async (req: AuthRequest, res: Response) => {
       }
     });
 
+    console.log('Material found:', material);
+
     if (!material) {
+      console.log('Material not found for id:', id);
       return res.status(404).json({ message: 'Material not found' });
     }
 
@@ -284,18 +294,29 @@ export const getContentStream = async (req: AuthRequest, res: Response) => {
                      req.user?.role === 'ADMIN' || 
                      req.user?.role === 'TEACHER';
 
+    console.log('User access check:', {
+      hasAccess,
+      userRole: req.user?.role,
+      courseStudents: material.course?.students.length
+    });
+
     if (!hasAccess) {
+      console.log('Access denied for user:', userId);
       return res.status(403).json({ message: 'Access denied' });
     }
 
     if (!material.file_url) {
+      console.log('File URL not found for material:', material.material_id);
       return res.status(404).json({ message: 'File URL not found' });
     }
 
     const filePath = path.join(process.env.UPLOAD_DIR || 'uploads', material.file_url);
 
+    console.log('File path:', filePath);
+
     // Check if file exists
     if (!fs.existsSync(filePath)) {
+      console.log('File not found at path:', filePath);
       return res.status(404).json({ message: 'File not found' });
     }
 
@@ -303,6 +324,8 @@ export const getContentStream = async (req: AuthRequest, res: Response) => {
     const contentType = getContentType(material.file_type || 'OTHER');
     res.setHeader('Content-Type', contentType);
     res.setHeader('Content-Disposition', `inline; filename="${material.file_name || 'file'}"`);
+
+    console.log('Streaming file with content type:', contentType);
 
     // Stream the file
     const fileStream = createReadStream(filePath);
@@ -364,13 +387,37 @@ export const getMaterials = async (_req: AuthRequest, res: Response) => {
       include: {
         subject: true,
         course: true
-      }
+      },
+      orderBy: { created_at: 'desc' }
     });
 
-    return res.json(materials);
+    // Transform the data to match frontend expectations
+    const transformedMaterials = materials.map(material => ({
+      id: material.material_id.toString(),
+      title: material.title,
+      description: material.description,
+      subject: material.subject?.name || 'Unknown',
+      topic: material.subject?.name || 'Unknown',
+      type: material.file_type || 'OTHER',
+      fileUrl: material.file_url,
+      fileName: material.file_name,
+      fileSize: material.file_size,
+      isPublished: material.is_published,
+      courseId: material.course_id?.toString(),
+      course: material.course,
+      createdAt: material.created_at.toISOString()
+    }));
+
+    return res.json({
+      success: true,
+      data: transformedMaterials
+    });
   } catch (error) {
     console.error('Error fetching materials:', error);
-    return res.status(500).json({ message: 'Error fetching materials' });
+    return res.status(500).json({ 
+      success: false,
+      message: 'Error fetching materials' 
+    });
   }
 };
 
