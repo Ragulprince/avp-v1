@@ -1,4 +1,3 @@
-
 import { Response } from 'express';
 import { body, query } from 'express-validator';
 import { prisma } from '../config/database';
@@ -18,11 +17,11 @@ export const getQuizzes = async (req: AuthRequest, res: Response) => {
     const skip = (parseInt(page as string) - 1) * parseInt(limit as string);
 
     const where: any = {
-      isPublished: true
+      is_published: true
     };
 
     if (subject && subject !== 'all') {
-      where.subject = subject;
+      where.subject_id = subject;
     }
 
     if (type) {
@@ -31,12 +30,12 @@ export const getQuizzes = async (req: AuthRequest, res: Response) => {
 
     // Filter by user's course if student
     const user = await prisma.user.findUnique({
-      where: { id: req.user?.id },
-      include: { studentProfile: true }
+      where: { user_id: req.user?.user_id },
+      include: { student_profile: true }
     });
 
-    if (user?.role === 'STUDENT' && user.studentProfile?.courseId) {
-      where.courseId = user.studentProfile.courseId;
+    if (user?.role === 'STUDENT' && user.student_profile?.course_id) {
+      where.course_id = user.student_profile.course_id;
     }
 
     const [quizzes, total] = await Promise.all([
@@ -45,7 +44,7 @@ export const getQuizzes = async (req: AuthRequest, res: Response) => {
         include: {
           course: {
             select: {
-              id: true,
+              course_id: true,
               name: true
             }
           },
@@ -58,7 +57,7 @@ export const getQuizzes = async (req: AuthRequest, res: Response) => {
         },
         skip,
         take: parseInt(limit as string),
-        orderBy: { createdAt: 'desc' }
+        orderBy: { created_at: 'desc' }
       }),
       prisma.quiz.count({ where })
     ]);
@@ -103,11 +102,11 @@ export const getQuizById = async (req: AuthRequest, res: Response): Promise<void
     }
 
     const quiz = await prisma.quiz.findUnique({
-      where: { id: quizId },
+      where: { quiz_id: quizId },
       include: {
         course: {
           select: {
-            id: true,
+            course_id: true,
             name: true
           }
         },
@@ -115,8 +114,8 @@ export const getQuizById = async (req: AuthRequest, res: Response): Promise<void
           include: {
             question: {
               select: {
-                id: true,
-                question: true,
+                question_id: true,
+                question_text: true,
                 type: true,
                 options: true,
                 marks: true,
@@ -129,7 +128,7 @@ export const getQuizById = async (req: AuthRequest, res: Response): Promise<void
       }
     });
 
-    if (!quiz || !quiz.isPublished) {
+    if (!quiz || !quiz.is_published) {
       res.status(404).json({
         success: false,
         message: 'Quiz not found'
@@ -164,7 +163,7 @@ export const submitQuizValidation = [
 export const submitQuiz = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { quizId, answers, totalTimeTaken }: QuizSubmission = req.body;
-    const userId = req.user!.id;
+    const userId = req.user!.user_id;
     const quizIdInt = parseInt(quizId);
 
     if (isNaN(quizIdInt)) {
@@ -176,7 +175,7 @@ export const submitQuiz = async (req: AuthRequest, res: Response): Promise<void>
     }
 
     const quiz = await prisma.quiz.findUnique({
-      where: { id: quizIdInt },
+      where: { quiz_id: quizIdInt },
       include: {
         questions: {
           include: {
@@ -186,7 +185,7 @@ export const submitQuiz = async (req: AuthRequest, res: Response): Promise<void>
       }
     });
 
-    if (!quiz || !quiz.isPublished) {
+    if (!quiz || !quiz.is_published) {
       res.status(404).json({
         success: false,
         message: 'Quiz not found'
@@ -197,9 +196,9 @@ export const submitQuiz = async (req: AuthRequest, res: Response): Promise<void>
     // Check if user already attempted this quiz
     const existingAttempt = await prisma.quizAttempt.findFirst({
       where: {
-        userId,
-        quizId: quizIdInt,
-        isCompleted: true
+        user_id: userId,
+        quiz_id: quizIdInt,
+        is_completed: true
       }
     });
 
@@ -219,14 +218,14 @@ export const submitQuiz = async (req: AuthRequest, res: Response): Promise<void>
     const answerMap = new Map(answers.map((a: QuizAnswer) => [a.questionId, a.answer]));
 
     for (const quizQuestion of quiz.questions) {
-      const userAnswer = answerMap.get(quizQuestion.questionId.toString());
-      const correctAnswer = quizQuestion.question.correctAnswer;
+      const userAnswer = answerMap.get(quizQuestion.question_id.toString());
+      const correctAnswer = quizQuestion.question.correct_answer;
 
       if (userAnswer === correctAnswer) {
         score += quizQuestion.question.marks;
         correctAnswers++;
-      } else if (userAnswer && quiz.negativeMarking && quiz.negativeMarks) {
-        score -= quiz.negativeMarks;
+      } else if (userAnswer && quiz.has_negative_marking && quiz.negative_marks) {
+        score -= quiz.negative_marks;
         wrongAnswers++;
       } else if (userAnswer) {
         wrongAnswers++;
@@ -239,25 +238,26 @@ export const submitQuiz = async (req: AuthRequest, res: Response): Promise<void>
     // Create quiz attempt
     const attempt = await prisma.quizAttempt.create({
       data: {
-        userId,
-        quizId: quizIdInt,
+        user_id: userId,
+        quiz_id: quizIdInt,
         answers: JSON.stringify(answers),
         score,
-        totalQuestions: quiz.questions.length,
-        correctAnswers,
-        wrongAnswers,
-        timeTaken: totalTimeTaken,
-        isCompleted: true,
-        completedAt: new Date()
+        total_questions: quiz.questions.length,
+        correct_answers: correctAnswers,
+        wrong_answers: wrongAnswers,
+        time_taken: totalTimeTaken,
+        is_completed: true,
+        submit_time: new Date()
       }
     });
 
-    // Update student profile stats
+    // Update student profile with new score
     await prisma.studentProfile.update({
-      where: { userId },
+      where: { user_id: userId },
       data: {
-        totalScore: { increment: score },
-        testsCompleted: { increment: 1 }
+        total_score: {
+          increment: score
+        }
       }
     });
 
@@ -265,13 +265,14 @@ export const submitQuiz = async (req: AuthRequest, res: Response): Promise<void>
       success: true,
       message: 'Quiz submitted successfully',
       data: {
-        attemptId: attempt.id,
+        attemptId: attempt.attempt_id,
         score,
-        totalQuestions: quiz.questions.length,
         correctAnswers,
         wrongAnswers,
+        totalQuestions: quiz.questions.length,
+        timeTaken: totalTimeTaken,
         percentage: Math.round((correctAnswers / quiz.questions.length) * 100),
-        passed: score >= quiz.passingMarks
+        passed: quiz.passing_marks ? score >= quiz.passing_marks : false
       }
     };
 
@@ -287,29 +288,28 @@ export const submitQuiz = async (req: AuthRequest, res: Response): Promise<void>
 
 export const getQuizAttempts = async (req: AuthRequest, res: Response) => {
   try {
-    const userId = req.user!.id;
+    const userId = req.user!.user_id;
     const { page = '1', limit = '10' } = req.query;
     const skip = (parseInt(page as string) - 1) * parseInt(limit as string);
 
     const [attempts, total] = await Promise.all([
       prisma.quizAttempt.findMany({
-        where: { userId, isCompleted: true },
+        where: { user_id: userId, is_completed: true },
         include: {
           quiz: {
             select: {
-              id: true,
+              quiz_id: true,
               title: true,
-              subject: true,
-              type: true,
-              totalMarks: true
+              total_marks: true,
+              passing_marks: true
             }
           }
         },
         skip,
         take: parseInt(limit as string),
-        orderBy: { completedAt: 'desc' }
+        orderBy: { submit_time: 'desc' }
       }),
-      prisma.quizAttempt.count({ where: { userId, isCompleted: true } })
+      prisma.quizAttempt.count({ where: { user_id: userId, is_completed: true } })
     ]);
 
     const response: ApiResponse = {

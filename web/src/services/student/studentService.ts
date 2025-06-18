@@ -1,9 +1,15 @@
-
 import { apiClient } from '../api';
 
 export interface StudentProfile {
-  name?: string;
-  phone?: string;
+  full_name?: string;
+  phone_number?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  country?: string;
+  pincode?: string;
+  date_of_birth?: string;
+  gender?: string;
 }
 
 export interface ChangePasswordData {

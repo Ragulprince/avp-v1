@@ -1,4 +1,3 @@
-
 import { Response } from 'express';
 import { query } from 'express-validator';
 import { prisma } from '../config/database';
@@ -18,29 +17,28 @@ export const getVideos = async (req: AuthRequest, res: Response) => {
     const skip = (parseInt(page) - 1) * parseInt(limit);
 
     const where: any = {
-      isPublished: true
+      is_published: true
     };
 
     if (subject && subject !== 'all') {
-      where.subject = subject;
+      where.subject_id = subject;
     }
 
     if (search) {
       where.OR = [
         { title: { contains: search, mode: 'insensitive' } },
-        { description: { contains: search, mode: 'insensitive' } },
-        { topic: { contains: search, mode: 'insensitive' } }
+        { description: { contains: search, mode: 'insensitive' } }
       ];
     }
 
     // Filter by user's course if student
     const user = await prisma.user.findUnique({
-      where: { id: req.user?.id },
-      include: { studentProfile: true }
+      where: { user_id: req.user?.user_id },
+      include: { student_profile: true }
     });
 
-    if (user?.role === 'STUDENT' && user.studentProfile?.courseId) {
-      where.courseId = user.studentProfile.courseId;
+    if (user?.role === 'STUDENT' && user.student_profile?.course_id) {
+      where.course_id = user.student_profile.course_id;
     }
 
     const [videos, total] = await Promise.all([
@@ -49,14 +47,14 @@ export const getVideos = async (req: AuthRequest, res: Response) => {
         include: {
           course: {
             select: {
-              id: true,
+              course_id: true,
               name: true
             }
           }
         },
         skip,
         take: parseInt(limit),
-        orderBy: { createdAt: 'desc' }
+        orderBy: { created_at: 'desc' }
       }),
       prisma.video.count({ where })
     ]);
@@ -97,18 +95,18 @@ export const getVideoById = async (req: AuthRequest, res: Response): Promise<voi
     }
 
     const video = await prisma.video.findUnique({
-      where: { id: videoId },
+      where: { video_id: videoId },
       include: {
         course: {
           select: {
-            id: true,
+            course_id: true,
             name: true
           }
         }
       }
     });
 
-    if (!video || !video.isPublished) {
+    if (!video || !video.is_published) {
       res.status(404).json({
         success: false,
         message: 'Video not found'
@@ -118,7 +116,7 @@ export const getVideoById = async (req: AuthRequest, res: Response): Promise<voi
 
     // Update view count
     await prisma.video.update({
-      where: { id: videoId },
+      where: { video_id: videoId },
       data: { views: { increment: 1 } }
     });
 
@@ -142,7 +140,7 @@ export const downloadVideo = async (req: AuthRequest, res: Response): Promise<vo
   try {
     const { id } = req.params;
     const videoId = parseInt(id);
-    const userId = req.user!.id;
+    const userId = req.user!.user_id;
 
     if (isNaN(videoId)) {
       res.status(400).json({
@@ -153,10 +151,10 @@ export const downloadVideo = async (req: AuthRequest, res: Response): Promise<vo
     }
 
     const video = await prisma.video.findUnique({
-      where: { id: videoId }
+      where: { video_id: videoId }
     });
 
-    if (!video || !video.isPublished) {
+    if (!video || !video.is_published) {
       res.status(404).json({
         success: false,
         message: 'Video not found'
@@ -167,20 +165,20 @@ export const downloadVideo = async (req: AuthRequest, res: Response): Promise<vo
     // Check if user already has active download
     const existingDownload = await prisma.videoDownload.findUnique({
       where: {
-        userId_videoId: {
-          userId,
-          videoId: videoId
+        user_id_video_id: {
+          user_id: userId,
+          video_id: videoId
         }
       }
     });
 
-    if (existingDownload && existingDownload.expiresAt > new Date()) {
+    if (existingDownload && existingDownload.expires_at > new Date()) {
       res.json({
         success: true,
         message: 'Download link already active',
         data: {
-          downloadUrl: video.videoUrl,
-          expiresAt: existingDownload.expiresAt
+          downloadUrl: video.video_url,
+          expiresAt: existingDownload.expires_at
         }
       });
       return;
@@ -192,18 +190,18 @@ export const downloadVideo = async (req: AuthRequest, res: Response): Promise<vo
 
     const download = await prisma.videoDownload.upsert({
       where: {
-        userId_videoId: {
-          userId,
-          videoId: videoId
+        user_id_video_id: {
+          user_id: userId,
+          video_id: videoId
         }
       },
       update: {
-        expiresAt
+        expires_at: expiresAt
       },
       create: {
-        userId,
-        videoId: videoId,
-        expiresAt
+        user_id: userId,
+        video_id: videoId,
+        expires_at: expiresAt
       }
     });
 
@@ -211,8 +209,8 @@ export const downloadVideo = async (req: AuthRequest, res: Response): Promise<vo
       success: true,
       message: 'Video download authorized',
       data: {
-        downloadUrl: video.videoUrl,
-        expiresAt: download.expiresAt
+        downloadUrl: video.video_url,
+        expiresAt: download.expires_at
       }
     };
 
@@ -229,15 +227,15 @@ export const downloadVideo = async (req: AuthRequest, res: Response): Promise<vo
 export const getVideoSubjects = async (res: Response) => {
   try {
     const subjects = await prisma.video.findMany({
-      where: { isPublished: true },
-      select: { subject: true },
-      distinct: ['subject']
+      where: { is_published: true },
+      select: { subject_id: true },
+      distinct: ['subject_id']
     });
 
     const response: ApiResponse = {
       success: true,
       message: 'Video subjects retrieved successfully',
-      data: subjects.map(s => s.subject)
+      data: subjects.map(s => s.subject_id)
     };
 
     res.json(response);

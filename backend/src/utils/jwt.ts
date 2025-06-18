@@ -13,7 +13,7 @@ export interface JWTPayload {
 
 export const generateToken = (user: User): string => {
   const payload: JWTPayload = {
-    id: user.id,
+    id: user.user_id,
     email: user.email,
     role: user.role,
   };

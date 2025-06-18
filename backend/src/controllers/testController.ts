@@ -1,8 +1,8 @@
-
 import { Response } from 'express';
 import { prisma } from '../config/database';
 import { AuthRequest } from '../types';
 import { logger } from '../config/logger';
+import type { Prisma } from '@prisma/client';
 
 // Test Creation with Configuration
 export const createTest = async (req: AuthRequest, res: Response) => {
@@ -10,67 +10,47 @@ export const createTest = async (req: AuthRequest, res: Response) => {
     const {
       title,
       description,
-      subject,
-      type,
-      duration,
-      totalMarks,
-      passingMarks,
-      negativeMarking,
-      negativeMarks,
-      courseId,
-      scheduledAt,
-      expiresAt,
-      questions
+      course_id,
+      subject_id,
+      batch_id,
+      time_limit_minutes,
+      total_marks,
+      passing_marks,
+      has_negative_marking,
+      negative_marks,
+      scheduled_at,
+      expires_at,
+      start_time,
+      end_time
     } = req.body;
 
     const quiz = await prisma.quiz.create({
       data: {
         title,
         description,
-        subject,
-        type,
-        duration,
-        totalMarks,
-        passingMarks,
-        negativeMarking,
-        negativeMarks,
-        courseId,
-        scheduledAt: scheduledAt ? new Date(scheduledAt) : null,
-        expiresAt: expiresAt ? new Date(expiresAt) : null,
-        isPublished: false
-      }
-    });
-
-    // Add questions to quiz
-    if (questions && questions.length > 0) {
-      const quizQuestions = questions.map((q: any, index: number) => ({
-        quizId: quiz.id,
-        questionId: q.questionId || q.id,
-        order: index + 1
-      }));
-
-      await prisma.quizQuestion.createMany({
-        data: quizQuestions
-      });
-    }
-
-    const completeQuiz = await prisma.quiz.findUnique({
-      where: { id: quiz.id },
-      include: {
-        questions: {
-          include: {
-            question: true
-          },
-          orderBy: { order: 'asc' }
-        },
-        course: true
+        course_id,
+        subject_id,
+        batch_id,
+        time_limit_minutes,
+        total_marks,
+        passing_marks,
+        has_negative_marking,
+        negative_marks,
+        scheduled_at,
+        expires_at,
+        start_time,
+        end_time,
+        is_published: false
       }
     });
 
     res.status(201).json({
       success: true,
       message: 'Test created successfully',
-      data: completeQuiz
+      data: {
+        quiz_id: quiz.quiz_id,
+        title: quiz.title
+      }
     });
   } catch (error) {
     logger.error('Create test error:', error);
@@ -93,9 +73,9 @@ export const getTests = async (req: AuthRequest, res: Response) => {
       ];
     }
 
-    if (subject) where.subject = subject;
+    if (subject) where.subject_id = subject;
     if (type) where.type = type;
-    if (courseId) where.courseId = courseId;
+    if (courseId) where.course_id = courseId;
 
     const [tests, total] = await Promise.all([
       prisma.quiz.findMany({
@@ -117,7 +97,7 @@ export const getTests = async (req: AuthRequest, res: Response) => {
             }
           }
         },
-        orderBy: { createdAt: 'desc' }
+        orderBy: { created_at: 'desc' }
       }),
       prisma.quiz.count({ where })
     ]);
@@ -139,92 +119,76 @@ export const getTests = async (req: AuthRequest, res: Response) => {
 };
 
 // Add Question to Test (Manual or from Question Bank)
-export const addQuestionToTest = async (req: AuthRequest, res: Response): Promise<void> => {
+export const addQuestionToTest = async (req: AuthRequest, res: Response) => {
   try {
     const { testId } = req.params;
-    const { questionId, questionData } = req.body;
+    const { questionId } = req.body;
     const testIdInt = parseInt(testId);
+    const questionIdInt = parseInt(questionId);
 
-    if (isNaN(testIdInt)) {
-      res.status(400).json({
+    // Verify test exists
+    const quiz = await prisma.quiz.findUnique({
+      where: { quiz_id: testIdInt }
+    });
+
+    if (!quiz) {
+      return res.status(404).json({
         success: false,
-        message: 'Invalid test ID'
+        message: 'Test not found'
       });
-      return;
     }
 
-    let question;
-    
-    if (questionId) {
-      // Adding from question bank
-      const questionIdInt = parseInt(questionId);
-      if (isNaN(questionIdInt)) {
-        res.status(400).json({
-          success: false,
-          message: 'Invalid question ID'
-        });
-        return;
-      }
+    // Verify question exists
+    const question = await prisma.question.findUnique({
+      where: { question_id: questionIdInt }
+    });
 
-      question = await prisma.question.findUnique({
-        where: { id: questionIdInt }
-      });
-      
-      if (!question) {
-        res.status(404).json({
-          success: false,
-          message: 'Question not found in question bank'
-        });
-        return;
-      }
-    } else if (questionData) {
-      // Creating new question manually
-      question = await prisma.question.create({
-        data: {
-          question: questionData.question,
-          type: questionData.type,
-          subject: questionData.subject,
-          topic: questionData.topic,
-          difficulty: questionData.difficulty,
-          options: questionData.options,
-          correctAnswer: questionData.correctAnswer,
-          explanation: questionData.explanation,
-          marks: questionData.marks || 1
-        }
-      });
-    } else {
-      res.status(400).json({
+    if (!question) {
+      return res.status(404).json({
         success: false,
-        message: 'Either questionId or questionData is required'
+        message: 'Question not found'
       });
-      return;
     }
 
-    // Get next order number
+    // Check if question is already in test
+    const existingQuestion = await prisma.quizQuestion.findFirst({
+      where: { 
+        quiz_id: testIdInt,
+        question_id: questionIdInt
+      }
+    });
+
+    if (existingQuestion) {
+      return res.status(400).json({
+        success: false,
+        message: 'Question already exists in test'
+      });
+    }
+
+    // Get the last question's order
     const lastQuestion = await prisma.quizQuestion.findFirst({
-      where: { quizId: testIdInt },
+      where: { quiz_id: testIdInt },
       orderBy: { order: 'desc' }
     });
 
-    const nextOrder = lastQuestion ? lastQuestion.order + 1 : 1;
+    const nextOrder = lastQuestion?.order ? lastQuestion.order + 1 : 1;
 
-    // Add question to quiz
+    // Add question to test
     await prisma.quizQuestion.create({
       data: {
-        quizId: testIdInt,
-        questionId: question.id,
+        quiz_id: testIdInt,
+        question_id: question.question_id,
         order: nextOrder
       }
     });
 
-    res.json({
+    return res.json({
       success: true,
-      message: 'Question added to test successfully',
-      data: question
+      message: 'Question added to test successfully'
     });
   } catch (error) {
     logger.error('Add question to test error:', error);
-    res.status(500).json({ success: false, message: 'Failed to add question to test' });
+    return res.status(500).json({ success: false, message: 'Failed to add question to test' });
   }
 };
 
@@ -243,7 +207,7 @@ export const getTestReport = async (req: AuthRequest, res: Response): Promise<vo
     }
 
     const test = await prisma.quiz.findUnique({
-      where: { id: testIdInt },
+      where: { quiz_id: testIdInt },
       include: {
         course: true,
         questions: {
@@ -256,8 +220,8 @@ export const getTestReport = async (req: AuthRequest, res: Response): Promise<vo
           include: {
             user: {
               select: {
-                id: true,
-                name: true,
+                user_id: true,
+                full_name: true,
                 email: true
               }
             }
@@ -265,7 +229,7 @@ export const getTestReport = async (req: AuthRequest, res: Response): Promise<vo
           orderBy: { score: 'desc' }
         }
       }
-    });
+    }) as (Prisma.QuizGetPayload<{ include: { questions: { include: { question: true } }, attempts: { include: { user: { select: { user_id: true, full_name: true, email: true } } } } } }> | null);
 
     if (!test) {
       res.status(404).json({
@@ -277,28 +241,28 @@ export const getTestReport = async (req: AuthRequest, res: Response): Promise<vo
 
     // Calculate analytics
     const totalAttempts = test.attempts.length;
-    const completedAttempts = test.attempts.filter((a: any) => a.isCompleted).length;
+    const completedAttempts = test.attempts.filter((a: any) => a.is_completed).length;
     const averageScore = totalAttempts > 0 
       ? test.attempts.reduce((sum: number, a: any) => sum + a.score, 0) / totalAttempts 
       : 0;
     const passRate = totalAttempts > 0 
-      ? (test.attempts.filter((a: any) => a.score >= test.passingMarks).length / totalAttempts) * 100 
+      ? (test.attempts.filter((a: any) => a.score >= (test.passing_marks ?? 0)).length  / totalAttempts) * 100 
       : 0;
 
     // Question-wise analysis
     const questionAnalysis = test.questions.map((q: any) => {
       const correctCount = test.attempts.filter((attempt: any) => {
         const answers = attempt.answers as any;
-        return answers[q.questionId] === q.question.correctAnswer;
+        return answers[q.question_id] === q.question.correct_answer;
       }).length;
       
       return {
-        questionId: q.questionId,
-        question: q.question.question,
+        question_id: q.question_id,
+        question_text: q.question.question_text,
         topic: q.question.topic,
         difficulty: q.question.difficulty,
-        correctAnswers: correctCount,
-        incorrectAnswers: totalAttempts - correctCount,
+        correct_answers: correctCount,
+        incorrect_answers: totalAttempts - correctCount,
         accuracy: totalAttempts > 0 ? (correctCount / totalAttempts) * 100 : 0
       };
     });
@@ -306,14 +270,31 @@ export const getTestReport = async (req: AuthRequest, res: Response): Promise<vo
     res.json({
       success: true,
       data: {
-        test,
-        analytics: {
-          totalAttempts,
-          completedAttempts,
-          averageScore: Math.round(averageScore * 100) / 100,
-          passRate: Math.round(passRate * 100) / 100
+        test_id: test.quiz_id,
+        title: test.title,
+        description: test.description,
+        course_id: test.course_id,
+        subject_id: test.subject_id,
+        batch_id: test.batch_id,
+        time_limit_minutes: test.time_limit_minutes,
+        total_marks: test.total_marks,
+        passing_marks: test.passing_marks,
+        has_negative_marking: test.has_negative_marking,
+        negative_marks: test.negative_marks,
+        is_published: test.is_published,
+        scheduled_at: test.scheduled_at,
+        expires_at: test.expires_at,
+        start_time: test.start_time,
+        end_time: test.end_time,
+        created_at: test.created_at,
+        updated_at: test.updated_at,
+        statistics: {
+          total_attempts: totalAttempts,
+          completed_attempts: completedAttempts,
+          average_score: averageScore,
+          pass_rate: passRate
         },
-        questionAnalysis,
+        question_analysis: questionAnalysis,
         attempts: test.attempts
       }
     });
@@ -340,14 +321,14 @@ export const getStudentTestReport = async (req: AuthRequest, res: Response): Pro
 
     const attempt = await prisma.quizAttempt.findFirst({
       where: {
-        userId: studentIdInt,
-        quizId: testIdInt
+        user_id: studentIdInt,
+        quiz_id: testIdInt
       },
       include: {
         user: {
           select: {
-            id: true,
-            name: true,
+            user_id: true,
+            full_name: true,
             email: true
           }
         },
@@ -375,17 +356,17 @@ export const getStudentTestReport = async (req: AuthRequest, res: Response): Pro
     // Question-wise analysis
     const answers = attempt.answers as any;
     const questionAnalysis = attempt.quiz.questions.map((q: any) => {
-      const studentAnswer = answers[q.questionId];
-      const isCorrect = studentAnswer === q.question.correctAnswer;
+      const studentAnswer = answers[q.question_id];
+      const isCorrect = studentAnswer === q.question.correct_answer;
       
       return {
-        questionId: q.questionId,
-        question: q.question.question,
+        question_id: q.question_id,
+        question_text: q.question.question_text,
         options: q.question.options,
-        correctAnswer: q.question.correctAnswer,
-        studentAnswer,
-        isCorrect,
-        marks: isCorrect ? q.question.marks : (attempt.quiz.negativeMarking ? -attempt.quiz.negativeMarks! : 0),
+        correct_answer: q.question.correct_answer,
+        student_answer: studentAnswer,
+        is_correct: isCorrect,
+        marks: isCorrect ? q.question.marks : (attempt.quiz.has_negative_marking ? -(attempt.quiz.negative_marks || 0) : 0),
         topic: q.question.topic,
         difficulty: q.question.difficulty,
         explanation: q.question.explanation
@@ -395,17 +376,20 @@ export const getStudentTestReport = async (req: AuthRequest, res: Response): Pro
     res.json({
       success: true,
       data: {
-        attempt,
-        questionAnalysis,
-        summary: {
-          totalQuestions: attempt.totalQuestions,
-          correctAnswers: attempt.correctAnswers,
-          wrongAnswers: attempt.wrongAnswers,
-          score: attempt.score,
-          percentage: (attempt.score / attempt.quiz.totalMarks) * 100,
-          timeTaken: attempt.timeTaken,
-          rank: await getStudentRank(testIdInt, attempt.score)
-        }
+        attempt_id: attempt.attempt_id,
+        user: attempt.user,
+        start_time: attempt.start_time,
+        submit_time: attempt.submit_time,
+        score: attempt.score,
+        total_questions: attempt.total_questions,
+        correct_answers: attempt.correct_answers,
+        wrong_answers: attempt.wrong_answers,
+        unattempted: attempt.unattempted,
+        accuracy: attempt.accuracy,
+        percentage: attempt.score ? (attempt.score / (attempt.quiz.total_marks || 0)) * 100 : 0,
+        time_taken: attempt.time_taken,
+        rank: await getStudentRank(testIdInt, attempt.score ?? 0),
+        question_analysis: questionAnalysis
       }
     });
   } catch (error) {
@@ -415,10 +399,10 @@ export const getStudentTestReport = async (req: AuthRequest, res: Response): Pro
 };
 
 // Helper function to get student rank
-async function getStudentRank(quizId: number, score: number): Promise<number> {
+async function getStudentRank(quiz_id: number, score: number): Promise<number> {
   const higherScores = await prisma.quizAttempt.count({
     where: {
-      quizId,
+      quiz_id,
       score: { gt: score }
     }
   });
@@ -430,7 +414,7 @@ async function getStudentRank(quizId: number, score: number): Promise<number> {
 export const toggleTestPublish = async (req: AuthRequest, res: Response) => {
   try {
     const { testId } = req.params;
-    const { isPublished } = req.body;
+    const { is_published } = req.body;
     const testIdInt = parseInt(testId);
 
     if (isNaN(testIdInt)) {
@@ -442,17 +426,154 @@ export const toggleTestPublish = async (req: AuthRequest, res: Response) => {
     }
 
     const test = await prisma.quiz.update({
-      where: { id: testIdInt },
-      data: { isPublished }
+      where: { quiz_id: testIdInt },
+      data: { is_published }
     });
 
     res.json({
       success: true,
-      message: `Test ${isPublished ? 'published' : 'unpublished'} successfully`,
-      data: test
+      message: `Test ${is_published ? 'published' : 'unpublished'} successfully`,
+      data: {
+        test_id: test.quiz_id,
+        is_published: test.is_published
+      }
     });
   } catch (error) {
     logger.error('Toggle test publish error:', error);
     res.status(500).json({ success: false, message: 'Failed to update test status' });
+  }
+};
+
+export const getTestDetails = async (req: AuthRequest, res: Response) => {
+  try {
+    const { testId } = req.params;
+    const testIdInt = parseInt(testId);
+    const test = await prisma.quiz.findUnique({
+      where: { quiz_id: testIdInt },
+      include: {
+        questions: { include: { question: true } },
+        attempts: {
+          include: {
+            user: { select: { user_id: true, full_name: true, email: true } }
+          }
+        }
+      }
+    }) as (Prisma.QuizGetPayload<{ include: { questions: { include: { question: true } }, attempts: { include: { user: { select: { user_id: true, full_name: true, email: true } } } } } }> | null);
+    if (!test) {
+      return res.status(404).json({ success: false, message: 'Test not found' });
+    }
+    const totalAttempts = test.attempts?.length || 0;
+    const completedAttempts = test.attempts?.filter(a => a.is_completed).length || 0;
+    const averageScore = totalAttempts > 0
+      ? test.attempts?.reduce((sum, a) => sum + (a.score ?? 0), 0) / totalAttempts
+      : 0;
+    const passPercentage = totalAttempts > 0
+      ? (test.attempts.filter((a: any) => a.score != null && a.score >= (test.passing_marks ?? 0)).length / totalAttempts) * 100
+      : 0;
+    const questionAnalysis = test.questions?.map(q => {
+      const correctCount = test.attempts?.filter(attempt => {
+        const answer = attempt.answers as any;
+        return answer && answer[q.question.question_id] === q.question.correct_answer;
+      }).length || 0;
+      return {
+        question_id: q.question.question_id,
+        question_text: q.question.question_text,
+        correct_answers: correctCount,
+        total_attempts: totalAttempts,
+        accuracy: totalAttempts > 0 ? (correctCount / totalAttempts) * 100 : 0
+      };
+    }) || [];
+    return res.json({
+      success: true,
+      data: {
+        test_id: test.quiz_id,
+        title: test.title,
+        description: test.description,
+        course_id: test.course_id,
+        subject_id: test.subject_id,
+        batch_id: test.batch_id,
+        time_limit_minutes: test.time_limit_minutes,
+        total_marks: test.total_marks,
+        passing_marks: test.passing_marks,
+        has_negative_marking: test.has_negative_marking,
+        negative_marks: test.negative_marks,
+        is_published: test.is_published,
+        scheduled_at: test.scheduled_at,
+        expires_at: test.expires_at,
+        start_time: test.start_time,
+        end_time: test.end_time,
+        created_at: test.created_at,
+        updated_at: test.updated_at,
+        statistics: {
+          total_attempts: totalAttempts,
+          completed_attempts: completedAttempts,
+          average_score: averageScore,
+          pass_percentage: passPercentage
+        },
+        question_analysis: questionAnalysis,
+        attempts: test.attempts || []
+      }
+    });
+  } catch (error) {
+    logger.error('Get test details error:', error);
+    return res.status(500).json({ success: false, message: 'Failed to fetch test details' });
+  }
+};
+
+export const getStudentAttempts = async (req: AuthRequest, res: Response) => {
+  try {
+    const { testId } = req.params;
+    const { studentId } = req.query;
+    const testIdInt = parseInt(testId);
+    const studentIdInt = parseInt(studentId as string);
+    const attempts = await prisma.quizAttempt.findMany({
+      where: {
+        user_id: studentIdInt,
+        quiz_id: testIdInt
+      },
+      include: {
+        user: { select: { user_id: true, full_name: true, email: true } },
+        quiz: {
+          include: {
+            questions: { include: { question: true } }
+          }
+        }
+      },
+      orderBy: { created_at: 'desc' }
+    });
+    const formattedAttempts = await Promise.all(attempts.map(async (attempt: any) => {
+      const questionAnalysis = attempt.quiz?.questions.map((q: any) => {
+        const answer = attempt.answers as any;
+        const isCorrect = answer && answer[q.question.question_id] === q.question.correct_answer;
+        return {
+          question_id: q.question.question_id,
+          question_text: q.question.question_text,
+          user_answer: answer ? answer[q.question.question_id] : null,
+          correct_answer: q.question.correct_answer,
+          is_correct: isCorrect,
+          marks: isCorrect ? q.question.marks : (attempt.quiz?.has_negative_marking ? -(attempt.quiz?.negative_marks ?? 0) : 0)
+        };
+      }) || [];
+      return {
+        attempt_id: attempt.attempt_id,
+        user: attempt.user,
+        start_time: attempt.start_time,
+        submit_time: attempt.submit_time,
+        score: attempt.score,
+        total_questions: attempt.total_questions,
+        correct_answers: attempt.correct_answers,
+        wrong_answers: attempt.wrong_answers,
+        unattempted: attempt.unattempted,
+        accuracy: attempt.accuracy,
+        percentage: attempt.score ? (attempt.score / (attempt.quiz?.total_marks ?? 0)) * 100 : 0,
+        time_taken: attempt.time_taken,
+        rank: await getStudentRank(testIdInt, attempt.score ?? 0),
+        question_analysis: questionAnalysis
+      };
+    }));
+    return res.json({ success: true, data: formattedAttempts });
+  } catch (error) {
+    logger.error('Get student attempts error:', error);
+    return res.status(500).json({ success: false, message: 'Failed to fetch student attempts' });
   }
 };

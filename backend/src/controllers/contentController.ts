@@ -55,7 +55,7 @@ export const upload = multer({
 // Upload Study Material
 export const uploadStudyMaterial = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const { title, description, subject, topic, courseId } = req.body;
+    const { title, description, subject, courseId } = req.body;
     const file = req.file;
 
     if (!file) {
@@ -78,13 +78,12 @@ export const uploadStudyMaterial = async (req: AuthRequest, res: Response): Prom
         title,
         description,
         subject,
-        topic,
-        type,
-        fileUrl: `/uploads/${file.filename}`,
-        fileName: file.originalname,
-        fileSize: `${(file.size / 1024 / 1024).toFixed(2)} MB`,
-        courseId,
-        isPublished: false
+        file_type: type,
+        file_url: `/uploads/${file.filename}`,
+        file_name: file.originalname,
+        file_size: `${(file.size / 1024 / 1024).toFixed(2)} MB`,
+        course_id: courseId,
+        is_published: false
       }
     });
 
@@ -102,7 +101,7 @@ export const uploadStudyMaterial = async (req: AuthRequest, res: Response): Prom
 // Upload Video
 export const uploadVideo = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const { title, description, subject, topic, courseId } = req.body;
+    const { title, description, subject, courseId } = req.body;
     const file = req.file;
 
     if (!file) {
@@ -118,10 +117,9 @@ export const uploadVideo = async (req: AuthRequest, res: Response): Promise<void
         title,
         description,
         subject,
-        topic,
-        videoUrl: `/uploads/${file.filename}`,
-        courseId,
-        isPublished: false
+        video_url: `/uploads/${file.filename}`,
+        course_id: courseId,
+        is_published: false
       }
     });
 
@@ -163,7 +161,7 @@ export const getStudyMaterials = async (req: AuthRequest, res: Response) => {
         include: {
           course: true
         },
-        orderBy: { createdAt: 'desc' }
+        orderBy: { created_at: 'desc' }
       }),
       prisma.studyMaterial.count({ where })
     ]);
@@ -188,17 +186,17 @@ export const getStudyMaterials = async (req: AuthRequest, res: Response) => {
 export const serveFile = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { filename } = req.params;
-    const userId = req.user?.id;
+    const userId = req.user?.user_id;
 
     // Check if user has access to this file
     const student = await prisma.user.findUnique({
-      where: { id: userId },
+      where: { user_id: userId },
       include: {
-        studentProfile: true
+        student_profile: true
       }
     });
 
-    if (!student?.studentProfile?.courseId) {
+    if (!student?.student_profile?.course_id) {
       res.status(403).json({
         success: false,
         message: 'Access denied'
@@ -241,8 +239,8 @@ export const toggleMaterialPublish = async (req: AuthRequest, res: Response): Pr
     }
 
     const material = await prisma.studyMaterial.update({
-      where: { id: materialId },
-      data: { isPublished }
+      where: { material_id: materialId },
+      data: { is_published: isPublished }
     });
 
     res.json({

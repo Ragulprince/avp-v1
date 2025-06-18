@@ -1,8 +1,8 @@
-
 import { Response } from 'express';
 import { prisma } from '../config/database';
 import { AuthRequest } from '../types';
 import { logger } from '../config/logger';
+import type { Prisma, QuestionType, DifficultyLevel } from '@prisma/client';
 
 // Get Questions from Question Bank
 export const getQuestions = async (req: AuthRequest, res: Response) => {
@@ -19,26 +19,26 @@ export const getQuestions = async (req: AuthRequest, res: Response) => {
     
     const skip = (parseInt(page as string) - 1) * parseInt(limit as string);
 
-    const where: any = {};
+    const where: Prisma.QuestionWhereInput = {};
     
     if (search) {
       where.OR = [
-        { question: { contains: search as string, mode: 'insensitive' } },
+        { question_text: { contains: search as string, mode: 'insensitive' } },
         { topic: { contains: search as string, mode: 'insensitive' } }
       ];
     }
 
-    if (subject) where.subject = subject;
-    if (topic) where.topic = topic;
-    if (difficulty) where.difficulty = difficulty;
-    if (type) where.type = type;
+    if (subject) where.subject_id = parseInt(subject as string);
+    if (topic) where.topic = topic as string;
+    if (difficulty) where.difficulty = difficulty as DifficultyLevel;
+    if (type) where.type = type as QuestionType;
 
     const [questions, total] = await Promise.all([
       prisma.question.findMany({
         where,
         skip,
         take: parseInt(limit as string),
-        orderBy: { createdAt: 'desc' }
+        orderBy: { created_at: 'desc' }
       }),
       prisma.question.count({ where })
     ]);
@@ -63,26 +63,26 @@ export const getQuestions = async (req: AuthRequest, res: Response) => {
 export const createQuestion = async (req: AuthRequest, res: Response) => {
   try {
     const {
-      question,
+      question_text,
       type,
-      subject,
+      subject_id,
       topic,
       difficulty,
       options,
-      correctAnswer,
+      correct_answer,
       explanation,
       marks
     } = req.body;
 
     const newQuestion = await prisma.question.create({
       data: {
-        question,
+        question_text,
         type,
-        subject,
+        subject_id,
         topic,
         difficulty,
         options,
-        correctAnswer,
+        correct_answer,
         explanation,
         marks: marks || 1
       }
@@ -115,7 +115,7 @@ export const updateQuestion = async (req: AuthRequest, res: Response) => {
     }
 
     const question = await prisma.question.update({
-      where: { id: questionId },
+      where: { question_id: questionId },
       data: updateData
     });
 
@@ -146,7 +146,7 @@ export const deleteQuestion = async (req: AuthRequest, res: Response): Promise<v
 
     // Check if question is used in any quiz
     const quizQuestion = await prisma.quizQuestion.findFirst({
-      where: { questionId: questionId }
+      where: { question_id: questionId }
     });
 
     if (quizQuestion) {
@@ -158,7 +158,7 @@ export const deleteQuestion = async (req: AuthRequest, res: Response): Promise<v
     }
 
     await prisma.question.delete({
-      where: { id: questionId }
+      where: { question_id: questionId }
     });
 
     res.json({
@@ -186,7 +186,7 @@ export const getQuestionById = async (req: AuthRequest, res: Response): Promise<
     }
 
     const question = await prisma.question.findUnique({
-      where: { id: questionId }
+      where: { question_id: questionId }
     });
 
     if (!question) {
@@ -221,7 +221,17 @@ export const bulkImportQuestions = async (req: AuthRequest, res: Response): Prom
     }
 
     const createdQuestions = await prisma.question.createMany({
-      data: questions,
+      data: questions.map(q => ({
+        question_text: q.question_text,
+        type: q.type,
+        subject_id: q.subject_id,
+        topic: q.topic,
+        difficulty: q.difficulty,
+        options: q.options,
+        correct_answer: q.correct_answer,
+        explanation: q.explanation,
+        marks: q.marks || 1
+      })),
       skipDuplicates: true
     });
 

@@ -1,4 +1,3 @@
-
 import { Response } from 'express';
 import { prisma } from '../config/database';
 import { AuthRequest } from '../types';
@@ -8,12 +7,12 @@ import { hashPassword } from '../utils/password';
 // Student Dashboard
 export const getStudentDashboard = async (req: AuthRequest, res: Response) => {
   try {
-    const userId = req.user?.id;
+    const userId = req.user?.user_id;
 
     const student = await prisma.user.findUnique({
-      where: { id: userId },
+      where: { user_id: userId },
       include: {
-        studentProfile: {
+        student_profile: {
           include: {
             batch: true,
             course: true
@@ -24,21 +23,21 @@ export const getStudentDashboard = async (req: AuthRequest, res: Response) => {
 
     // Get student stats
     const [videosWatched, testsCompleted, totalVideos, activeTests] = await Promise.all([
-      prisma.videoDownload.count({ where: { userId } }),
-      prisma.quizAttempt.count({ where: { userId, isCompleted: true } }),
+      prisma.videoDownload.count({ where: { user_id: userId } }),
+      prisma.quizAttempt.count({ where: { user_id: userId, is_completed: true } }),
       prisma.video.count({ 
         where: { 
-          courseId: student?.studentProfile?.courseId || undefined,
-          isPublished: true 
+          course_id: student?.student_profile?.course_id || undefined,
+          is_published: true 
         } 
       }),
       prisma.quiz.count({ 
         where: { 
-          courseId: student?.studentProfile?.courseId || undefined,
-          isPublished: true,
+          course_id: student?.student_profile?.course_id || undefined,
+          is_published: true,
           OR: [
-            { expiresAt: null },
-            { expiresAt: { gt: new Date() } }
+            { expires_at: null },
+            { expires_at: { gt: new Date() } }
           ]
         } 
       })
@@ -47,21 +46,21 @@ export const getStudentDashboard = async (req: AuthRequest, res: Response) => {
     // Get recent activities
     const recentVideos = await prisma.video.findMany({
       where: { 
-        courseId: student?.studentProfile?.courseId || undefined,
-        isPublished: true 
+        course_id: student?.student_profile?.course_id || undefined,
+        is_published: true 
       },
       take: 5,
-      orderBy: { createdAt: 'desc' }
+      orderBy: { created_at: 'desc' }
     });
 
     const upcomingTests = await prisma.quiz.findMany({
       where: {
-        courseId: student?.studentProfile?.courseId || undefined,
-        isPublished: true,
-        scheduledAt: { gt: new Date() }
+        course_id: student?.student_profile?.course_id || undefined,
+        is_published: true,
+        scheduled_at: { gt: new Date() }
       },
       take: 5,
-      orderBy: { scheduledAt: 'asc' }
+      orderBy: { scheduled_at: 'asc' }
     });
 
     res.json({
@@ -87,12 +86,12 @@ export const getStudentDashboard = async (req: AuthRequest, res: Response) => {
 // Get Student Profile
 export const getStudentProfile = async (req: AuthRequest, res: Response) => {
   try {
-    const userId = req.user?.id;
+    const userId = req.user?.user_id;
 
     const student = await prisma.user.findUnique({
-      where: { id: userId },
+      where: { user_id: userId },
       include: {
-        studentProfile: {
+        student_profile: {
           include: {
             batch: true,
             course: true
@@ -114,24 +113,24 @@ export const getStudentProfile = async (req: AuthRequest, res: Response) => {
 // Update Student Profile
 export const updateStudentProfile = async (req: AuthRequest, res: Response) => {
   try {
-    const userId = req.user?.id;
-    const { name, phone, address, emergencyContact, bio } = req.body;
+    const userId = req.user?.user_id;
+    const { full_name, phone_number, address, emergency_contact, bio } = req.body;
 
     const student = await prisma.user.update({
-      where: { id: userId },
+      where: { user_id: userId },
       data: {
-        name,
-        phone,
-        studentProfile: {
+        full_name,
+        phone_number,
+        student_profile: {
           update: {
             address,
-            emergencyContact,
+            emergency_contact,
             bio
           }
         }
       },
       include: {
-        studentProfile: {
+        student_profile: {
           include: {
             batch: true,
             course: true
@@ -154,11 +153,11 @@ export const updateStudentProfile = async (req: AuthRequest, res: Response) => {
 // Change Password
 export const changePassword = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const userId = req.user?.id;
+    const userId = req.user?.user_id;
     const { currentPassword, newPassword } = req.body;
 
     const user = await prisma.user.findUnique({
-      where: { id: userId }
+      where: { user_id: userId }
     });
 
     if (!user) {
@@ -185,7 +184,7 @@ export const changePassword = async (req: AuthRequest, res: Response): Promise<v
     const hashedNewPassword = await hashPassword(newPassword);
 
     await prisma.user.update({
-      where: { id: userId },
+      where: { user_id: userId },
       data: { password: hashedNewPassword }
     });
 
@@ -202,24 +201,24 @@ export const changePassword = async (req: AuthRequest, res: Response): Promise<v
 // Get Student Videos (based on batch/course)
 export const getStudentVideos = async (req: AuthRequest, res: Response) => {
   try {
-    const userId = req.user?.id;
+    const userId = req.user?.user_id;
     const { subject, page = 1, limit = 10 } = req.query;
     const skip = (parseInt(page as string) - 1) * parseInt(limit as string);
 
     const student = await prisma.user.findUnique({
-      where: { id: userId },
+      where: { user_id: userId },
       include: {
-        studentProfile: true
+        student_profile: true
       }
     });
 
     const where: any = {
-      courseId: student?.studentProfile?.courseId || undefined,
-      isPublished: true
+      course_id: student?.student_profile?.course_id || undefined,
+      is_published: true
     };
 
     if (subject) {
-      where.subject = subject;
+      where.subject_id = subject;
     }
 
     const [videos, total] = await Promise.all([
@@ -227,7 +226,7 @@ export const getStudentVideos = async (req: AuthRequest, res: Response) => {
         where,
         skip,
         take: parseInt(limit as string),
-        orderBy: { createdAt: 'desc' }
+        orderBy: { created_at: 'desc' }
       }),
       prisma.video.count({ where })
     ]);
@@ -248,34 +247,35 @@ export const getStudentVideos = async (req: AuthRequest, res: Response) => {
   }
 };
 
-// Get Student Study Materials
+// Get Student Materials
 export const getStudentMaterials = async (req: AuthRequest, res: Response) => {
   try {
-    const userId = req.user?.id;
-    const { subject, type, page = 1, limit = 10 } = req.query;
+    const userId = req.user?.user_id;
+    const { subject, page = 1, limit = 10 } = req.query;
     const skip = (parseInt(page as string) - 1) * parseInt(limit as string);
 
     const student = await prisma.user.findUnique({
-      where: { id: userId },
+      where: { user_id: userId },
       include: {
-        studentProfile: true
+        student_profile: true
       }
     });
 
     const where: any = {
-      courseId: student?.studentProfile?.courseId || undefined,
-      isPublished: true
+      course_id: student?.student_profile?.course_id || undefined,
+      is_published: true
     };
 
-    if (subject) where.subject = subject;
-    if (type) where.type = type;
+    if (subject) {
+      where.subject_id = subject;
+    }
 
     const [materials, total] = await Promise.all([
       prisma.studyMaterial.findMany({
         where,
         skip,
         take: parseInt(limit as string),
-        orderBy: { createdAt: 'desc' }
+        orderBy: { created_at: 'desc' }
       }),
       prisma.studyMaterial.count({ where })
     ]);
@@ -292,6 +292,6 @@ export const getStudentMaterials = async (req: AuthRequest, res: Response) => {
     });
   } catch (error) {
     logger.error('Get student materials error:', error);
-    res.status(500).json({ success: false, message: 'Failed to fetch study materials' });
+    res.status(500).json({ success: false, message: 'Failed to fetch materials' });
   }
 };

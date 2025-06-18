@@ -6,16 +6,21 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Plus, Search, Edit, Trash2, Users, UserCheck, GraduationCap, Phone, Mail } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '@/components/ui/dialog';
+import { Plus, Search, Edit, Trash2, Users, UserCheck, GraduationCap, Phone, Mail, BookOpen } from 'lucide-react';
 import { useStudents, useCreateStudent, useCourses, useBatches } from '@/hooks/api/useAdmin';
 import { CreateStudentData } from '@/services/admin';
+import { useToast } from '@/hooks/use-toast';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { adminService } from '@/services/admin';
 
 const StudentManagement = () => {
   const { data: studentsResponse, isLoading } = useStudents();
   const { data: coursesResponse } = useCourses();
   const { data: batchesResponse } = useBatches();
   const createStudentMutation = useCreateStudent();
+  const { toast } = useToast();
   
   const students = studentsResponse?.data || [];
   const courses = coursesResponse?.data || [];
@@ -25,46 +30,170 @@ const StudentManagement = () => {
   const [selectedCourse, setSelectedCourse] = useState('');
   const [selectedBatch, setSelectedBatch] = useState('');
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [selectedStudent, setSelectedStudent] = useState<any>(null);
   
   const [newStudent, setNewStudent] = useState<CreateStudentData>({
     email: '',
-    name: '',
-    phone: '',
-    batchId: '',
-    courseId: '',
+    full_name: '',
+    phone_number: '',
+    batch_id: '',
+    course_id: '',
     address: '',
-    emergencyContact: ''
+    emergency_contact: '',
+    date_of_birth: '',
+    gender: '',
+    city: '',
+    state: '',
+    country: '',
+    pincode: '',
+    adhaar_num: '',
+    enrollment_number: '',
+    qualification: '',
+    guardian_name: '',
+    guardian_contact: '',
+    guardian_email: '',
+    guardian_relation: '',
+    mobile_number: '',
+    bio: '',
+    blood_group: '',
+    medical_conditions: '',
+    achievements: {},
+    documents: {}
   });
 
+  const queryClient = useQueryClient();
+
+  const editStudentMutation = useMutation({
+    mutationFn: async (data: { id: string; values: Partial<CreateStudentData> }) => {
+      return adminService.updateStudent(data.id, data.values);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['students'] });
+      toast({ title: 'Success', description: 'Student updated successfully' });
+      setIsEditDialogOpen(false);
+    },
+    onError: () => {
+      toast({ title: 'Error', description: 'Failed to update student', variant: 'destructive' });
+    },
+  });
+
+  const deleteStudentMutation = useMutation({
+    mutationFn: async (id: string) => {
+      return adminService.deleteStudent(id);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['students'] });
+      toast({ title: 'Success', description: 'Student deleted successfully' });
+      setIsDeleteDialogOpen(false);
+    },
+    onError: () => {
+      toast({ title: 'Error', description: 'Failed to delete student', variant: 'destructive' });
+    },
+  });
+
+  const [editStudent, setEditStudent] = useState<CreateStudentData | null>(null);
+
+  const openEditDialog = (student: any) => {
+    setSelectedStudent(student);
+    setEditStudent({
+      email: student.email || '',
+      full_name: student.full_name || '',
+      phone_number: student.phone_number || '',
+      batch_id: student.student_profile?.batch?.batch_id?.toString() || '',
+      course_id: student.student_profile?.course?.course_id?.toString() || '',
+      address: student.address || '',
+      emergency_contact: student.emergency_contact || '',
+      date_of_birth: student.date_of_birth ? student.date_of_birth.split('T')[0] : '',
+      gender: student.gender || '',
+      city: student.city || '',
+      state: student.state || '',
+      country: student.country || '',
+      pincode: student.pincode || '',
+      avatar: student.avatar || '',
+      role: student.role || 'STUDENT',
+      is_active: student.is_active,
+      adhaar_num: student.student_profile?.adhaar_num || '',
+      enrollment_number: student.student_profile?.enrollment_number || '',
+      qualification: student.student_profile?.qualification || '',
+      guardian_name: student.student_profile?.guardian_name || '',
+      guardian_contact: student.student_profile?.guardian_contact || '',
+      guardian_email: student.student_profile?.guardian_email || '',
+      guardian_relation: student.student_profile?.guardian_relation || '',
+      mobile_number: student.student_profile?.mobile_number || '',
+      bio: student.student_profile?.bio || '',
+      blood_group: student.student_profile?.blood_group || '',
+      medical_conditions: student.student_profile?.medical_conditions || '',
+      achievements: student.student_profile?.achievements || {},
+      documents: student.student_profile?.documents || {}
+    });
+    setIsEditDialogOpen(true);
+  };
+
+  const handleEditStudent = async () => {
+    if (!selectedStudent || !editStudent) return;
+    await editStudentMutation.mutateAsync({ id: selectedStudent.user_id.toString(), values: editStudent });
+  };
+
+  const handleDeleteStudent = async () => {
+    if (!selectedStudent) return;
+    await deleteStudentMutation.mutateAsync(selectedStudent.user_id.toString());
+  };
+
   const filteredStudents = students.filter(student => {
-    const matchesSearch = student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         student.email.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCourse = !selectedCourse || student.studentProfile?.courseId === parseInt(selectedCourse);
-    const matchesBatch = !selectedBatch || student.studentProfile?.batchId === parseInt(selectedBatch);
+    const matchesSearch = (student.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) || false) ||
+                         (student.email?.toLowerCase().includes(searchTerm.toLowerCase()) || false);
+    const matchesCourse = !selectedCourse || student.student_profile?.course_id === parseInt(selectedCourse);
+    const matchesBatch = !selectedBatch || student.student_profile?.batch_id === parseInt(selectedBatch);
     return matchesSearch && matchesCourse && matchesBatch;
   });
 
   const handleAddStudent = async () => {
-    if (!newStudent.email || !newStudent.name) {
+    if (!newStudent.email || !newStudent.full_name) {
+      toast({
+        title: 'Error',
+        description: 'Email and full name are required',
+        variant: 'destructive',
+      });
       return;
     }
 
     try {
       const studentData: CreateStudentData = {
         ...newStudent,
-        batchId: newStudent.batchId || undefined, // Keep as string or undefined
-        courseId: newStudent.courseId || undefined // Keep as string or undefined
+        batch_id: newStudent.batch_id || undefined,
+        course_id: newStudent.course_id || undefined
       };
       
       await createStudentMutation.mutateAsync(studentData);
       setNewStudent({
         email: '',
-        name: '',
-        phone: '',
-        batchId: '',
-        courseId: '',
+        full_name: '',
+        phone_number: '',
+        batch_id: '',
+        course_id: '',
         address: '',
-        emergencyContact: ''
+        emergency_contact: '',
+        date_of_birth: '',
+        gender: '',
+        city: '',
+        state: '',
+        country: '',
+        pincode: '',
+        adhaar_num: '',
+        enrollment_number: '',
+        qualification: '',
+        guardian_name: '',
+        guardian_contact: '',
+        guardian_email: '',
+        guardian_relation: '',
+        mobile_number: '',
+        bio: '',
+        blood_group: '',
+        medical_conditions: '',
+        achievements: {},
+        documents: {}
       });
       setIsAddDialogOpen(false);
     } catch (error) {
@@ -105,14 +234,17 @@ const StudentManagement = () => {
           <DialogContent className="max-w-2xl">
             <DialogHeader>
               <DialogTitle>Add New Student</DialogTitle>
+              <DialogDescription>
+                Fill in the student's details below. Fields marked with * are required.
+              </DialogDescription>
             </DialogHeader>
             <div className="grid grid-cols-2 gap-4 mt-4">
               <div>
-                <Label htmlFor="name">Full Name *</Label>
+                <Label htmlFor="full_name">Full Name *</Label>
                 <Input
-                  id="name"
-                  value={newStudent.name}
-                  onChange={(e) => setNewStudent({...newStudent, name: e.target.value})}
+                  id="full_name"
+                  value={newStudent.full_name}
+                  onChange={(e) => setNewStudent({...newStudent, full_name: e.target.value})}
                   placeholder="Student name"
                 />
               </div>
@@ -127,32 +259,54 @@ const StudentManagement = () => {
                 />
               </div>
               <div>
-                <Label htmlFor="phone">Phone</Label>
+                <Label htmlFor="phone_number">Phone</Label>
                 <Input
-                  id="phone"
-                  value={newStudent.phone}
-                  onChange={(e) => setNewStudent({...newStudent, phone: e.target.value})}
+                  id="phone_number"
+                  value={newStudent.phone_number}
+                  onChange={(e) => setNewStudent({...newStudent, phone_number: e.target.value})}
                   placeholder="+91 9876543210"
                 />
               </div>
               <div>
-                <Label htmlFor="emergencyContact">Emergency Contact</Label>
+                <Label htmlFor="emergency_contact">Emergency Contact</Label>
                 <Input
-                  id="emergencyContact"
-                  value={newStudent.emergencyContact}
-                  onChange={(e) => setNewStudent({...newStudent, emergencyContact: e.target.value})}
+                  id="emergency_contact"
+                  value={newStudent.emergency_contact}
+                  onChange={(e) => setNewStudent({...newStudent, emergency_contact: e.target.value})}
                   placeholder="+91 9876543210"
                 />
+              </div>
+              <div>
+                <Label htmlFor="date_of_birth">Date of Birth</Label>
+                <Input
+                  id="date_of_birth"
+                  type="date"
+                  value={newStudent.date_of_birth}
+                  onChange={(e) => setNewStudent({...newStudent, date_of_birth: e.target.value})}
+                />
+              </div>
+              <div>
+                <Label htmlFor="gender">Gender</Label>
+                <Select value={newStudent.gender} onValueChange={(value) => setNewStudent({...newStudent, gender: value})}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select gender" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="male">Male</SelectItem>
+                    <SelectItem value="female">Female</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               <div>
                 <Label htmlFor="course">Course</Label>
-                <Select value={newStudent.courseId} onValueChange={(value) => setNewStudent({...newStudent, courseId: value})}>
+                <Select value={newStudent.course_id} onValueChange={(value) => setNewStudent({...newStudent, course_id: value})}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select course" />
                   </SelectTrigger>
                   <SelectContent>
                     {courses.map((course) => (
-                      <SelectItem key={course.id} value={course.id.toString()}>
+                      <SelectItem key={course.course_id} value={course.course_id.toString()}>
                         {course.name}
                       </SelectItem>
                     ))}
@@ -161,14 +315,14 @@ const StudentManagement = () => {
               </div>
               <div>
                 <Label htmlFor="batch">Batch</Label>
-                <Select value={newStudent.batchId} onValueChange={(value) => setNewStudent({...newStudent, batchId: value})}>
+                <Select value={newStudent.batch_id} onValueChange={(value) => setNewStudent({...newStudent, batch_id: value})}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select batch" />
                   </SelectTrigger>
                   <SelectContent>
                     {batches.map((batch) => (
-                      <SelectItem key={batch.id} value={batch.id.toString()}>
-                        {batch.name}
+                      <SelectItem key={batch.batch_id} value={batch.batch_id.toString()}>
+                        {batch.batch_name}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -181,6 +335,151 @@ const StudentManagement = () => {
                   value={newStudent.address}
                   onChange={(e) => setNewStudent({...newStudent, address: e.target.value})}
                   placeholder="Student address"
+                />
+              </div>
+              <div>
+                <Label htmlFor="city">City</Label>
+                <Input
+                  id="city"
+                  value={newStudent.city}
+                  onChange={(e) => setNewStudent({...newStudent, city: e.target.value})}
+                  placeholder="City"
+                />
+              </div>
+              <div>
+                <Label htmlFor="state">State</Label>
+                <Input
+                  id="state"
+                  value={newStudent.state}
+                  onChange={(e) => setNewStudent({...newStudent, state: e.target.value})}
+                  placeholder="State"
+                />
+              </div>
+              <div>
+                <Label htmlFor="country">Country</Label>
+                <Input
+                  id="country"
+                  value={newStudent.country}
+                  onChange={(e) => setNewStudent({...newStudent, country: e.target.value})}
+                  placeholder="Country"
+                />
+              </div>
+              <div>
+                <Label htmlFor="pincode">Pincode</Label>
+                <Input
+                  id="pincode"
+                  value={newStudent.pincode}
+                  onChange={(e) => setNewStudent({...newStudent, pincode: e.target.value})}
+                  placeholder="Pincode"
+                />
+              </div>
+              <div>
+                <Label htmlFor="adhaar_num">Adhaar Number</Label>
+                <Input
+                  id="adhaar_num"
+                  value={newStudent.adhaar_num}
+                  onChange={(e) => setNewStudent({...newStudent, adhaar_num: e.target.value})}
+                  placeholder="Adhaar Number"
+                />
+              </div>
+              <div>
+                <Label htmlFor="enrollment_number">Enrollment Number</Label>
+                <Input
+                  id="enrollment_number"
+                  value={newStudent.enrollment_number}
+                  onChange={(e) => setNewStudent({...newStudent, enrollment_number: e.target.value})}
+                  placeholder="Enrollment Number"
+                />
+              </div>
+              <div>
+                <Label htmlFor="qualification">Qualification</Label>
+                <Input
+                  id="qualification"
+                  value={newStudent.qualification}
+                  onChange={(e) => setNewStudent({...newStudent, qualification: e.target.value})}
+                  placeholder="Qualification"
+                />
+              </div>
+              <div>
+                <Label htmlFor="guardian_name">Guardian Name</Label>
+                <Input
+                  id="guardian_name"
+                  value={newStudent.guardian_name}
+                  onChange={(e) => setNewStudent({...newStudent, guardian_name: e.target.value})}
+                  placeholder="Guardian Name"
+                />
+              </div>
+              <div>
+                <Label htmlFor="guardian_contact">Guardian Contact</Label>
+                <Input
+                  id="guardian_contact"
+                  value={newStudent.guardian_contact}
+                  onChange={(e) => setNewStudent({...newStudent, guardian_contact: e.target.value})}
+                  placeholder="Guardian Contact"
+                />
+              </div>
+              <div>
+                <Label htmlFor="guardian_email">Guardian Email</Label>
+                <Input
+                  id="guardian_email"
+                  type="email"
+                  value={newStudent.guardian_email}
+                  onChange={(e) => setNewStudent({...newStudent, guardian_email: e.target.value})}
+                  placeholder="Guardian Email"
+                />
+              </div>
+              <div>
+                <Label htmlFor="guardian_relation">Guardian Relation</Label>
+                <Input
+                  id="guardian_relation"
+                  value={newStudent.guardian_relation}
+                  onChange={(e) => setNewStudent({...newStudent, guardian_relation: e.target.value})}
+                  placeholder="Guardian Relation"
+                />
+              </div>
+              <div>
+                <Label htmlFor="mobile_number">Mobile Number</Label>
+                <Input
+                  id="mobile_number"
+                  value={newStudent.mobile_number}
+                  onChange={(e) => setNewStudent({...newStudent, mobile_number: e.target.value})}
+                  placeholder="Mobile Number"
+                />
+              </div>
+              <div>
+                <Label htmlFor="blood_group">Blood Group</Label>
+                <Select value={newStudent.blood_group} onValueChange={(value) => setNewStudent({...newStudent, blood_group: value})}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select blood group" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="A+">A+</SelectItem>
+                    <SelectItem value="A-">A-</SelectItem>
+                    <SelectItem value="B+">B+</SelectItem>
+                    <SelectItem value="B-">B-</SelectItem>
+                    <SelectItem value="AB+">AB+</SelectItem>
+                    <SelectItem value="AB-">AB-</SelectItem>
+                    <SelectItem value="O+">O+</SelectItem>
+                    <SelectItem value="O-">O-</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="col-span-2">
+                <Label htmlFor="medical_conditions">Medical Conditions</Label>
+                <Textarea
+                  id="medical_conditions"
+                  value={newStudent.medical_conditions}
+                  onChange={(e) => setNewStudent({...newStudent, medical_conditions: e.target.value})}
+                  placeholder="Medical Conditions"
+                />
+              </div>
+              <div className="col-span-2">
+                <Label htmlFor="bio">Bio</Label>
+                <Textarea
+                  id="bio"
+                  value={newStudent.bio}
+                  onChange={(e) => setNewStudent({...newStudent, bio: e.target.value})}
+                  placeholder="Student Bio"
                 />
               </div>
             </div>
@@ -217,7 +516,7 @@ const StudentManagement = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Active Students</p>
-                <p className="text-2xl font-bold">{students.filter(s => s.isActive).length}</p>
+                <p className="text-2xl font-bold">{students.filter(s => s.is_active).length}</p>
               </div>
               <UserCheck className="w-8 h-8 text-green-500" />
             </div>
@@ -228,7 +527,7 @@ const StudentManagement = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Enrolled Courses</p>
-                <p className="text-2xl font-bold">{students.filter(s => s.studentProfile?.courseId).length}</p>
+                <p className="text-2xl font-bold">{students.filter(s => s.student_profile?.course_id).length}</p>
               </div>
               <GraduationCap className="w-8 h-8 text-purple-500" />
             </div>
@@ -242,7 +541,7 @@ const StudentManagement = () => {
                 <p className="text-2xl font-bold">{students.filter(s => {
                   const monthAgo = new Date();
                   monthAgo.setMonth(monthAgo.getMonth() - 1);
-                  return new Date(s.createdAt) > monthAgo;
+                  return new Date(s.created_at) > monthAgo;
                 }).length}</p>
               </div>
               <Users className="w-8 h-8 text-orange-500" />
@@ -270,7 +569,7 @@ const StudentManagement = () => {
               </SelectTrigger>
               <SelectContent>
                 {courses.map((course) => (
-                  <SelectItem key={course.id} value={course.id.toString()}>
+                  <SelectItem key={course.course_id} value={course.course_id.toString()}>
                     {course.name}
                   </SelectItem>
                 ))}
@@ -282,8 +581,8 @@ const StudentManagement = () => {
               </SelectTrigger>
               <SelectContent>
                 {batches.map((batch) => (
-                  <SelectItem key={batch.id} value={batch.id.toString()}>
-                    {batch.name}
+                  <SelectItem key={batch.batch_id} value={batch.batch_id.toString()}>
+                    {batch.batch_name}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -299,71 +598,73 @@ const StudentManagement = () => {
         </CardContent>
       </Card>
 
-      {/* Students Grid */}
+      {/* Student List */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredStudents.map((student) => (
-          <Card key={student.id} className="hover:shadow-lg transition-shadow">
+          <Card key={student.user_id}>
             <CardContent className="p-6">
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex items-center space-x-3">
+              <div className="flex items-start justify-between">
+                <div className="flex items-center space-x-4">
                   <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
                     <span className="text-white font-semibold text-lg">
-                      {student.name.split(' ').map(n => n[0]).join('')}
+                      {student.full_name?.split(' ').map(n => n[0]).join('')}
                     </span>
                   </div>
                   <div>
-                    <h3 className="font-semibold text-gray-900">{student.name}</h3>
-                    <Badge variant={student.isActive ? "default" : "secondary"}>
-                      {student.isActive ? 'Active' : 'Inactive'}
+                    <h3 className="font-semibold text-gray-900">{student.full_name}</h3>
+                    <Badge variant={student.is_active ? "default" : "secondary"}>
+                      {student.is_active ? 'Active' : 'Inactive'}
                     </Badge>
                   </div>
                 </div>
-                <div className="flex space-x-1">
-                  <Button variant="ghost" size="sm">
+                <div className="flex space-x-2">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => openEditDialog(student)}
+                  >
                     <Edit className="w-4 h-4" />
                   </Button>
-                  <Button variant="ghost" size="sm">
-                    <Trash2 className="w-4 h-4 text-red-500" />
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => {
+                      setSelectedStudent(student);
+                      setIsDeleteDialogOpen(true);
+                    }}
+                  >
+                    <Trash2 className="w-4 h-4" />
                   </Button>
                 </div>
               </div>
-
-              <div className="space-y-2 mb-4">
+              <div className="mt-4 space-y-2">
                 <div className="flex items-center space-x-2 text-sm text-gray-600">
                   <Mail className="w-4 h-4" />
                   <span>{student.email}</span>
                 </div>
-                {student.phone && (
+                {student.phone_number && (
                   <div className="flex items-center space-x-2 text-sm text-gray-600">
                     <Phone className="w-4 h-4" />
-                    <span>{student.phone}</span>
+                    <span>{student.phone_number}</span>
+                  </div>
+                )}
+                {student.student_profile?.course && (
+                  <div className="flex items-center space-x-2 text-sm text-gray-600">
+                    <BookOpen className="w-4 h-4" />
+                    <span>{student.student_profile.course.name}</span>
+                  </div>
+                )}
+                {student.student_profile?.batch && (
+                  <div className="flex items-center space-x-2 text-sm text-gray-600">
+                    <GraduationCap className="w-4 h-4" />
+                    <span>{student.student_profile.batch.batch_name}</span>
                   </div>
                 )}
               </div>
-
-              <div className="space-y-2">
-                {student.studentProfile?.course && (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Course:</span>
-                    <span className="font-medium">{student.studentProfile.course.name}</span>
-                  </div>
-                )}
-                {student.studentProfile?.batch && (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Batch:</span>
-                    <span className="font-medium">{student.studentProfile.batch.name}</span>
-                  </div>
-                )}
+              <div className="mt-4 pt-4 border-t">
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">Joined:</span>
-                  <span className="font-medium">{new Date(student.createdAt).toLocaleDateString()}</span>
-                </div>
-              </div>
-
-              <div className="mt-4 pt-4 border-t border-gray-200">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600">Last Activity</span>
-                  <span className="text-sm font-medium">2 days ago</span>
+                  <span className="font-medium">{new Date(student.created_at).toLocaleDateString()}</span>
                 </div>
               </div>
             </CardContent>
@@ -371,19 +672,182 @@ const StudentManagement = () => {
         ))}
       </div>
 
-      {filteredStudents.length === 0 && (
-        <Card>
-          <CardContent className="p-12 text-center">
-            <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">No students found</h3>
-            <p className="text-gray-600 mb-4">Try adjusting your search or add your first student.</p>
-            <Button onClick={() => setIsAddDialogOpen(true)}>
-              <Plus className="w-4 h-4 mr-2" />
-              Add Student
+      {/* Edit Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Edit Student</DialogTitle>
+            <DialogDescription>
+              Update student information below.
+            </DialogDescription>
+          </DialogHeader>
+          {editStudent && (
+            <div className="grid grid-cols-2 gap-4 mt-4">
+              <div>
+                <Label htmlFor="edit_full_name">Full Name *</Label>
+                <Input
+                  id="edit_full_name"
+                  value={editStudent.full_name}
+                  onChange={e => setEditStudent({ ...editStudent, full_name: e.target.value })}
+                  placeholder="Student name"
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit_email">Email *</Label>
+                <Input
+                  id="edit_email"
+                  type="email"
+                  value={editStudent.email}
+                  onChange={e => setEditStudent({ ...editStudent, email: e.target.value })}
+                  placeholder="student@example.com"
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit_phone_number">Phone</Label>
+                <Input
+                  id="edit_phone_number"
+                  value={editStudent.phone_number}
+                  onChange={e => setEditStudent({ ...editStudent, phone_number: e.target.value })}
+                  placeholder="+91 9876543210"
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit_emergency_contact">Emergency Contact</Label>
+                <Input
+                  id="edit_emergency_contact"
+                  value={editStudent.emergency_contact}
+                  onChange={e => setEditStudent({ ...editStudent, emergency_contact: e.target.value })}
+                  placeholder="+91 9876543210"
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit_date_of_birth">Date of Birth</Label>
+                <Input
+                  id="edit_date_of_birth"
+                  type="date"
+                  value={editStudent.date_of_birth}
+                  onChange={e => setEditStudent({ ...editStudent, date_of_birth: e.target.value })}
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit_gender">Gender</Label>
+                <Select value={editStudent.gender} onValueChange={value => setEditStudent({ ...editStudent, gender: value })}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select gender" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="male">Male</SelectItem>
+                    <SelectItem value="female">Female</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="edit_course">Course</Label>
+                <Select value={editStudent.course_id} onValueChange={value => setEditStudent({ ...editStudent, course_id: value })}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select course" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {courses.map(course => (
+                      <SelectItem key={course.course_id} value={course.course_id.toString()}>
+                        {course.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="edit_batch">Batch</Label>
+                <Select value={editStudent.batch_id} onValueChange={value => setEditStudent({ ...editStudent, batch_id: value })}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select batch" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {batches.map(batch => (
+                      <SelectItem key={batch.batch_id} value={batch.batch_id.toString()}>
+                        {batch.batch_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="col-span-2">
+                <Label htmlFor="edit_address">Address</Label>
+                <Textarea
+                  id="edit_address"
+                  value={editStudent.address}
+                  onChange={e => setEditStudent({ ...editStudent, address: e.target.value })}
+                  placeholder="Student address"
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit_city">City</Label>
+                <Input
+                  id="edit_city"
+                  value={editStudent.city}
+                  onChange={e => setEditStudent({ ...editStudent, city: e.target.value })}
+                  placeholder="City"
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit_state">State</Label>
+                <Input
+                  id="edit_state"
+                  value={editStudent.state}
+                  onChange={e => setEditStudent({ ...editStudent, state: e.target.value })}
+                  placeholder="State"
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit_country">Country</Label>
+                <Input
+                  id="edit_country"
+                  value={editStudent.country}
+                  onChange={e => setEditStudent({ ...editStudent, country: e.target.value })}
+                  placeholder="Country"
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit_pincode">Pincode</Label>
+                <Input
+                  id="edit_pincode"
+                  value={editStudent.pincode}
+                  onChange={e => setEditStudent({ ...editStudent, pincode: e.target.value })}
+                  placeholder="Pincode"
+                />
+              </div>
+            </div>
+          )}
+          <div className="flex justify-end space-x-2 mt-6">
+            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+              Cancel
             </Button>
-          </CardContent>
-        </Card>
-      )}
+            <Button onClick={handleEditStudent} disabled={editStudentMutation.isPending}>
+              {editStudentMutation.isPending ? 'Saving...' : 'Save Changes'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the student's account
+              and remove their data from our servers.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteStudent}>
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

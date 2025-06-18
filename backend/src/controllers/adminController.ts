@@ -8,7 +8,7 @@ import crypto from 'crypto';
 // Student Management
 export const createStudent = async (req: AuthRequest, res: Response) => {
   try {
-    const { email, name, phone, batchId, courseId, address, emergencyContact } = req.body;
+    const { email, full_name, phone_number, batch_id, course_id, address, emergency_contact } = req.body;
     
     // Generate random password
     const randomPassword = crypto.randomBytes(8).toString('hex');
@@ -18,21 +18,21 @@ export const createStudent = async (req: AuthRequest, res: Response) => {
     const student = await prisma.user.create({
       data: {
         email,
-        name,
-        phone,
+        full_name,
+        phone_number,
         password: hashedPassword,
         role: 'STUDENT',
-        studentProfile: {
+        student_profile: {
           create: {
-            batchId: batchId ? parseInt(batchId, 10) : undefined, // Convert to integer
-            courseId: courseId ? parseInt(courseId, 10) : undefined, // Convert to integer
+            batch_id: batch_id ? parseInt(batch_id, 10) : undefined,
+            course_id: course_id ? parseInt(course_id, 10) : undefined,
             address,
-            emergencyContact
+            emergency_contact
           }
         }
       },
       include: {
-        studentProfile: {
+        student_profile: {
           include: {
             batch: true,
             course: true
@@ -54,22 +54,22 @@ export const createStudent = async (req: AuthRequest, res: Response) => {
 
 export const getStudents = async (req: AuthRequest, res: Response) => {
   try {
-    const { page = 1, limit = 10, search, batchId, courseId } = req.query;
+    const { page = 1, limit = 10, search, batch_id, course_id } = req.query;
     const skip = (parseInt(page as string) - 1) * parseInt(limit as string);
 
     const where: any = { role: 'STUDENT' };
     
     if (search) {
       where.OR = [
-        { name: { contains: search as string, mode: 'insensitive' } },
+        { full_name: { contains: search as string, mode: 'insensitive' } },
         { email: { contains: search as string, mode: 'insensitive' } }
       ];
     }
 
-    if (batchId || courseId) {
-      where.studentProfile = {};
-      if (batchId) where.studentProfile.batchId = parseInt(batchId as string);
-      if (courseId) where.studentProfile.courseId = parseInt(courseId as string);
+    if (batch_id || course_id) {
+      where.student_profile = {};
+      if (batch_id) where.student_profile.batch_id = parseInt(batch_id as string);
+      if (course_id) where.student_profile.course_id = parseInt(course_id as string);
     }
 
     const [students, total] = await Promise.all([
@@ -78,14 +78,14 @@ export const getStudents = async (req: AuthRequest, res: Response) => {
         skip,
         take: parseInt(limit as string),
         include: {
-          studentProfile: {
+          student_profile: {
             include: {
               batch: true,
               course: true
             }
           }
         },
-        orderBy: { createdAt: 'desc' }
+        orderBy: { created_at: 'desc' }
       }),
       prisma.user.count({ where })
     ]);
@@ -119,25 +119,25 @@ export const updateStudent = async (req: AuthRequest, res: Response) => {
       return;
     }
 
-    const { name, phone, batchId, courseId, address, emergencyContact, isActive } = req.body;
+    const { full_name, phone_number, batch_id, course_id, address, emergency_contact, is_active } = req.body;
 
     const student = await prisma.user.update({
-      where: { id: studentId },
+      where: { user_id: studentId },
       data: {
-        name,
-        phone,
-        isActive,
-        studentProfile: {
+        full_name,
+        phone_number,
+        is_active,
+        student_profile: {
           update: {
-            batchId,
-            courseId,
+            batch_id,
+            course_id,
             address,
-            emergencyContact
+            emergency_contact
           }
         }
       },
       include: {
-        studentProfile: {
+        student_profile: {
           include: {
             batch: true,
             course: true
@@ -171,7 +171,7 @@ export const deleteStudent = async (req: AuthRequest, res: Response) => {
     }
 
     await prisma.user.delete({
-      where: { id: studentId }
+      where: { user_id: studentId }
     });
 
     res.json({
@@ -211,7 +211,7 @@ export const createCourse = async (req: AuthRequest, res: Response) => {
   }
 };
 
-export const getCourses = async ( req: AuthRequest,res: Response) => {
+export const getCourses = async (_: AuthRequest, res: Response) => {
   try {
     const courses = await prisma.course.findMany({
       include: {
@@ -226,9 +226,9 @@ export const getCourses = async ( req: AuthRequest,res: Response) => {
           }
         }
       },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { created_at: 'desc' }
     });
-    console.log(req)
+
     res.status(200).json({
       success: true,
       data: courses
@@ -255,7 +255,7 @@ export const updateCourse = async (req: AuthRequest, res: Response) => {
     const { name, description, duration, fees, subjects, status } = req.body;
 
     const course = await prisma.course.update({
-      where: { id: courseId },
+      where: { course_id: courseId },
       data: {
         name,
         description,
@@ -291,7 +291,7 @@ export const deleteCourse = async (req: AuthRequest, res: Response) => {
     }
 
     await prisma.course.delete({
-      where: { id: courseId }
+      where: { course_id: courseId }
     });
 
     res.json({
@@ -307,17 +307,17 @@ export const deleteCourse = async (req: AuthRequest, res: Response) => {
 // Batch Management
 export const createBatch = async (req: AuthRequest, res: Response) => {
   try {
-    const { name, timing, capacity, courseId } = req.body;
+    const { batch_name, timing, capacity, course_id, start_date, end_date, description } = req.body;
 
     const batch = await prisma.batch.create({
       data: {
-        name,
+        batch_name,
         timing,
         capacity,
-        courseId
-      },
-      include: {
-        course: true
+        course_id,
+        start_date,
+        end_date,
+        description
       }
     });
 
@@ -334,21 +334,16 @@ export const createBatch = async (req: AuthRequest, res: Response) => {
 
 export const getBatches = async (req: AuthRequest, res: Response) => {
   try {
-    const { courseId } = req.query;
-    const where = courseId ? { courseId: parseInt(courseId as string) } : {};
+    const { course_id } = req.query;
+    const where = course_id ? { course_id: parseInt(course_id as string) } : undefined;
 
     const batches = await prisma.batch.findMany({
       where,
       include: {
         course: true,
-        students: true,
-        _count: {
-          select: {
-            students: true
-          }
-        }
+        students: true
       },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { created_at: 'desc' }
     });
 
     res.json({
@@ -364,18 +359,31 @@ export const getBatches = async (req: AuthRequest, res: Response) => {
 // Staff Management
 export const createStaff = async (req: AuthRequest, res: Response) => {
   try {
-    const { email, name, phone, role } = req.body;
+    const { email, full_name, phone_number, department, designation, qualifications, specialization, subjects } = req.body;
     
+    // Generate random password
     const randomPassword = crypto.randomBytes(8).toString('hex');
     const hashedPassword = await hashPassword(randomPassword);
     
     const staff = await prisma.user.create({
       data: {
         email,
-        name,
-        phone,
+        full_name,
+        phone_number,
         password: hashedPassword,
-        role: role || 'TEACHER'
+        role: 'TEACHER',
+        staff: {
+          create: {
+            department,
+            designation,
+            qualifications,
+            specialization,
+            subjects
+          }
+        }
+      },
+      include: {
+        staff: true
       }
     });
 
@@ -390,27 +398,42 @@ export const createStaff = async (req: AuthRequest, res: Response) => {
   }
 };
 
-export const getStaff = async (res: Response) => {
+export const getStaff = async (req: AuthRequest, res: Response) => {
   try {
-    const staff = await prisma.user.findMany({
-      where: {
-        role: { in: ['ADMIN', 'TEACHER'] }
-      },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        phone: true,
-        role: true,
-        isActive: true,
-        createdAt: true
-      },
-      orderBy: { createdAt: 'desc' }
-    });
+    const { page = 1, limit = 10, search } = req.query;
+    const skip = (parseInt(page as string) - 1) * parseInt(limit as string);
+
+    const where: any = { role: 'TEACHER' };
+    
+    if (search) {
+      where.OR = [
+        { full_name: { contains: search as string, mode: 'insensitive' } },
+        { email: { contains: search as string, mode: 'insensitive' } }
+      ];
+    }
+
+    const [staff, total] = await Promise.all([
+      prisma.user.findMany({
+        where,
+        skip,
+        take: parseInt(limit as string),
+        include: {
+          staff: true
+        },
+        orderBy: { created_at: 'desc' }
+      }),
+      prisma.user.count({ where })
+    ]);
 
     res.json({
       success: true,
-      data: staff
+      data: staff,
+      meta: {
+        total,
+        page: parseInt(page as string),
+        limit: parseInt(limit as string),
+        totalPages: Math.ceil(total / parseInt(limit as string))
+      }
     });
   } catch (error) {
     logger.error('Get staff error:', error);

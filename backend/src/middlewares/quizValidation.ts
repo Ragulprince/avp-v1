@@ -60,13 +60,13 @@ export const validateQuizAccess = async (req: AuthRequest, res: Response, next: 
 
     // Check if student belongs to the correct course
     const student = await prisma.user.findUnique({
-      where: { id: userId },
+      where: { user_id: req.user?.user_id },
       include: {
-        studentProfile: true
+        student_profile: true
       }
     });
 
-    if (!student?.studentProfile || student.studentProfile.courseId !== quiz.courseId) {
+    if (!student?.student_profile || student.student_profile.course_id !== quiz.course_id) {
       res.status(403).json({
         success: false,
         message: 'You are not enrolled in this course'

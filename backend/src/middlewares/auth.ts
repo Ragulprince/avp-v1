@@ -20,9 +20,9 @@ export const authenticate = async (req: AuthRequest, res: Response, next: NextFu
     const decoded = verifyToken(token);
     
     const user = await prisma.user.findUnique({
-      where: { id: decoded.id },
+      where: { user_id: decoded.id },
       include: {
-        studentProfile: {
+        student_profile: {
           include: {
             batch: true,
             course: true
@@ -31,7 +31,7 @@ export const authenticate = async (req: AuthRequest, res: Response, next: NextFu
       }
     });
 
-    if (!user || !user.isActive) {
+    if (!user || !user.is_active) {
       res.status(401).json({
         success: false,
         message: 'Invalid or inactive user'

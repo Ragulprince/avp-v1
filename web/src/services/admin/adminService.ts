@@ -1,4 +1,3 @@
-
 import { apiClient } from '../api';
 
 export interface Student {
@@ -20,12 +19,34 @@ export interface Student {
 
 export interface CreateStudentData {
   email: string;
-  name: string;
-  phone?: string;
-  batchId?: string;
-  courseId?: string;
+  full_name: string;
+  phone_number?: string;
+  batch_id?: string;
+  course_id?: string;
   address?: string;
-  emergencyContact?: string;
+  emergency_contact?: string;
+  date_of_birth?: string;
+  gender?: string;
+  city?: string;
+  state?: string;
+  country?: string;
+  pincode?: string;
+  avatar?: string;
+  role?: 'STUDENT';
+  is_active?: boolean;
+  adhaar_num?: string;
+  enrollment_number?: string;
+  qualification?: string;
+  guardian_name?: string;
+  guardian_contact?: string;
+  guardian_email?: string;
+  guardian_relation?: string;
+  mobile_number?: string;
+  bio?: string;
+  blood_group?: string;
+  medical_conditions?: string;
+  achievements?: any;
+  documents?: any;
 }
 
 export interface Course {
@@ -79,6 +100,24 @@ export interface CreateStaffData {
   name: string;
   phone?: string;
   role?: 'ADMIN' | 'TEACHER';
+}
+
+export interface User {
+  user_id: number;
+  email: string;
+  full_name: string;
+  phone_number?: string;
+  avatar?: string;
+  role: string;
+  is_active: boolean;
+  student_profile?: {
+    batch?: {
+      batch_name: string;
+    };
+    course?: {
+      name: string;
+    };
+  };
 }
 
 export const adminService = {

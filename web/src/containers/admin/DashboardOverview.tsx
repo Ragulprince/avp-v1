@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Users, GraduationCap, BookOpen, TrendingUp, DollarSign, Clock } from 'lucide-react';
@@ -54,8 +53,8 @@ const DashboardOverview = () => {
     );
   }
 
-  const activeStudents = students.filter(s => s.isActive).length;
-  const activeStaff = staff.filter(s => s.isActive).length;
+  const activeStudents = students.filter(s => s.is_active).length;
+  const activeStaff = staff.filter(s => s.is_active).length;
   const activeCourses = courses.filter(c => c.status === 'ACTIVE').length;
 
   return (
@@ -166,14 +165,14 @@ const DashboardOverview = () => {
           <CardContent>
             <div className="space-y-4">
               {students.slice(0, 5).map((student) => (
-                <div key={student.id} className="flex items-center space-x-3">
+                <div key={student.user_id} className="flex items-center space-x-3">
                   <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
                     <span className="text-blue-600 font-semibold">
-                      {student.name.split(' ').map(n => n[0]).join('')}
+                      {student.full_name?.split(' ').map(n => n[0]).join('') || 'NA'}
                     </span>
                   </div>
                   <div>
-                    <p className="font-medium">{student.name}</p>
+                    <p className="font-medium">{student.full_name}</p>
                     <p className="text-sm text-gray-600">{student.email}</p>
                   </div>
                 </div>
@@ -189,13 +188,13 @@ const DashboardOverview = () => {
           <CardContent>
             <div className="space-y-4">
               {courses.slice(0, 5).map((course) => (
-                <div key={course.id} className="flex items-center justify-between">
+                <div key={course.course_id} className="flex items-center justify-between">
                   <div>
                     <p className="font-medium">{course.name}</p>
-                    <p className="text-sm text-gray-600">{course.duration} months • ₹{course.fees}</p>
+                    <p className="text-sm text-gray-600">{course.duration} • ₹{course.fees}</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm font-medium">{course._count?.students || 0} students</p>
+                    <p className="text-sm font-medium">{course.students?.length || 0} students</p>
                     <p className="text-sm text-gray-600">{course.status}</p>
                   </div>
                 </div>

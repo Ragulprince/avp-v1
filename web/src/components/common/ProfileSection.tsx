@@ -361,7 +361,7 @@ const ProfileSection: React.FC<ProfileSectionProps> = ({
                     <Label>Employee ID</Label>
                     <div className="flex items-center gap-2 p-2 bg-gray-50 rounded">
                       <User className="w-4 h-4 text-gray-500" />
-                      <span>EMP{editedUser.id.slice(-4)}</span>
+                      <span>EMP{editeduser.user_id.slice(-4)}</span>
                     </div>
                   </div>
                   

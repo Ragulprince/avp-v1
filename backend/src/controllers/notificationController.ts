@@ -1,8 +1,8 @@
-
 import { Response } from 'express';
 import { prisma } from '../config/database';
 import { AuthRequest } from '../types';
 import { logger } from '../config/logger';
+import type { Prisma, NotificationType, Role } from '@prisma/client';
 
 // Create Notification
 export const createNotification = async (req: AuthRequest, res: Response) => {
@@ -13,8 +13,8 @@ export const createNotification = async (req: AuthRequest, res: Response) => {
       data: {
         title,
         message,
-        type,
-        userId,
+        type: type as NotificationType,
+        user_id: userId,
         data
       }
     });
@@ -38,18 +38,18 @@ export const broadcastNotification = async (req: AuthRequest, res: Response) => 
     // Get all active students
     const students = await prisma.user.findMany({
       where: { 
-        role: 'STUDENT',
-        isActive: true 
+        role: 'STUDENT' as Role,
+        is_active: true 
       },
-      select: { id: true }
+      select: { user_id: true }
     });
 
     // Create notifications for all students
     const notifications = students.map(student => ({
       title,
       message,
-      type,
-      userId: student.id,
+      type: type as NotificationType,
+      user_id: student.user_id,
       data
     }));
 
@@ -71,19 +71,19 @@ export const broadcastNotification = async (req: AuthRequest, res: Response) => 
 // Get Notifications for User
 export const getUserNotifications = async (req: AuthRequest, res: Response) => {
   try {
-    const userId = req.user?.id;
+    const userId = req.user?.user_id;
     const { page = 1, limit = 20, isRead } = req.query;
     const skip = (parseInt(page as string) - 1) * parseInt(limit as string);
 
-    const where: any = {
+    const where: Prisma.NotificationWhereInput = {
       OR: [
-        { userId },
-        { userId: null } // Global notifications
+        { user_id: userId },
+        { user_id: null } // Global notifications
       ]
     };
 
     if (isRead !== undefined) {
-      where.isRead = isRead === 'true';
+      where.is_read = isRead === 'true';
     }
 
     const [notifications, total] = await Promise.all([
@@ -91,7 +91,7 @@ export const getUserNotifications = async (req: AuthRequest, res: Response) => {
         where,
         skip,
         take: parseInt(limit as string),
-        orderBy: { createdAt: 'desc' }
+        orderBy: { created_at: 'desc' }
       }),
       prisma.notification.count({ where })
     ]);
@@ -116,7 +116,7 @@ export const getUserNotifications = async (req: AuthRequest, res: Response) => {
 export const markAsRead = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
-    const userId = req.user?.id;
+    const userId = req.user?.user_id;
     const notificationId = parseInt(id);
 
     if (isNaN(notificationId)) {
@@ -129,13 +129,13 @@ export const markAsRead = async (req: AuthRequest, res: Response) => {
 
     const notification = await prisma.notification.update({
       where: { 
-        id: notificationId,
+        notification_id: notificationId,
         OR: [
-          { userId },
-          { userId: null }
+          { user_id: userId },
+          { user_id: null }
         ]
       },
-      data: { isRead: true }
+      data: { is_read: true }
     });
 
     res.json({
@@ -152,17 +152,17 @@ export const markAsRead = async (req: AuthRequest, res: Response) => {
 // Mark All Notifications as Read
 export const markAllAsRead = async (req: AuthRequest, res: Response) => {
   try {
-    const userId = req.user?.id;
+    const userId = req.user?.user_id;
 
     await prisma.notification.updateMany({
       where: {
         OR: [
-          { userId },
-          { userId: null }
+          { user_id: userId },
+          { user_id: null }
         ],
-        isRead: false
+        is_read: false
       },
-      data: { isRead: true }
+      data: { is_read: true }
     });
 
     res.json({
@@ -190,7 +190,7 @@ export const deleteNotification = async (req: AuthRequest, res: Response) => {
     }
 
     await prisma.notification.delete({
-      where: { id: notificationId }
+      where: { notification_id: notificationId }
     });
 
     res.json({

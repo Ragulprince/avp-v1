@@ -34,8 +34,13 @@ interface User {
 }
 
 interface StudentProfile {
-  studentProfile?: {
-    batch?: { name: string };
+  student_profile?: {
+    batch?: {
+      batch_name: string;
+    };
+    course?: {
+      name: string;
+    };
     address?: string;
   };
 }
@@ -147,7 +152,7 @@ const Profile: React.FC<ProfileProps> = ({ activeTab, onTabChange }) => {
                   <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
                     <Badge variant="outline" className="flex items-center gap-1">
                       <GraduationCap className="w-3 h-3" />
-                      {studentProfile?.studentProfile?.batch?.name ?? 'NEET 2024'}
+                      {studentProfile?.student_profile?.batch?.batch_name ?? 'NEET 2024'}
                     </Badge>
                     <Badge variant="outline" className="flex items-center gap-1">
                       <School className="w-3 h-3" />
@@ -256,14 +261,14 @@ const Profile: React.FC<ProfileProps> = ({ activeTab, onTabChange }) => {
                     <MapPin className="w-5 h-5 text-gray-500" />
                     <div>
                       <p className="text-sm font-medium text-gray-900">Address</p>
-                      <p className="text-sm text-gray-600">{studentProfile?.studentProfile?.address ?? '123 Main Street, City'}</p>
+                      <p className="text-sm text-gray-600">{studentProfile?.student_profile?.address ?? '123 Main Street, City'}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
                     <GraduationCap className="w-5 h-5 text-gray-500" />
                     <div>
                       <p className="text-sm font-medium text-gray-900">Batch</p>
-                      <p className="text-sm text-gray-600">{studentProfile?.studentProfile?.batch?.name ?? 'NEET 2024'}</p>
+                      <p className="text-sm text-gray-600">{studentProfile?.student_profile?.batch?.batch_name ?? 'NEET 2024'}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
@@ -296,10 +301,7 @@ const Profile: React.FC<ProfileProps> = ({ activeTab, onTabChange }) => {
             <CollapsibleContent>
               <CardContent className="pt-0 space-y-4">
                 {/* Class 10th */}
-                <div className="bg-blue-50 p-4 rounded-lg border border-blue-200ქ
-
-System: 200  border-blue-200">
-                   
+                <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
                   <h4 className="font-semibold text-blue-900 mb-3 flex items-center">
                     <GraduationCap className="w-4 h-4 mr-2" />
                     Class 10th

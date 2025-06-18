@@ -1,4 +1,3 @@
-
 import { Request, Response } from 'express';
 import { body } from 'express-validator';
 import { prisma } from '../config/database';
@@ -10,7 +9,7 @@ import { AuthRequest, ApiResponse } from '../types';
 export const registerValidation = [
   body('email').isEmail().normalizeEmail(),
   body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
-  body('name').trim().isLength({ min: 2 }).withMessage('Name must be at least 2 characters'),
+  body('full_name').trim().isLength({ min: 2 }).withMessage('Name must be at least 2 characters'),
   body('role').optional().isIn(['STUDENT', 'ADMIN']).withMessage('Invalid role')
 ];
 
@@ -21,14 +20,14 @@ export const loginValidation = [
 
 export const register = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { email, password, name, phone, role = 'STUDENT' } = req.body;
+    const { email, password, full_name, phone_number, role = 'STUDENT' } = req.body;
 
     // Check if user already exists
     const existingUser = await prisma.user.findFirst({
       where: {
         OR: [
           { email },
-          { phone: phone || undefined }
+          { phone_number: phone_number || undefined }
         ]
       }
     });
@@ -47,15 +46,15 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       data: {
         email,
         password: hashedPassword,
-        name,
-        phone,
+        full_name,
+        phone_number,
         role,
-        studentProfile: role === 'STUDENT' ? {
+        student_profile: role === 'STUDENT' ? {
           create: {}
         } : undefined
       },
       include: {
-        studentProfile: true
+        student_profile: true
       }
     });
 
@@ -66,9 +65,9 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       message: 'User registered successfully',
       data: {
         user: {
-          id: user.id,
+          user_id: user.user_id,
           email: user.email,
-          name: user.name,
+          full_name: user.full_name,
           role: user.role,
           avatar: user.avatar
         },
@@ -94,7 +93,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     const user = await prisma.user.findUnique({
       where: { email },
       include: {
-        studentProfile: {
+        student_profile: {
           include: {
             batch: true,
             course: true
@@ -103,7 +102,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       }
     });
 
-    if (!user || !user.isActive) {
+    if (!user || !user.is_active) {
       res.status(401).json({
         success: false,
         message: 'Invalid credentials or inactive account'
@@ -128,12 +127,12 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       message: 'Login successful',
       data: {
         user: {
-          id: user.id,
+          user_id: user.user_id,
           email: user.email,
-          name: user.name,
+          full_name: user.full_name,
           role: user.role,
           avatar: user.avatar,
-          studentProfile: user.studentProfile
+          student_profile: user.student_profile
         },
         token
       }
@@ -153,9 +152,9 @@ export const login = async (req: Request, res: Response): Promise<void> => {
 export const getProfile = async (req: AuthRequest, res: Response) => {
   try {
     const user = await prisma.user.findUnique({
-      where: { id: req.user!.id },
+      where: { user_id: req.user!.user_id },
       include: {
-        studentProfile: {
+        student_profile: {
           include: {
             batch: true,
             course: true
@@ -168,13 +167,13 @@ export const getProfile = async (req: AuthRequest, res: Response) => {
       success: true,
       message: 'Profile retrieved successfully',
       data: {
-        id: user!.id,
+        user_id: user!.user_id,
         email: user!.email,
-        name: user!.name,
-        phone: user!.phone,
+        full_name: user!.full_name,
+        phone_number: user!.phone_number,
         role: user!.role,
         avatar: user!.avatar,
-        studentProfile: user!.studentProfile
+        student_profile: user!.student_profile
       }
     };
 
