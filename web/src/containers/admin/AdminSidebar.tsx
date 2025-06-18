@@ -1,5 +1,5 @@
-
 import React from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { 
@@ -19,8 +19,6 @@ import {
 } from 'lucide-react';
 
 interface AdminSidebarProps {
-  activeTab: string;
-  onTabChange: (tab: string) => void;
   isOpen: boolean;
   onClose: () => void;
 }
@@ -40,54 +38,60 @@ const menuItems = [
   { id: 'profile', label: 'Profile', icon: User },
 ];
 
-const AdminSidebar: React.FC<AdminSidebarProps> = ({ 
-  activeTab, 
-  onTabChange, 
-  isOpen, 
-  onClose 
-}) => {
+const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) => {
+  const location = useLocation();
+  const currentPath = location.pathname.split('/').pop() || 'dashboard';
+
   return (
     <>
-      {/* Mobile overlay */}
+      {/* Mobile backdrop */}
       {isOpen && (
-        <div 
-          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+        <div
+          className="fixed inset-0 z-40 bg-gray-600 bg-opacity-75 lg:hidden"
           onClick={onClose}
         />
       )}
-      
+
       {/* Sidebar */}
-      <div className={cn(
-        "fixed left-0 top-0 h-full w-64 bg-white border-r border-gray-200 z-50 transform transition-transform duration-200 ease-in-out lg:translate-x-0",
-        isOpen ? "translate-x-0" : "-translate-x-full"
-      )}>
-        <div className="flex items-center justify-between p-4 border-b border-gray-200">
-          <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-              <BookOpen className="w-5 h-5 text-white" />
-            </div>
-            <h1 className="text-xl font-bold text-gray-900">AVP Academy</h1>
-          </div>
-          <Button variant="ghost" size="sm" className="lg:hidden" onClick={onClose}>
-            <X className="w-5 h-5" />
+      <div
+        className={cn(
+          'fixed inset-y-0 left-0 z-50 w-64 transform bg-white shadow-lg transition-transform duration-300 ease-in-out lg:translate-x-0',
+          isOpen ? 'translate-x-0' : '-translate-x-full'
+        )}
+      >
+        <div className="flex h-16 items-center justify-between px-4">
+          <h1 className="text-xl font-bold text-gray-900">Admin Panel</h1>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="lg:hidden"
+            onClick={onClose}
+          >
+            <X className="h-6 w-6" />
           </Button>
         </div>
 
-        <nav className="p-4 space-y-2">
-          {menuItems.map((item) => (
-            <Button
-              key={item.id}
-              variant={activeTab === item.id ? "default" : "ghost"}
-              className={cn(
-                "w-full justify-start space-x-3",
-                activeTab === item.id && "bg-blue-600 text-white hover:bg-blue-700"
-              )}
-              onClick={() => onTabChange(item.id)}
-            >
-              <item.icon className="w-5 h-5" />
-              <span>{item.label}</span>
-            </Button>
-          ))}
+        <nav className="mt-4 px-2">
+          {menuItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = currentPath === item.id;
+
+            return (
+              <Link
+                key={item.id}
+                to={`/admin/${item.id}`}
+                className={cn(
+                  'flex items-center space-x-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+                  isActive
+                    ? 'bg-blue-50 text-blue-600'
+                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                )}
+              >
+                <Icon className={cn('h-5 w-5', isActive ? 'text-blue-600' : 'text-gray-400')} />
+                <span>{item.label}</span>
+              </Link>
+            );
+          })}
         </nav>
       </div>
     </>

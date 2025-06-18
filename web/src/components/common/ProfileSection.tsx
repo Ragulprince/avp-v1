@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -54,7 +53,7 @@ const ProfileSection: React.FC<ProfileSectionProps> = ({
   showStats = true 
 }) => {
   const [isEditing, setIsEditing] = useState(false);
-  const [editedUser, setEditedUser] = useState(user);
+  const [editedUser, setEditedUser] = useState<ProfileUser>(user);
 
   const handleSave = () => {
     if (onUpdate) {
@@ -361,7 +360,7 @@ const ProfileSection: React.FC<ProfileSectionProps> = ({
                     <Label>Employee ID</Label>
                     <div className="flex items-center gap-2 p-2 bg-gray-50 rounded">
                       <User className="w-4 h-4 text-gray-500" />
-                      <span>EMP{editeduser.user_id.slice(-4)}</span>
+                      <span>EMP{editedUser.id.slice(-4)}</span>
                     </div>
                   </div>
                   

@@ -1,61 +1,32 @@
-
-import { Router } from 'express';
-import { authenticate, authorize } from '../middlewares/auth';
-import { validateRequest } from '../middlewares/validation';
-import { body } from 'express-validator';
+import express from 'express';
 import {
-  upload,
-  uploadStudyMaterial,
-  uploadVideo,
-  getStudyMaterials,
-  serveFile,
-  toggleMaterialPublish
+  createMaterial,
+  getMaterials,
+  getMaterialById,
+  updateMaterial,
+  deleteMaterial,
+  getContentStream
 } from '../controllers/contentController';
+import { authenticate, authorize } from '../middlewares/auth';
 
-const router = Router();
+const router = express.Router();
 
-// File uploads (Admin only)
-router.post('/materials/upload',
-  authenticate,
-  authorize('ADMIN', 'TEACHER'),
-  upload.single('file'),
-  [
-    body('title').notEmpty().withMessage('Title is required'),
-    body('subject').notEmpty().withMessage('Subject is required'),
-    body('topic').notEmpty().withMessage('Topic is required'),
-    body('courseId').isUUID().withMessage('Valid course ID is required')
-  ],
-  validateRequest,
-  uploadStudyMaterial
-);
+// Create a new study material
+router.post('/', authenticate, authorize('ADMIN', 'TEACHER'), createMaterial);
 
-router.post('/videos/upload',
-  authenticate,
-  authorize('ADMIN', 'TEACHER'),
-  upload.single('video'),
-  [
-    body('title').notEmpty().withMessage('Title is required'),
-    body('subject').notEmpty().withMessage('Subject is required'),
-    body('topic').notEmpty().withMessage('Topic is required'),
-    body('courseId').isUUID().withMessage('Valid course ID is required')
-  ],
-  validateRequest,
-  uploadVideo
-);
+// Get all study materials
+router.get('/', authenticate, getMaterials);
 
-// Content management
-router.get('/materials', authenticate, getStudyMaterials);
-router.patch('/materials/:id/publish',
-  authenticate,
-  authorize('ADMIN', 'TEACHER'),
-  [
-    body('isPublished').isBoolean().withMessage('isPublished must be boolean')
-  ],
-  validateRequest,
-  toggleMaterialPublish
-);
+// Get a specific study material
+router.get('/:id', authenticate, getMaterialById);
 
-// Serve protected files
-router.get('/files/:filename', authenticate, serveFile);
+// Update a study material
+router.put('/:id', authenticate, authorize('ADMIN', 'TEACHER'), updateMaterial);
+
+// Delete a study material
+router.delete('/:id', authenticate, authorize('ADMIN', 'TEACHER'), deleteMaterial);
+
+// Secure content viewing route
+router.get('/view/:id', authenticate, authorize('STUDENT', 'ADMIN', 'TEACHER'), getContentStream);
 
 export default router;

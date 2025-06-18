@@ -129,8 +129,8 @@ export const updateStudent = async (req: AuthRequest, res: Response) => {
         is_active,
         student_profile: {
           update: {
-            batch_id,
-            course_id,
+            batch_id: batch_id ? parseInt(batch_id) : null,
+            course_id: course_id ? parseInt(course_id) : null,
             address,
             emergency_contact
           }
@@ -260,8 +260,8 @@ export const updateCourse = async (req: AuthRequest, res: Response) => {
         name,
         description,
         duration,
-        fees,
-        subjects,
+        fees: fees ? parseInt(fees) : null,
+        subjects: subjects || [],
         status
       }
     });
@@ -438,6 +438,117 @@ export const getStaff = async (req: AuthRequest, res: Response) => {
   } catch (error) {
     logger.error('Get staff error:', error);
     res.status(500).json({ success: false, message: 'Failed to fetch staff' });
+  }
+};
+
+export const updateStaff = async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const staffId = parseInt(id);
+
+    if (isNaN(staffId)) {
+      res.status(400).json({
+        success: false,
+        message: 'Invalid staff ID'
+      });
+      return;
+    }
+
+    const {
+      full_name,
+      phone_number,
+      department,
+      designation,
+      qualifications,
+      years_of_experience,
+      specialization,
+      subjects,
+      salary,
+      bank_details,
+      documents,
+      emergency_contact,
+      blood_group,
+      medical_conditions,
+      achievements,
+      performance_rating,
+      is_teaching,
+      is_administrative,
+      office_location,
+      working_hours,
+      leaves_taken,
+      leaves_remaining
+    } = req.body;
+
+    const staff = await prisma.user.update({
+      where: { user_id: staffId },
+      data: {
+        full_name,
+        phone_number,
+        staff: {
+          update: {
+            department,
+            designation,
+            qualifications: qualifications || [],
+            years_of_experience: years_of_experience ? parseInt(years_of_experience) : null,
+            specialization: specialization || [],
+            subjects: subjects || [],
+            salary: salary ? parseFloat(salary) : null,
+            bank_details,
+            documents,
+            emergency_contact,
+            blood_group,
+            medical_conditions,
+            achievements,
+            performance_rating: performance_rating ? parseFloat(performance_rating) : null,
+            is_teaching,
+            is_administrative,
+            office_location,
+            working_hours,
+            leaves_taken: leaves_taken ? parseInt(leaves_taken) : 0,
+            leaves_remaining: leaves_remaining ? parseInt(leaves_remaining) : 0
+          }
+        }
+      },
+      include: {
+        staff: true
+      }
+    });
+
+    res.json({
+      success: true,
+      message: 'Staff updated successfully',
+      data: staff
+    });
+  } catch (error) {
+    logger.error('Update staff error:', error);
+    res.status(500).json({ success: false, message: 'Failed to update staff' });
+  }
+};
+
+export const deleteStaff = async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const staffId = parseInt(id);
+
+    if (isNaN(staffId)) {
+      res.status(400).json({
+        success: false,
+        message: 'Invalid staff ID'
+      });
+      return;
+    }
+
+    await prisma.user.delete({
+      where: { user_id: staffId }
+    });
+
+    res.json({
+      success: true,
+      message: 'Staff deleted successfully'
+    });
+  } catch (error) {
+    logger.error('Delete staff error:', error);
+    res.status(500).json({ success: false, message: 'Failed to delete staff' });
   }
 };
 

@@ -1,4 +1,5 @@
 import { apiClient } from '../api';
+import axios from 'axios';
 
 export interface Student {
   id: string;
@@ -62,10 +63,33 @@ export interface Course {
 
 export interface CreateCourseData {
   name: string;
-  description?: string;
+  description: string;
   duration: number;
+  level: 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED';
+  category: string;
+  prerequisites: string[];
+  syllabus: string[];
   fees: number;
-  subjects: string[];
+  max_students: number;
+  start_date: string;
+  end_date: string;
+  is_active: boolean;
+  instructor_id: string;
+  materials: string[];
+  assessments: string[];
+  schedule: Record<string, any>;
+  location: string;
+  mode: 'ONLINE' | 'OFFLINE' | 'HYBRID';
+  language: string;
+  certification: boolean;
+  certification_type: string;
+  certification_validity: number;
+  rating: number;
+  reviews: any[];
+  enrollment_count: number;
+  completion_rate: number;
+  tags: string[];
+  metadata: Record<string, any>;
 }
 
 export interface Batch {
@@ -98,8 +122,28 @@ export interface StaffMember {
 export interface CreateStaffData {
   email: string;
   name: string;
-  phone?: string;
-  role?: 'ADMIN' | 'TEACHER';
+  phone: string;
+  role: 'ADMIN' | 'TEACHER';
+  department?: string;
+  designation?: string;
+  qualifications?: string[];
+  years_of_experience?: number;
+  specialization?: string[];
+  subjects?: string[];
+  salary?: number;
+  bank_details?: Record<string, any>;
+  documents?: Record<string, any>;
+  emergency_contact?: string;
+  blood_group?: string;
+  medical_conditions?: string;
+  achievements?: Record<string, any>;
+  performance_rating?: number;
+  is_teaching?: boolean;
+  is_administrative?: boolean;
+  office_location?: string;
+  working_hours?: Record<string, any>;
+  leaves_taken?: number;
+  leaves_remaining?: number;
 }
 
 export interface User {
@@ -171,6 +215,14 @@ export const adminService = {
 
   createStaff: async (data: CreateStaffData) => {
     return await apiClient.post('/admin/staff', data);
+  },
+
+  updateStaff: async (id: string, data: Partial<CreateStaffData>) => {
+    return await apiClient.put(`/admin/staff/${id}`, data);
+  },
+
+  deleteStaff: async (id: string) => {
+    return await apiClient.delete(`/admin/staff/${id}`);
   },
 
   // Settings

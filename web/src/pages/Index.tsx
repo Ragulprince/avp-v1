@@ -1,26 +1,13 @@
-
-import React, { useState } from 'react';
+import React from 'react';
 import { useProfile } from '@/hooks/api/useAuth';
+import { Navigate } from 'react-router-dom';
 import Login from './auth/Login';
-import AdminDashboard from './admin/AdminDashboard';
-import StudentDashboard from './student/StudentDashboard';
-import VideoLearning from './student/VideoLearning';
-import QuizCenter from './student/QuizCenter';
-import Profile from './student/Profile';
-import Settings from './student/Settings';
-import { StudentProvider } from '@/contexts/StudentContext';
 
 const Index = () => {
-  const [activeTab, setActiveTab] = useState('home');
   const { data: profileData, isLoading, error } = useProfile();
 
   const isAuthenticated = !!profileData?.data;
   const userRole = profileData?.data?.role;
-
-  const handleLogin = (type: 'student' | 'admin') => {
-    // Login handled by the Login component through API
-    console.log(`Login attempt as ${type}`);
-  };
 
   if (isLoading) {
     return (
@@ -34,37 +21,15 @@ const Index = () => {
   }
 
   if (!isAuthenticated || error) {
-    return <Login onLogin={handleLogin} />;
+    return <Login />;
   }
 
-  // Admin Dashboard
+  // Redirect based on role
   if (userRole === 'ADMIN') {
-    return <AdminDashboard />;
+    return <Navigate to="/admin" replace />;
   }
 
-  // Student Interface
-  const renderStudentContent = () => {
-    switch (activeTab) {
-      case 'home':
-        return <StudentDashboard activeTab={activeTab} onTabChange={setActiveTab} />;
-      case 'practice':
-        return <QuizCenter activeTab={activeTab} onTabChange={setActiveTab} />;
-      case 'hub':
-        return <VideoLearning activeTab={activeTab} onTabChange={setActiveTab} />;
-      case 'profile':
-        return <Profile activeTab={activeTab} onTabChange={setActiveTab} />;
-      case 'settings':
-        return <Settings activeTab={activeTab} onTabChange={setActiveTab} />;
-      default:
-        return <StudentDashboard activeTab={activeTab} onTabChange={setActiveTab} />;
-    }
-  };
-
-  return (
-    <StudentProvider>
-      {renderStudentContent()}
-    </StudentProvider>
-  );
+  return <Navigate to="/student" replace />;
 };
 
 export default Index;

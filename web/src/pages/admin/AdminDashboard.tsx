@@ -1,5 +1,5 @@
-
 import React, { useState } from 'react';
+import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import AdminSidebar from '@/containers/admin/AdminSidebar';
 import AdminHeader from '@/containers/admin/AdminHeader';
 import DashboardOverview from '@/containers/admin/DashboardOverview';
@@ -16,8 +16,9 @@ import TestReports from '@/containers/admin/TestReports';
 import ProfileSection from '@/components/common/ProfileSection';
 
 const AdminDashboard = () => {
-  const [activeTab, setActiveTab] = useState('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const navigate = useNavigate();
+  const location = useLocation();
 
   // Sample admin user data
   const adminUser = {
@@ -35,7 +36,7 @@ const AdminDashboard = () => {
 
   const handleTabChange = (tab: string) => {
     console.log('AdminDashboard: Tab change requested to:', tab);
-    setActiveTab(tab);
+    navigate(`/admin/${tab}`);
     setSidebarOpen(false);
   };
 
@@ -44,9 +45,9 @@ const AdminDashboard = () => {
   };
 
   const renderContent = () => {
-    console.log('AdminDashboard: Rendering content for tab:', activeTab);
+    console.log('AdminDashboard: Rendering content for tab:', location.pathname.split('/').pop());
     
-    switch (activeTab) {
+    switch (location.pathname.split('/').pop()) {
       case 'dashboard':
         return <DashboardOverview />;
       case 'students':
@@ -72,7 +73,7 @@ const AdminDashboard = () => {
       case 'analytics':
         return <Analytics />;
       default:
-        console.warn('AdminDashboard: Unknown tab:', activeTab);
+        console.warn('AdminDashboard: Unknown tab:', location.pathname.split('/').pop());
         return <DashboardOverview />;
     }
   };
@@ -80,7 +81,7 @@ const AdminDashboard = () => {
   return (
     <div className="min-h-screen bg-gray-50 flex">
       <AdminSidebar
-        activeTab={activeTab}
+        activeTab={location.pathname.split('/').pop() || 'dashboard'}
         onTabChange={handleTabChange}
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
@@ -92,7 +93,7 @@ const AdminDashboard = () => {
           onProfileClick={handleProfileClick}
         />
         <main className="flex-1 p-4 lg:p-6">
-          {renderContent()}
+          <Outlet />
         </main>
       </div>
     </div>

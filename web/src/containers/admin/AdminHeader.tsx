@@ -1,11 +1,19 @@
-
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Menu, Bell, Search, User } from 'lucide-react';
+import { Menu, Bell, Search, User, LogOut } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import { useProfile } from '@/hooks/api/useAuth';
+import { useProfile, useLogout } from '@/hooks/api/useAuth';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useNavigate } from 'react-router-dom';
 
 interface AdminHeaderProps {
   onMenuClick: () => void;
@@ -15,6 +23,17 @@ interface AdminHeaderProps {
 const AdminHeader: React.FC<AdminHeaderProps> = ({ onMenuClick, onProfileClick }) => {
   const { data: profileData } = useProfile();
   const adminUser = profileData?.data;
+  const logoutMutation = useLogout();
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    try {
+      await logoutMutation.mutateAsync();
+      navigate('/');
+    } catch (error) {
+      console.error('Logout failed:', error);
+    }
+  };
 
   return (
     <header className="bg-white border-b border-gray-200 px-4 py-3">
@@ -48,22 +67,37 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ onMenuClick, onProfileClick }
             </Badge>
           </Button>
 
-          <Button
-            variant="ghost"
-            className="flex items-center space-x-2"
-            onClick={onProfileClick}
-          >
-            <Avatar className="w-8 h-8">
-              <AvatarImage src={adminUser?.avatar || ''} />
-              <AvatarFallback>
-                {adminUser?.name ? adminUser.name.split(' ').map(n => n[0]).join('') : 'A'}
-              </AvatarFallback>
-            </Avatar>
-            <div className="hidden md:block text-left">
-              <p className="text-sm font-medium">{adminUser?.name || 'Admin'}</p>
-              <p className="text-xs text-gray-500">{adminUser?.role || 'Administrator'}</p>
-            </div>
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                className="flex items-center space-x-2"
+              >
+                <Avatar className="w-8 h-8">
+                  <AvatarImage src={adminUser?.avatar || ''} />
+                  <AvatarFallback>
+                    {adminUser?.name ? adminUser.name.split(' ').map(n => n[0]).join('') : 'A'}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="hidden md:block text-left">
+                  <p className="text-sm font-medium">{adminUser?.name || 'Admin'}</p>
+                  <p className="text-xs text-gray-500">{adminUser?.role || 'Administrator'}</p>
+                </div>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuLabel>My Account</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={onProfileClick}>
+                <User className="w-4 h-4 mr-2" />
+                Profile
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleLogout}>
+                <LogOut className="w-4 h-4 mr-2" />
+                Logout
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
     </header>

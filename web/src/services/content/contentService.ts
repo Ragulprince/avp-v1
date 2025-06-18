@@ -1,4 +1,3 @@
-
 import { apiClient } from '../api';
 
 export interface StudyMaterial {
@@ -28,11 +27,11 @@ export interface MaterialQuery {
 
 export const contentService = {
   getStudyMaterials: async (params: MaterialQuery = {}) => {
-    return await apiClient.get('/content/materials', { params });
+    return await apiClient.get('/content', { params });
   },
 
   uploadStudyMaterial: async (formData: FormData) => {
-    return await apiClient.post('/content/materials/upload', formData, {
+    return await apiClient.post('/content', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
@@ -48,7 +47,7 @@ export const contentService = {
   },
 
   toggleMaterialPublish: async (id: string, isPublished: boolean) => {
-    return await apiClient.patch(`/content/materials/${id}/publish`, { isPublished });
+    return await apiClient.patch(`/content/${id}/publish`, { isPublished });
   },
 
   getFile: async (filename: string) => {

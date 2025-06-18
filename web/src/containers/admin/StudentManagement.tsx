@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -63,6 +64,8 @@ const StudentManagement = () => {
     documents: {}
   });
 
+  const [editStudent, setEditStudent] = useState<CreateStudentData | null>(null);
+
   const queryClient = useQueryClient();
 
   const editStudentMutation = useMutation({
@@ -73,6 +76,7 @@ const StudentManagement = () => {
       queryClient.invalidateQueries({ queryKey: ['students'] });
       toast({ title: 'Success', description: 'Student updated successfully' });
       setIsEditDialogOpen(false);
+      setEditStudent(null);
     },
     onError: () => {
       toast({ title: 'Error', description: 'Failed to update student', variant: 'destructive' });
@@ -93,8 +97,7 @@ const StudentManagement = () => {
     },
   });
 
-  const [editStudent, setEditStudent] = useState<CreateStudentData | null>(null);
-
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const openEditDialog = (student: any) => {
     setSelectedStudent(student);
     setEditStudent({
@@ -198,6 +201,11 @@ const StudentManagement = () => {
       setIsAddDialogOpen(false);
     } catch (error) {
       console.error('Failed to create student:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to create student. Please try again.',
+        variant: 'destructive',
+      });
     }
   };
 
@@ -231,259 +239,261 @@ const StudentManagement = () => {
               Add Student
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
+          <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
+            <DialogHeader className="flex-shrink-0">
               <DialogTitle>Add New Student</DialogTitle>
               <DialogDescription>
-                Fill in the student's details below. Fields marked with * are required.
+                Fill in the student details below. Fields marked with * are required.
               </DialogDescription>
             </DialogHeader>
-            <div className="grid grid-cols-2 gap-4 mt-4">
-              <div>
-                <Label htmlFor="full_name">Full Name *</Label>
-                <Input
-                  id="full_name"
-                  value={newStudent.full_name}
-                  onChange={(e) => setNewStudent({...newStudent, full_name: e.target.value})}
-                  placeholder="Student name"
-                />
-              </div>
-              <div>
-                <Label htmlFor="email">Email *</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={newStudent.email}
-                  onChange={(e) => setNewStudent({...newStudent, email: e.target.value})}
-                  placeholder="student@example.com"
-                />
-              </div>
-              <div>
-                <Label htmlFor="phone_number">Phone</Label>
-                <Input
-                  id="phone_number"
-                  value={newStudent.phone_number}
-                  onChange={(e) => setNewStudent({...newStudent, phone_number: e.target.value})}
-                  placeholder="+91 9876543210"
-                />
-              </div>
-              <div>
-                <Label htmlFor="emergency_contact">Emergency Contact</Label>
-                <Input
-                  id="emergency_contact"
-                  value={newStudent.emergency_contact}
-                  onChange={(e) => setNewStudent({...newStudent, emergency_contact: e.target.value})}
-                  placeholder="+91 9876543210"
-                />
-              </div>
-              <div>
-                <Label htmlFor="date_of_birth">Date of Birth</Label>
-                <Input
-                  id="date_of_birth"
-                  type="date"
-                  value={newStudent.date_of_birth}
-                  onChange={(e) => setNewStudent({...newStudent, date_of_birth: e.target.value})}
-                />
-              </div>
-              <div>
-                <Label htmlFor="gender">Gender</Label>
-                <Select value={newStudent.gender} onValueChange={(value) => setNewStudent({...newStudent, gender: value})}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select gender" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="male">Male</SelectItem>
-                    <SelectItem value="female">Female</SelectItem>
-                    <SelectItem value="other">Other</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label htmlFor="course">Course</Label>
-                <Select value={newStudent.course_id} onValueChange={(value) => setNewStudent({...newStudent, course_id: value})}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select course" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {courses.map((course) => (
-                      <SelectItem key={course.course_id} value={course.course_id.toString()}>
-                        {course.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label htmlFor="batch">Batch</Label>
-                <Select value={newStudent.batch_id} onValueChange={(value) => setNewStudent({...newStudent, batch_id: value})}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select batch" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {batches.map((batch) => (
-                      <SelectItem key={batch.batch_id} value={batch.batch_id.toString()}>
-                        {batch.batch_name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="col-span-2">
-                <Label htmlFor="address">Address</Label>
-                <Textarea
-                  id="address"
-                  value={newStudent.address}
-                  onChange={(e) => setNewStudent({...newStudent, address: e.target.value})}
-                  placeholder="Student address"
-                />
-              </div>
-              <div>
-                <Label htmlFor="city">City</Label>
-                <Input
-                  id="city"
-                  value={newStudent.city}
-                  onChange={(e) => setNewStudent({...newStudent, city: e.target.value})}
-                  placeholder="City"
-                />
-              </div>
-              <div>
-                <Label htmlFor="state">State</Label>
-                <Input
-                  id="state"
-                  value={newStudent.state}
-                  onChange={(e) => setNewStudent({...newStudent, state: e.target.value})}
-                  placeholder="State"
-                />
-              </div>
-              <div>
-                <Label htmlFor="country">Country</Label>
-                <Input
-                  id="country"
-                  value={newStudent.country}
-                  onChange={(e) => setNewStudent({...newStudent, country: e.target.value})}
-                  placeholder="Country"
-                />
-              </div>
-              <div>
-                <Label htmlFor="pincode">Pincode</Label>
-                <Input
-                  id="pincode"
-                  value={newStudent.pincode}
-                  onChange={(e) => setNewStudent({...newStudent, pincode: e.target.value})}
-                  placeholder="Pincode"
-                />
-              </div>
-              <div>
-                <Label htmlFor="adhaar_num">Adhaar Number</Label>
-                <Input
-                  id="adhaar_num"
-                  value={newStudent.adhaar_num}
-                  onChange={(e) => setNewStudent({...newStudent, adhaar_num: e.target.value})}
-                  placeholder="Adhaar Number"
-                />
-              </div>
-              <div>
-                <Label htmlFor="enrollment_number">Enrollment Number</Label>
-                <Input
-                  id="enrollment_number"
-                  value={newStudent.enrollment_number}
-                  onChange={(e) => setNewStudent({...newStudent, enrollment_number: e.target.value})}
-                  placeholder="Enrollment Number"
-                />
-              </div>
-              <div>
-                <Label htmlFor="qualification">Qualification</Label>
-                <Input
-                  id="qualification"
-                  value={newStudent.qualification}
-                  onChange={(e) => setNewStudent({...newStudent, qualification: e.target.value})}
-                  placeholder="Qualification"
-                />
-              </div>
-              <div>
-                <Label htmlFor="guardian_name">Guardian Name</Label>
-                <Input
-                  id="guardian_name"
-                  value={newStudent.guardian_name}
-                  onChange={(e) => setNewStudent({...newStudent, guardian_name: e.target.value})}
-                  placeholder="Guardian Name"
-                />
-              </div>
-              <div>
-                <Label htmlFor="guardian_contact">Guardian Contact</Label>
-                <Input
-                  id="guardian_contact"
-                  value={newStudent.guardian_contact}
-                  onChange={(e) => setNewStudent({...newStudent, guardian_contact: e.target.value})}
-                  placeholder="Guardian Contact"
-                />
-              </div>
-              <div>
-                <Label htmlFor="guardian_email">Guardian Email</Label>
-                <Input
-                  id="guardian_email"
-                  type="email"
-                  value={newStudent.guardian_email}
-                  onChange={(e) => setNewStudent({...newStudent, guardian_email: e.target.value})}
-                  placeholder="Guardian Email"
-                />
-              </div>
-              <div>
-                <Label htmlFor="guardian_relation">Guardian Relation</Label>
-                <Input
-                  id="guardian_relation"
-                  value={newStudent.guardian_relation}
-                  onChange={(e) => setNewStudent({...newStudent, guardian_relation: e.target.value})}
-                  placeholder="Guardian Relation"
-                />
-              </div>
-              <div>
-                <Label htmlFor="mobile_number">Mobile Number</Label>
-                <Input
-                  id="mobile_number"
-                  value={newStudent.mobile_number}
-                  onChange={(e) => setNewStudent({...newStudent, mobile_number: e.target.value})}
-                  placeholder="Mobile Number"
-                />
-              </div>
-              <div>
-                <Label htmlFor="blood_group">Blood Group</Label>
-                <Select value={newStudent.blood_group} onValueChange={(value) => setNewStudent({...newStudent, blood_group: value})}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select blood group" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="A+">A+</SelectItem>
-                    <SelectItem value="A-">A-</SelectItem>
-                    <SelectItem value="B+">B+</SelectItem>
-                    <SelectItem value="B-">B-</SelectItem>
-                    <SelectItem value="AB+">AB+</SelectItem>
-                    <SelectItem value="AB-">AB-</SelectItem>
-                    <SelectItem value="O+">O+</SelectItem>
-                    <SelectItem value="O-">O-</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="col-span-2">
-                <Label htmlFor="medical_conditions">Medical Conditions</Label>
-                <Textarea
-                  id="medical_conditions"
-                  value={newStudent.medical_conditions}
-                  onChange={(e) => setNewStudent({...newStudent, medical_conditions: e.target.value})}
-                  placeholder="Medical Conditions"
-                />
-              </div>
-              <div className="col-span-2">
-                <Label htmlFor="bio">Bio</Label>
-                <Textarea
-                  id="bio"
-                  value={newStudent.bio}
-                  onChange={(e) => setNewStudent({...newStudent, bio: e.target.value})}
-                  placeholder="Student Bio"
-                />
+            <div className="flex-grow overflow-y-auto pr-4 -mr-4">
+              <div className="grid grid-cols-2 gap-4 py-4">
+                <div>
+                  <Label htmlFor="full_name">Full Name *</Label>
+                  <Input
+                    id="full_name"
+                    value={newStudent.full_name}
+                    onChange={(e) => setNewStudent({...newStudent, full_name: e.target.value})}
+                    placeholder="Student name"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="email">Email *</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={newStudent.email}
+                    onChange={(e) => setNewStudent({...newStudent, email: e.target.value})}
+                    placeholder="student@example.com"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="phone_number">Phone</Label>
+                  <Input
+                    id="phone_number"
+                    value={newStudent.phone_number}
+                    onChange={(e) => setNewStudent({...newStudent, phone_number: e.target.value})}
+                    placeholder="+91 9876543210"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="emergency_contact">Emergency Contact</Label>
+                  <Input
+                    id="emergency_contact"
+                    value={newStudent.emergency_contact}
+                    onChange={(e) => setNewStudent({...newStudent, emergency_contact: e.target.value})}
+                    placeholder="+91 9876543210"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="date_of_birth">Date of Birth</Label>
+                  <Input
+                    id="date_of_birth"
+                    type="date"
+                    value={newStudent.date_of_birth}
+                    onChange={(e) => setNewStudent({...newStudent, date_of_birth: e.target.value})}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="gender">Gender</Label>
+                  <Select value={newStudent.gender} onValueChange={(value) => setNewStudent({...newStudent, gender: value})}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select gender" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="male">Male</SelectItem>
+                      <SelectItem value="female">Female</SelectItem>
+                      <SelectItem value="other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="course">Course</Label>
+                  <Select value={newStudent.course_id} onValueChange={(value) => setNewStudent({...newStudent, course_id: value})}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select course" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {courses.map((course) => (
+                        <SelectItem key={course.course_id} value={course.course_id.toString()}>
+                          {course.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="batch">Batch</Label>
+                  <Select value={newStudent.batch_id} onValueChange={(value) => setNewStudent({...newStudent, batch_id: value})}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select batch" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {batches.map((batch) => (
+                        <SelectItem key={batch.batch_id} value={batch.batch_id.toString()}>
+                          {batch.batch_name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="col-span-2">
+                  <Label htmlFor="address">Address</Label>
+                  <Textarea
+                    id="address"
+                    value={newStudent.address}
+                    onChange={(e) => setNewStudent({...newStudent, address: e.target.value})}
+                    placeholder="Student address"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="city">City</Label>
+                  <Input
+                    id="city"
+                    value={newStudent.city}
+                    onChange={(e) => setNewStudent({...newStudent, city: e.target.value})}
+                    placeholder="City"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="state">State</Label>
+                  <Input
+                    id="state"
+                    value={newStudent.state}
+                    onChange={(e) => setNewStudent({...newStudent, state: e.target.value})}
+                    placeholder="State"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="country">Country</Label>
+                  <Input
+                    id="country"
+                    value={newStudent.country}
+                    onChange={(e) => setNewStudent({...newStudent, country: e.target.value})}
+                    placeholder="Country"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="pincode">Pincode</Label>
+                  <Input
+                    id="pincode"
+                    value={newStudent.pincode}
+                    onChange={(e) => setNewStudent({...newStudent, pincode: e.target.value})}
+                    placeholder="Pincode"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="adhaar_num">Aadhaar Number</Label>
+                  <Input
+                    id="adhaar_num"
+                    value={newStudent.adhaar_num}
+                    onChange={(e) => setNewStudent({...newStudent, adhaar_num: e.target.value})}
+                    placeholder="Aadhaar Number"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="enrollment_number">Enrollment Number</Label>
+                  <Input
+                    id="enrollment_number"
+                    value={newStudent.enrollment_number}
+                    onChange={(e) => setNewStudent({...newStudent, enrollment_number: e.target.value})}
+                    placeholder="Enrollment Number"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="qualification">Qualification</Label>
+                  <Input
+                    id="qualification"
+                    value={newStudent.qualification}
+                    onChange={(e) => setNewStudent({...newStudent, qualification: e.target.value})}
+                    placeholder="Qualification"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="guardian_name">Guardian Name</Label>
+                  <Input
+                    id="guardian_name"
+                    value={newStudent.guardian_name}
+                    onChange={(e) => setNewStudent({...newStudent, guardian_name: e.target.value})}
+                    placeholder="Guardian Name"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="guardian_contact">Guardian Contact</Label>
+                  <Input
+                    id="guardian_contact"
+                    value={newStudent.guardian_contact}
+                    onChange={(e) => setNewStudent({...newStudent, guardian_contact: e.target.value})}
+                    placeholder="Guardian Contact"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="guardian_email">Guardian Email</Label>
+                  <Input
+                    id="guardian_email"
+                    type="email"
+                    value={newStudent.guardian_email}
+                    onChange={(e) => setNewStudent({...newStudent, guardian_email: e.target.value})}
+                    placeholder="Guardian Email"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="guardian_relation">Guardian Relation</Label>
+                  <Input
+                    id="guardian_relation"
+                    value={newStudent.guardian_relation}
+                    onChange={(e) => setNewStudent({...newStudent, guardian_relation: e.target.value})}
+                    placeholder="Guardian Relation"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="mobile_number">Mobile Number</Label>
+                  <Input
+                    id="mobile_number"
+                    value={newStudent.mobile_number}
+                    onChange={(e) => setNewStudent({...newStudent, mobile_number: e.target.value})}
+                    placeholder="Mobile Number"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="blood_group">Blood Group</Label>
+                  <Select value={newStudent.blood_group} onValueChange={(value) => setNewStudent({...newStudent, blood_group: value})}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select blood group" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="A+">A+</SelectItem>
+                      <SelectItem value="A-">A-</SelectItem>
+                      <SelectItem value="B+">B+</SelectItem>
+                      <SelectItem value="B-">B-</SelectItem>
+                      <SelectItem value="AB+">AB+</SelectItem>
+                      <SelectItem value="AB-">AB-</SelectItem>
+                      <SelectItem value="O+">O+</SelectItem>
+                      <SelectItem value="O-">O-</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="col-span-2">
+                  <Label htmlFor="medical_conditions">Medical Conditions</Label>
+                  <Textarea
+                    id="medical_conditions"
+                    value={newStudent.medical_conditions}
+                    onChange={(e) => setNewStudent({...newStudent, medical_conditions: e.target.value})}
+                    placeholder="Medical Conditions"
+                  />
+                </div>
+                <div className="col-span-2">
+                  <Label htmlFor="bio">Bio</Label>
+                  <Textarea
+                    id="bio"
+                    value={newStudent.bio}
+                    onChange={(e) => setNewStudent({...newStudent, bio: e.target.value})}
+                    placeholder="Student Bio"
+                  />
+                </div>
               </div>
             </div>
-            <div className="flex justify-end space-x-2 mt-6">
+            <div className="flex-shrink-0 flex justify-end space-x-2 mt-6">
               <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
                 Cancel
               </Button>
@@ -504,7 +514,7 @@ const StudentManagement = () => {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Total Students</p>
+                <p className="text-sm font-semibold text-gray-600">Total Students</p>
                 <p className="text-2xl font-bold">{students.length}</p>
               </div>
               <Users className="w-8 h-8 text-blue-500" />
@@ -515,7 +525,7 @@ const StudentManagement = () => {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Active Students</p>
+                <p className="text-sm font-semibold text-gray-600">Active Students</p>
                 <p className="text-2xl font-bold">{students.filter(s => s.is_active).length}</p>
               </div>
               <UserCheck className="w-8 h-8 text-green-500" />
@@ -526,7 +536,7 @@ const StudentManagement = () => {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Enrolled Courses</p>
+                <p className="text-sm font-semibold text-gray-600">Enrolled Courses</p>
                 <p className="text-2xl font-bold">{students.filter(s => s.student_profile?.course_id).length}</p>
               </div>
               <GraduationCap className="w-8 h-8 text-purple-500" />
@@ -537,7 +547,7 @@ const StudentManagement = () => {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">This Month</p>
+                <p className="text-sm font-semibold text-gray-600">This Month</p>
                 <p className="text-2xl font-bold">{students.filter(s => {
                   const monthAgo = new Date();
                   monthAgo.setMonth(monthAgo.getMonth() - 1);
@@ -674,153 +684,228 @@ const StudentManagement = () => {
 
       {/* Edit Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
+        <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
+          <DialogHeader className="flex-shrink-0">
             <DialogTitle>Edit Student</DialogTitle>
             <DialogDescription>
               Update student information below.
             </DialogDescription>
           </DialogHeader>
           {editStudent && (
-            <div className="grid grid-cols-2 gap-4 mt-4">
-              <div>
-                <Label htmlFor="edit_full_name">Full Name *</Label>
-                <Input
-                  id="edit_full_name"
-                  value={editStudent.full_name}
-                  onChange={e => setEditStudent({ ...editStudent, full_name: e.target.value })}
-                  placeholder="Student name"
-                />
-              </div>
-              <div>
-                <Label htmlFor="edit_email">Email *</Label>
-                <Input
-                  id="edit_email"
-                  type="email"
-                  value={editStudent.email}
-                  onChange={e => setEditStudent({ ...editStudent, email: e.target.value })}
-                  placeholder="student@example.com"
-                />
-              </div>
-              <div>
-                <Label htmlFor="edit_phone_number">Phone</Label>
-                <Input
-                  id="edit_phone_number"
-                  value={editStudent.phone_number}
-                  onChange={e => setEditStudent({ ...editStudent, phone_number: e.target.value })}
-                  placeholder="+91 9876543210"
-                />
-              </div>
-              <div>
-                <Label htmlFor="edit_emergency_contact">Emergency Contact</Label>
-                <Input
-                  id="edit_emergency_contact"
-                  value={editStudent.emergency_contact}
-                  onChange={e => setEditStudent({ ...editStudent, emergency_contact: e.target.value })}
-                  placeholder="+91 9876543210"
-                />
-              </div>
-              <div>
-                <Label htmlFor="edit_date_of_birth">Date of Birth</Label>
-                <Input
-                  id="edit_date_of_birth"
-                  type="date"
-                  value={editStudent.date_of_birth}
-                  onChange={e => setEditStudent({ ...editStudent, date_of_birth: e.target.value })}
-                />
-              </div>
-              <div>
-                <Label htmlFor="edit_gender">Gender</Label>
-                <Select value={editStudent.gender} onValueChange={value => setEditStudent({ ...editStudent, gender: value })}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select gender" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="male">Male</SelectItem>
-                    <SelectItem value="female">Female</SelectItem>
-                    <SelectItem value="other">Other</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label htmlFor="edit_course">Course</Label>
-                <Select value={editStudent.course_id} onValueChange={value => setEditStudent({ ...editStudent, course_id: value })}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select course" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {courses.map(course => (
-                      <SelectItem key={course.course_id} value={course.course_id.toString()}>
-                        {course.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label htmlFor="edit_batch">Batch</Label>
-                <Select value={editStudent.batch_id} onValueChange={value => setEditStudent({ ...editStudent, batch_id: value })}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select batch" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {batches.map(batch => (
-                      <SelectItem key={batch.batch_id} value={batch.batch_id.toString()}>
-                        {batch.batch_name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="col-span-2">
-                <Label htmlFor="edit_address">Address</Label>
-                <Textarea
-                  id="edit_address"
-                  value={editStudent.address}
-                  onChange={e => setEditStudent({ ...editStudent, address: e.target.value })}
-                  placeholder="Student address"
-                />
-              </div>
-              <div>
-                <Label htmlFor="edit_city">City</Label>
-                <Input
-                  id="edit_city"
-                  value={editStudent.city}
-                  onChange={e => setEditStudent({ ...editStudent, city: e.target.value })}
-                  placeholder="City"
-                />
-              </div>
-              <div>
-                <Label htmlFor="edit_state">State</Label>
-                <Input
-                  id="edit_state"
-                  value={editStudent.state}
-                  onChange={e => setEditStudent({ ...editStudent, state: e.target.value })}
-                  placeholder="State"
-                />
-              </div>
-              <div>
-                <Label htmlFor="edit_country">Country</Label>
-                <Input
-                  id="edit_country"
-                  value={editStudent.country}
-                  onChange={e => setEditStudent({ ...editStudent, country: e.target.value })}
-                  placeholder="Country"
-                />
-              </div>
-              <div>
-                <Label htmlFor="edit_pincode">Pincode</Label>
-                <Input
-                  id="edit_pincode"
-                  value={editStudent.pincode}
-                  onChange={e => setEditStudent({ ...editStudent, pincode: e.target.value })}
-                  placeholder="Pincode"
-                />
+            <div className="flex-grow overflow-y-auto pr-4 -mr-4">
+              <div className="grid grid-cols-2 gap-4 py-4">
+                <div>
+                  <Label htmlFor="edit-name">Full Name *</Label>
+                  <Input
+                    id="edit-name"
+                    value={editStudent.full_name}
+                    onChange={(e) => setEditStudent({...editStudent, full_name: e.target.value})}
+                    placeholder="Full name"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="edit-email">Email *</Label>
+                  <Input
+                    id="edit-email"
+                    type="email"
+                    value={editStudent.email}
+                    onChange={(e) => setEditStudent({...editStudent, email: e.target.value})}
+                    placeholder="Email address"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="edit-phone">Phone Number</Label>
+                  <Input
+                    id="edit-phone"
+                    value={editStudent.phone_number}
+                    onChange={(e) => setEditStudent({...editStudent, phone_number: e.target.value})}
+                    placeholder="Phone number"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="edit-dob">Date of Birth</Label>
+                  <Input
+                    id="edit-dob"
+                    type="date"
+                    value={editStudent.date_of_birth}
+                    onChange={(e) => setEditStudent({...editStudent, date_of_birth: e.target.value})}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="edit-gender">Gender</Label>
+                  <Select value={editStudent.gender || ''} onValueChange={(value) => setEditStudent({...editStudent, gender: value})}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select gender" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="male">Male</SelectItem>
+                      <SelectItem value="female">Female</SelectItem>
+                      <SelectItem value="other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="edit-adhaar">Aadhaar Number</Label>
+                  <Input
+                    id="edit-adhaar"
+                    value={editStudent.adhaar_num}
+                    onChange={(e) => setEditStudent({...editStudent, adhaar_num: e.target.value})}
+                    placeholder="Aadhaar number"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="edit-enrollment">Enrollment Number</Label>
+                  <Input
+                    id="edit-enrollment"
+                    value={editStudent.enrollment_number}
+                    onChange={(e) => setEditStudent({...editStudent, enrollment_number: e.target.value})}
+                    placeholder="Enrollment number"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="edit-qualification">Qualification</Label>
+                  <Input
+                    id="edit-qualification"
+                    value={editStudent.qualification}
+                    onChange={(e) => setEditStudent({...editStudent, qualification: e.target.value})}
+                    placeholder="Qualification"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="edit-guardian-name">Guardian Name</Label>
+                  <Input
+                    id="edit-guardian-name"
+                    value={editStudent.guardian_name}
+                    onChange={(e) => setEditStudent({...editStudent, guardian_name: e.target.value})}
+                    placeholder="Guardian name"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="edit-guardian-contact">Guardian Contact</Label>
+                  <Input
+                    id="edit-guardian-contact"
+                    value={editStudent.guardian_contact}
+                    onChange={(e) => setEditStudent({...editStudent, guardian_contact: e.target.value})}
+                    placeholder="Guardian contact"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="edit-guardian-email">Guardian Email</Label>
+                  <Input
+                    id="edit-guardian-email"
+                    type="email"
+                    value={editStudent.guardian_email}
+                    onChange={(e) => setEditStudent({...editStudent, guardian_email: e.target.value})}
+                    placeholder="Guardian email"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="edit-guardian-relation">Guardian Relation</Label>
+                  <Input
+                    id="edit-guardian-relation"
+                    value={editStudent.guardian_relation}
+                    onChange={(e) => setEditStudent({...editStudent, guardian_relation: e.target.value})}
+                    placeholder="Guardian relation"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="edit-mobile">Mobile Number</Label>
+                  <Input
+                    id="edit-mobile"
+                    value={editStudent.mobile_number}
+                    onChange={(e) => setEditStudent({...editStudent, mobile_number: e.target.value})}
+                    placeholder="Mobile number"
+                  />
+                </div>
+                <div className="col-span-2">
+                  <Label htmlFor="edit-bio">Bio</Label>
+                  <Textarea
+                    id="edit-bio"
+                    value={editStudent.bio}
+                    onChange={(e) => setEditStudent({...editStudent, bio: e.target.value})}
+                    placeholder="Student bio"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="edit-blood-group">Blood Group</Label>
+                  <Select value={editStudent.blood_group || ''} onValueChange={(value) => setEditStudent({...editStudent, blood_group: value})}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select blood group" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="A+">A+</SelectItem>
+                      <SelectItem value="A-">A-</SelectItem>
+                      <SelectItem value="B+">B+</SelectItem>
+                      <SelectItem value="B-">B-</SelectItem>
+                      <SelectItem value="AB+">AB+</SelectItem>
+                      <SelectItem value="AB-">AB-</SelectItem>
+                      <SelectItem value="O+">O+</SelectItem>
+                      <SelectItem value="O-">O-</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="col-span-2">
+                  <Label htmlFor="edit-medical">Medical Conditions</Label>
+                  <Textarea
+                    id="edit-medical"
+                    value={editStudent.medical_conditions}
+                    onChange={(e) => setEditStudent({...editStudent, medical_conditions: e.target.value})}
+                    placeholder="Medical conditions"
+                  />
+                </div>
+                <div className="col-span-2">
+                  <Label htmlFor="edit-address">Address</Label>
+                  <Textarea
+                    id="edit-address"
+                    value={editStudent.address}
+                    onChange={(e) => setEditStudent({...editStudent, address: e.target.value})}
+                    placeholder="Address"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="edit-city">City</Label>
+                  <Input
+                    id="edit-city"
+                    value={editStudent.city}
+                    onChange={(e) => setEditStudent({...editStudent, city: e.target.value})}
+                    placeholder="City"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="edit-state">State</Label>
+                  <Input
+                    id="edit-state"
+                    value={editStudent.state}
+                    onChange={(e) => setEditStudent({...editStudent, state: e.target.value})}
+                    placeholder="State"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="edit-country">Country</Label>
+                  <Input
+                    id="edit-country"
+                    value={editStudent.country}
+                    onChange={(e) => setEditStudent({...editStudent, country: e.target.value})}
+                    placeholder="Country"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="edit-pincode">Pincode</Label>
+                  <Input
+                    id="edit-pincode"
+                    value={editStudent.pincode}
+                    onChange={(e) => setEditStudent({...editStudent, pincode: e.target.value})}
+                    placeholder="Pincode"
+                  />
+                </div>
               </div>
             </div>
           )}
-          <div className="flex justify-end space-x-2 mt-6">
-            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+          <div className="flex-shrink-0 flex justify-end space-x-2 mt-6">
+            <Button variant="outline" onClick={() => {
+              setIsEditDialogOpen(false);
+              setEditStudent(null);
+            }}>
               Cancel
             </Button>
             <Button onClick={handleEditStudent} disabled={editStudentMutation.isPending}>

@@ -13,13 +13,16 @@ import {
   getBatches,
   createStaff,
   getStaff,
+  updateStaff,
+  deleteStaff,
   getAdminSettings
 } from '../controllers/adminController';
 
 const router = Router();
 
-// All admin routes require authentication and ADMIN role
-router.use(authenticate, authorize('ADMIN'));
+// Apply authentication and authorization middleware to all routes
+router.use(authenticate);
+router.use(authorize('ADMIN'));
 
 // Student Management
 router.post('/students', createStudent);
@@ -40,8 +43,10 @@ router.get('/batches', getBatches);
 // Staff Management
 router.post('/staff', createStaff);
 router.get('/staff', getStaff);
+router.put('/staff/:id', updateStaff);
+router.delete('/staff/:id', deleteStaff);
 
 // Settings
-router.get('/settings', (_, res) => getAdminSettings(res));
+router.get('/settings', getAdminSettings);
 
 export default router;

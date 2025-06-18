@@ -5,6 +5,8 @@ import { logger } from '../config/logger';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
+import { createReadStream } from 'fs';
+import { pipeline } from 'stream/promises';
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
@@ -251,5 +253,216 @@ export const toggleMaterialPublish = async (req: AuthRequest, res: Response): Pr
   } catch (error) {
     logger.error('Toggle material publish error:', error);
     res.status(500).json({ success: false, message: 'Failed to update material status' });
+  }
+};
+
+export const getContentStream = async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user?.user_id;
+
+    // Get the material and verify access
+    const material = await prisma.studyMaterial.findUnique({
+      where: { material_id: parseInt(id) },
+      include: {
+        course: {
+          include: {
+            students: {
+              where: { user_id: userId }
+            }
+          }
+        }
+      }
+    });
+
+    if (!material) {
+      return res.status(404).json({ message: 'Material not found' });
+    }
+
+    // Check if user has access to the material
+    const hasAccess = material.course?.students.some(student => student.user_id === userId) || 
+                     req.user?.role === 'ADMIN' || 
+                     req.user?.role === 'TEACHER';
+
+    if (!hasAccess) {
+      return res.status(403).json({ message: 'Access denied' });
+    }
+
+    if (!material.file_url) {
+      return res.status(404).json({ message: 'File URL not found' });
+    }
+
+    const filePath = path.join(process.env.UPLOAD_DIR || 'uploads', material.file_url);
+
+    // Check if file exists
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ message: 'File not found' });
+    }
+
+    // Set appropriate headers based on file type
+    const contentType = getContentType(material.file_type || 'OTHER');
+    res.setHeader('Content-Type', contentType);
+    res.setHeader('Content-Disposition', `inline; filename="${material.file_name || 'file'}"`);
+
+    // Stream the file
+    const fileStream = createReadStream(filePath);
+    await pipeline(fileStream, res);
+    
+    return res.end();
+  } catch (error) {
+    console.error('Error streaming content:', error);
+    return res.status(500).json({ message: 'Error streaming content' });
+  }
+};
+
+const getContentType = (fileType: string): string => {
+  switch (fileType) {
+    case 'PDF':
+      return 'application/pdf';
+    case 'IMAGE':
+      return 'image/jpeg';
+    case 'VIDEO':
+      return 'video/mp4';
+    case 'DOC':
+      return 'application/msword';
+    case 'PPT':
+      return 'application/vnd.ms-powerpoint';
+    default:
+      return 'application/octet-stream';
+  }
+};
+
+// Create a new study material
+export const createMaterial = async (req: AuthRequest, res: Response) => {
+  try {
+    const { title, description, file_url, file_type, file_name, file_size, subject_id, course_id } = req.body;
+
+    const material = await prisma.studyMaterial.create({
+      data: {
+        title,
+        description,
+        file_url,
+        file_type,
+        file_name,
+        file_size,
+        subject_id: subject_id ? parseInt(subject_id) : null,
+        course_id: course_id ? parseInt(course_id) : null,
+      }
+    });
+
+    return res.status(201).json(material);
+  } catch (error) {
+    console.error('Error creating material:', error);
+    return res.status(500).json({ message: 'Error creating material' });
+  }
+};
+
+// Get all study materials
+export const getMaterials = async (_req: AuthRequest, res: Response) => {
+  try {
+    const materials = await prisma.studyMaterial.findMany({
+      include: {
+        subject: true,
+        course: true
+      }
+    });
+
+    return res.json(materials);
+  } catch (error) {
+    console.error('Error fetching materials:', error);
+    return res.status(500).json({ message: 'Error fetching materials' });
+  }
+};
+
+// Get a specific study material
+export const getMaterialById = async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const material = await prisma.studyMaterial.findUnique({
+      where: {
+        material_id: parseInt(id)
+      },
+      include: {
+        subject: true,
+        course: true
+      }
+    });
+
+    if (!material) {
+      return res.status(404).json({
+        success: false,
+        message: 'Material not found'
+      });
+    }
+
+    return res.json({
+      success: true,
+      data: material
+    });
+  } catch (error) {
+    logger.error('Get material by ID error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to get material'
+    });
+  }
+};
+
+// Update a study material
+export const updateMaterial = async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { title, description, file_url, file_type, file_name, file_size, subject_id, course_id, is_published } = req.body;
+
+    const material = await prisma.studyMaterial.update({
+      where: { material_id: parseInt(id) },
+      data: {
+        title,
+        description,
+        file_url,
+        file_type,
+        file_name,
+        file_size,
+        subject_id: subject_id ? parseInt(subject_id) : null,
+        course_id: course_id ? parseInt(course_id) : null,
+        is_published
+      }
+    });
+
+    return res.json(material);
+  } catch (error) {
+    console.error('Error updating material:', error);
+    return res.status(500).json({ message: 'Error updating material' });
+  }
+};
+
+// Delete a study material
+export const deleteMaterial = async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const material = await prisma.studyMaterial.findUnique({
+      where: { material_id: parseInt(id) }
+    });
+
+    if (!material) {
+      return res.status(404).json({ message: 'Material not found' });
+    }
+
+    // Delete the file if it exists
+    if (material.file_url) {
+      const filePath = path.join(process.env.UPLOAD_DIR || 'uploads', material.file_url);
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+      }
+    }
+
+    await prisma.studyMaterial.delete({
+      where: { material_id: parseInt(id) }
+    });
+
+    return res.json({ message: 'Material deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting material:', error);
+    return res.status(500).json({ message: 'Error deleting material' });
   }
 };

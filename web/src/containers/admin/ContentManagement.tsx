@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,10 +8,23 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Search, Edit, Trash2, Upload, Download, Video, FileText, Image, File } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, Upload, Download, Video, FileText, Image, File, Eye } from 'lucide-react';
 import { useContent } from '@/hooks/api/useContent';
 import { useCourses } from '@/hooks/api/useAdmin';
 import { useToast } from '@/hooks/use-toast';
+import { MaterialType, MaterialStatus } from '@/types/content';
+import { compressImage, compressPDF, compressDocument } from '@/utils/compression';
+
+// Update UploadData interface for type safety
+interface UploadData {
+  title: string;
+  description: string;
+  subject?: string;
+  topic?: string;
+  courseId?: string;
+  type: MaterialType;
+  status: MaterialStatus;
+}
 
 const ContentManagement = () => {
   const { toast } = useToast();
@@ -26,14 +38,16 @@ const ContentManagement = () => {
   const [selectedSubject, setSelectedSubject] = useState('');
   const [selectedType, setSelectedType] = useState('');
   const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
+  const [isViewerOpen, setIsViewerOpen] = useState(false);
+  const [selectedMaterial, setSelectedMaterial] = useState<any>(null);
   const [uploadFile, setUploadFile] = useState<File | null>(null);
-  const [uploadData, setUploadData] = useState({
+  const [isCompressing, setIsCompressing] = useState(false);
+  const [uploadData, setUploadData] = useState<UploadData>({
     title: '',
     description: '',
-    subject: '',
-    topic: '',
-    courseId: '',
-    type: 'PDF' as const
+    type: MaterialType.PDF,
+    status: MaterialStatus.DRAFT,
+    courseId: undefined,
   });
 
   const filteredMaterials = materials.filter(material => {
@@ -44,31 +58,60 @@ const ContentManagement = () => {
     return matchesSearch && matchesSubject && matchesType;
   });
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      setUploadFile(file);
+    if (!file) return;
+
+    setIsCompressing(true);
+    try {
+      let compressedFile: File;
+      const fileType = getFileType(file.name);
+
+      switch (fileType) {
+        case MaterialType.IMAGE:
+          compressedFile = await compressImage(file);
+          break;
+        case MaterialType.PDF:
+          compressedFile = await compressPDF(file);
+          break;
+        case MaterialType.DOC:
+        case MaterialType.PPT:
+          compressedFile = await compressDocument(file);
+          break;
+        default:
+          compressedFile = file;
+      }
+
+      setUploadFile(compressedFile);
       setUploadData(prev => ({
         ...prev,
-        title: file.name.split('.')[0],
-        type: getFileType(file.name)
+        title: file.name.split('.')[0] || '',
+        type: fileType,
       }));
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to compress file. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsCompressing(false);
     }
   };
 
-  const getFileType = (filename: string) => {
-    const ext = filename.split('.').pop()?.toLowerCase();
+  const getFileType = (filename: string): MaterialType => {
+    const ext = filename.split('.').pop()?.toLowerCase() || '';
     switch (ext) {
-      case 'pdf': return 'PDF';
+      case 'pdf': return MaterialType.PDF;
       case 'ppt':
-      case 'pptx': return 'PPT';
+      case 'pptx': return MaterialType.PPT;
       case 'doc':
-      case 'docx': return 'DOC';
+      case 'docx': return MaterialType.DOC;
       case 'jpg':
       case 'jpeg':
       case 'png':
-      case 'gif': return 'IMAGE';
-      default: return 'OTHER';
+      case 'gif': return MaterialType.IMAGE;
+      default: return MaterialType.OTHER;
     }
   };
 
@@ -77,7 +120,7 @@ const ContentManagement = () => {
       toast({
         title: 'Error',
         description: 'Please fill all required fields and select a file',
-        variant: 'destructive'
+        variant: 'destructive',
       });
       return;
     }
@@ -87,8 +130,8 @@ const ContentManagement = () => {
       formData.append('file', uploadFile);
       formData.append('title', uploadData.title);
       formData.append('description', uploadData.description);
-      formData.append('subject', uploadData.subject);
-      formData.append('topic', uploadData.topic);
+      formData.append('subject', uploadData.subject || '');
+      formData.append('topic', uploadData.topic || '');
       formData.append('courseId', uploadData.courseId);
       formData.append('type', uploadData.type);
 
@@ -97,7 +140,7 @@ const ContentManagement = () => {
       
       toast({
         title: 'Success',
-        description: 'Material uploaded successfully'
+        description: 'Material uploaded successfully',
       });
       
       setIsUploadDialogOpen(false);
@@ -107,16 +150,22 @@ const ContentManagement = () => {
         description: '',
         subject: '',
         topic: '',
-        courseId: '',
-        type: 'PDF'
+        courseId: undefined,
+        type: MaterialType.PDF,
+        status: MaterialStatus.DRAFT,
       });
     } catch (error) {
       toast({
         title: 'Error',
         description: 'Failed to upload material',
-        variant: 'destructive'
+        variant: 'destructive',
       });
     }
+  };
+
+  const handleViewMaterial = (material: any) => {
+    setSelectedMaterial(material);
+    setIsViewerOpen(true);
   };
 
   const getTypeIcon = (type: string) => {
@@ -186,26 +235,43 @@ const ContentManagement = () => {
                 </div>
                 <div>
                   <Label htmlFor="course">Course *</Label>
-                  <Select value={uploadData.courseId} onValueChange={(value) => setUploadData({...uploadData, courseId: value})}>
+                  <Select 
+                    value={uploadData.courseId || ''} 
+                    onValueChange={(value) => setUploadData({...uploadData, courseId: value})}
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder="Select course" />
                     </SelectTrigger>
                     <SelectContent>
-                      {courses.map((course) => (
-                        <SelectItem key={course.id} value={course.id.toString()}>
-                          {course.name}
-                        </SelectItem>
-                      ))}
+                      {courses.map((course) => {
+                        const courseId = course.course_id || course.id;
+                        if (!courseId) {
+                          console.warn('Course missing ID:', course);
+                          return null;
+                        }
+                        return (
+                          <SelectItem 
+                            key={courseId} 
+                            value={courseId.toString()}
+                          >
+                            {course.name || 'Unnamed Course'}
+                          </SelectItem>
+                        );
+                      })}
                     </SelectContent>
                   </Select>
                 </div>
                 <div>
                   <Label htmlFor="subject">Subject</Label>
-                  <Select value={uploadData.subject} onValueChange={(value) => setUploadData({...uploadData, subject: value})}>
+                  <Select 
+                    value={uploadData.subject || ''} 
+                    onValueChange={(value) => setUploadData({...uploadData, subject: value})}
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder="Select subject" />
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="none">None</SelectItem>
                       {subjects.map((subject) => (
                         <SelectItem key={subject} value={subject}>
                           {subject}
@@ -218,7 +284,7 @@ const ContentManagement = () => {
                   <Label htmlFor="topic">Topic</Label>
                   <Input
                     id="topic"
-                    value={uploadData.topic}
+                    value={uploadData.topic || ''}
                     onChange={(e) => setUploadData({...uploadData, topic: e.target.value})}
                   />
                 </div>
@@ -230,6 +296,40 @@ const ContentManagement = () => {
                   value={uploadData.description}
                   onChange={(e) => setUploadData({...uploadData, description: e.target.value})}
                 />
+              </div>
+              <div>
+                <Label htmlFor="type">Type</Label>
+                <Select 
+                  value={uploadData.type} 
+                  onValueChange={(value) => setUploadData({...uploadData, type: value as MaterialType})}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={MaterialType.PDF}>PDF</SelectItem>
+                    <SelectItem value={MaterialType.PPT}>PPT</SelectItem>
+                    <SelectItem value={MaterialType.DOC}>DOC</SelectItem>
+                    <SelectItem value={MaterialType.IMAGE}>Image</SelectItem>
+                    <SelectItem value={MaterialType.OTHER}>Other</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="status">Status</Label>
+                <Select 
+                  value={uploadData.status} 
+                  onValueChange={(value) => setUploadData({...uploadData, status: value as MaterialStatus})}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={MaterialStatus.DRAFT}>Draft</SelectItem>
+                    <SelectItem value={MaterialStatus.PUBLISHED}>Published</SelectItem>
+                    <SelectItem value={MaterialStatus.ARCHIVED}>Archived</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
             <div className="flex justify-end space-x-2 mt-6">
@@ -305,12 +405,15 @@ const ContentManagement = () => {
                 className="pl-10"
               />
             </div>
-            <Select value={selectedSubject} onValueChange={setSelectedSubject}>
+            <Select 
+              value={selectedSubject || 'all'} 
+              onValueChange={(value) => setSelectedSubject(value === 'all' ? '' : value)}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="All subjects" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All subjects</SelectItem>
+                <SelectItem value="all">All subjects</SelectItem>
                 {subjects.map((subject) => (
                   <SelectItem key={subject} value={subject}>
                     {subject}
@@ -318,12 +421,15 @@ const ContentManagement = () => {
                 ))}
               </SelectContent>
             </Select>
-            <Select value={selectedType} onValueChange={setSelectedType}>
+            <Select 
+              value={selectedType || 'all'} 
+              onValueChange={(value) => setSelectedType(value === 'all' ? '' : value)}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="All types" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All types</SelectItem>
+                <SelectItem value="all">All types</SelectItem>
                 {fileTypes.map((type) => (
                   <SelectItem key={type} value={type}>
                     {type}
@@ -331,11 +437,14 @@ const ContentManagement = () => {
                 ))}
               </SelectContent>
             </Select>
-            <Button variant="outline" onClick={() => {
-              setSearchTerm('');
-              setSelectedSubject('');
-              setSelectedType('');
-            }}>
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setSearchTerm('');
+                setSelectedSubject('');
+                setSelectedType('');
+              }}
+            >
               Clear Filters
             </Button>
           </div>
@@ -352,17 +461,21 @@ const ContentManagement = () => {
                   {getTypeIcon(material.type)}
                   <div>
                     <h3 className="font-semibold text-gray-900">{material.title}</h3>
-                    <Badge variant={material.isPublished ? "default" : "secondary"}>
+                    <Badge variant={material.isPublished ? 'default' : 'secondary'}>
                       {material.isPublished ? 'Published' : 'Draft'}
                     </Badge>
                   </div>
                 </div>
                 <div className="flex space-x-1">
-                  <Button variant="ghost" size="sm">
-                    <Edit className="w-4 h-4" />
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    onClick={() => handleViewMaterial(material)}
+                  >
+                    <Eye className="w-4 h-4" />
                   </Button>
                   <Button variant="ghost" size="sm">
-                    <Download className="w-4 h-4" />
+                    <Edit className="w-4 h-4" />
                   </Button>
                   <Button variant="ghost" size="sm">
                     <Trash2 className="w-4 h-4 text-red-500" />
@@ -396,6 +509,39 @@ const ContentManagement = () => {
           </Card>
         ))}
       </div>
+
+      {/* Material Viewer Dialog */}
+      <Dialog open={isViewerOpen} onOpenChange={setIsViewerOpen}>
+        <DialogContent className="max-w-4xl h-[80vh]">
+          <DialogHeader>
+            <DialogTitle>{selectedMaterial?.title}</DialogTitle>
+          </DialogHeader>
+          <div className="flex-1 overflow-auto">
+            {selectedMaterial?.type === 'PDF' && (
+              <iframe
+                src={`/api/content/view/${selectedMaterial.id}`}
+                className="w-full h-full"
+                title={selectedMaterial.title}
+              />
+            )}
+            {selectedMaterial?.type === 'IMAGE' && (
+              <img
+                src={`/api/content/view/${selectedMaterial.id}`}
+                alt={selectedMaterial.title}
+                className="max-w-full h-auto"
+              />
+            )}
+            {selectedMaterial?.type === 'VIDEO' && (
+              <video
+                src={`/api/content/view/${selectedMaterial.id}`}
+                controls
+                className="w-full"
+              />
+            )}
+            {/* Add other content type viewers as needed */}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

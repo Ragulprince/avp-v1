@@ -1,11 +1,24 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import DashboardOverview from "@/containers/admin/DashboardOverview";
+import StudentManagement from "@/containers/admin/StudentManagement";
+import ContentManagement from "@/containers/admin/ContentManagement";
+import TestManagement from "@/containers/admin/TestManagement";
+import Analytics from "@/containers/admin/Analytics";
+import CourseManagement from "@/containers/admin/CourseManagement";
+import QuestionBank from "@/containers/admin/QuestionBank";
+import NotificationCenter from "@/containers/admin/NotificationCenter";
+import StaffManagement from "@/containers/admin/StaffManagement";
+import AdminSettings from "@/containers/admin/AdminSettings";
+import TestReports from "@/containers/admin/TestReports";
+import ProfileSection from "@/components/common/ProfileSection";
+import AdminProfile from "@/components/common/AdminProfile";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -24,7 +37,21 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+          <Route path="/admin" element={<AdminDashboard />}>
+            <Route index element={<Navigate to="dashboard" replace />} />
+            <Route path="dashboard" element={<DashboardOverview />} />
+            <Route path="students" element={<StudentManagement />} />
+            <Route path="staff" element={<StaffManagement />} />
+            <Route path="courses" element={<CourseManagement />} />
+            <Route path="content" element={<ContentManagement />} />
+            <Route path="tests" element={<TestManagement />} />
+            <Route path="questions" element={<QuestionBank />} />
+            <Route path="reports" element={<TestReports />} />
+            <Route path="notifications" element={<NotificationCenter />} />
+            <Route path="settings" element={<AdminSettings />} />
+            <Route path="profile" element={<AdminProfile />} />
+            <Route path="analytics" element={<Analytics />} />
+          </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
