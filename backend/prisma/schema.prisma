@@ -1,4 +1,3 @@
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -9,271 +8,445 @@ datasource db {
 }
 
 // =================================================================
-//
 //                         USER & PROFILE MODELS
-//
 // =================================================================
 
 model User {
-  id        Int      @id @default(autoincrement())
-  email     String   @unique
-  phone     String?  @unique
-  password  String
-  name      String
-  avatar    String?
-  role      Role     @default(STUDENT)
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  user_id            Int       @id @default(autoincrement())
+  email              String    @unique
+  username           String?   @unique
+  password           String
+  full_name          String
+  phone_number       String?   @unique
+  avatar             String?
+  role               Role      @default(STUDENT)
+  is_active          Boolean   @default(true)
+  date_of_joining    DateTime? @default(now())
+  created_at         DateTime  @default(now())
+  updated_at         DateTime  @updatedAt
+  last_login         DateTime?
+  resetToken         String?   @unique
+  resetTokenExpiry   DateTime?
+  email_verified     Boolean   @default(false)
+  phone_verified     Boolean   @default(false)
+  date_of_birth      DateTime?
+  gender             String?
+  address            String?
+  city               String?
+  state              String?
+  country            String?
+  pincode            String?
 
-  // Student specific fields
-  studentProfile StudentProfile?
-  quizAttempts   QuizAttempt[]
-  videoDownloads VideoDownload[]
-  notifications  Notification[]
+  student_profile    StudentProfile?
+  staff              Staff?
+  user_batches       UserBatch[]
+  video_progress     UserVideoProgress[]
+  material_progress  UserMaterialProgress[]
+  quiz_attempts      QuizAttempt[]
+  video_downloads    VideoDownload[]
+  notifications      Notification[]
+  leaderboard        Leaderboard[]
 
+  @@index([role])
   @@map("users")
 }
 
 model StudentProfile {
-  id            Int      @id @default(autoincrement())
-  userId        Int      @unique
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  batchId       Int?
-  batch         Batch?   @relation(fields: [batchId], references: [id])
-  courseId      Int?
-  course        Course?  @relation(fields: [courseId], references: [id])
-  joinDate      DateTime @default(now())
-  address       String?
-  emergencyContact String?
-  bio           String?
-  totalScore    Int      @default(0)
-  rank          Int?
-  videosWatched Int      @default(0)
-  testsCompleted Int     @default(0)
+  student_id         Int       @id @default(autoincrement())
+  user_id            Int       @unique
+  adhaar_num         String?   @unique
+  enrollment_number  String?   @unique
+  qualification      String?
+  guardian_name      String?
+  guardian_contact   String?
+  guardian_email     String?
+  guardian_relation  String?
+  date_of_birth      DateTime?
+  address            String?
+  mobile_number      String?
+  batch_id           Int?
+  course_id          Int?
+  join_date          DateTime  @default(now())
+  bio                String?
+  total_score        Int       @default(0)
+  rank               Int?
+  videos_watched     Int       @default(0)
+  tests_completed    Int       @default(0)
+  attendance_percentage Float?  @default(0)
+  last_attendance    DateTime?
+  emergency_contact  String?
+  blood_group        String?
+  medical_conditions String?
+  achievements       Json?
+  documents          Json?
+
+  user               User      @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+  batch              Batch?    @relation(fields: [batch_id], references: [batch_id])
+  course             Course?   @relation(fields: [course_id], references: [course_id])
 
   @@map("student_profiles")
 }
 
+model Staff {
+  staff_id            Int       @id @default(autoincrement())
+  user_id             Int       @unique
+  department          String?
+  designation         String?
+  hire_date           DateTime?
+  qualifications      String[]
+  years_of_experience Int?
+  specialization      String[]
+  subjects            String[]
+  salary              Float?
+  bank_details        Json?
+  documents           Json?
+  emergency_contact   String?
+  blood_group         String?
+  medical_conditions  String?
+  achievements        Json?
+  performance_rating  Float?
+  last_review_date    DateTime?
+  is_teaching         Boolean   @default(true)
+  is_administrative   Boolean   @default(false)
+  office_location     String?
+  working_hours       Json?
+  leaves_taken        Int       @default(0)
+  leaves_remaining    Int       @default(0)
+
+  user                User      @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+
+  @@map("staff")
+}
 
 // =================================================================
-//
 //                         COURSE & CONTENT MODELS
-//
 // =================================================================
 
 model Course {
-  id          Int       @id @default(autoincrement())
-  name        String
-  description String
-  duration    String
-  fees        Int
-  status      CourseStatus @default(DRAFT)
-  subjects    String[]
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  course_id     Int       @id @default(autoincrement())
+  name          String
+  description   String
+  duration      String?
+  fees          Int?
+  status        CourseStatus @default(DRAFT)
+  subjects      String[]
+  created_at    DateTime  @default(now())
+  updated_at    DateTime  @updatedAt
 
-  batches     Batch[]
-  students    StudentProfile[]
-  videos      Video[]
-  materials   StudyMaterial[]
-  quizzes     Quiz[]
+  batches       Batch[]
+  students      StudentProfile[]
+  videos        Video[]
+  study_materials StudyMaterial[]
+  quizzes       Quiz[]
 
   @@map("courses")
 }
 
 model Batch {
-  id        Int      @id @default(autoincrement())
-  name      String
-  timing    String
-  capacity  Int
-  courseId  Int
-  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  students  StudentProfile[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  batch_id      Int       @id @default(autoincrement())
+  batch_name    String
+  timing        String?
+  capacity      Int?
+  course_id     Int?
+  start_date    DateTime?
+  end_date      DateTime?
+  description   String?
+  is_active     Boolean   @default(true)
+  created_at    DateTime  @default(now())
+  updated_at    DateTime  @updatedAt
+
+  course        Course?   @relation(fields: [course_id], references: [course_id], onDelete: Cascade)
+  students      StudentProfile[]
+  user_batches  UserBatch[]
+  quizzes       Quiz[]
 
   @@map("batches")
 }
 
-model Video {
-  id          Int      @id @default(autoincrement())
-  title       String
-  description String?
-  subject     String
-  topic       String
-  duration    String?
-  thumbnail   String?
-  videoUrl    String
-  courseId    Int
-  course      Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  isPublished Boolean  @default(false)
-  views       Int      @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+model UserBatch {
+  user_batch_id Int    @id @default(autoincrement())
+  user_id       Int
+  batch_id      Int
+  joined_at     DateTime @default(now())
 
-  downloads VideoDownload[]
+  user          User   @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+  batch         Batch  @relation(fields: [batch_id], references: [batch_id], onDelete: Cascade)
+
+  @@unique([user_id, batch_id])
+  @@map("user_batches")
+}
+
+model Subject {
+  subject_id    Int       @id @default(autoincrement())
+  name          String
+  description   String
+
+  chapters      Chapter[]
+  videos        Video[]
+  study_materials StudyMaterial[]
+  quizzes       Quiz[]
+  questions     Question[]
+
+  @@map("subjects")
+}
+
+model Chapter {
+  chapter_id    Int       @id @default(autoincrement())
+  subject_id    Int
+  name          String
+  description   String
+  order_index   Int?
+  is_active     Boolean   @default(true)
+
+  subject       Subject   @relation(fields: [subject_id], references: [subject_id], onDelete: Cascade)
+  videos        Video[]
+
+  @@map("chapters")
+}
+
+model Video {
+  video_id             Int       @id @default(autoincrement())
+  chapter_id           Int?
+  subject_id           Int
+  course_id            Int?
+  title                String
+  description          String?
+  video_url            String
+  thumbnail_url        String?
+  duration             String?
+  is_motivational      Boolean   @default(false)
+  allow_download       Boolean   @default(false)
+  download_validity_days Int?
+  is_published         Boolean   @default(false)
+  views                Int       @default(0)
+  created_at           DateTime  @default(now())
+  updated_at           DateTime  @updatedAt
+
+  chapter              Chapter?  @relation(fields: [chapter_id], references: [chapter_id], onDelete: Cascade)
+  subject              Subject   @relation(fields: [subject_id], references: [subject_id], onDelete: Cascade)
+  course               Course?   @relation(fields: [course_id], references: [course_id], onDelete: Cascade)
+  video_progress       UserVideoProgress[]
+  downloads            VideoDownload[]
 
   @@map("videos")
 }
 
-model VideoDownload {
-  id        Int      @id @default(autoincrement())
-  userId    Int
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  videoId   Int
-  video     Video    @relation(fields: [videoId], references: [id], onDelete: Cascade)
-  expiresAt DateTime
-  createdAt DateTime @default(now())
+model UserVideoProgress {
+  progress_id      Int       @id @default(autoincrement())
+  user_id          Int
+  video_id         Int
+  watch_progress   Float?
+  last_watched     DateTime?
+  download_expiry  DateTime?
+  is_downloaded    Boolean   @default(false)
 
-  @@unique([userId, videoId])
+  user             User      @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+  video            Video     @relation(fields: [video_id], references: [video_id], onDelete: Cascade)
+
+  @@index([user_id, video_id])
+  @@map("user_video_progress")
+}
+
+model VideoDownload {
+  video_download_id Int       @id @default(autoincrement())
+  user_id           Int
+  video_id          Int
+  expires_at        DateTime
+  created_at        DateTime  @default(now())
+
+  user              User      @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+  video             Video     @relation(fields: [video_id], references: [video_id], onDelete: Cascade)
+
+  @@unique([user_id, video_id])
   @@map("video_downloads")
 }
 
 model StudyMaterial {
-  id          Int      @id @default(autoincrement())
-  title       String
-  description String?
-  type        MaterialType
-  subject     String
-  topic       String
-  fileUrl     String
-  fileName    String
-  fileSize    String?
-  courseId    Int
-  course      Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  isPublished Boolean  @default(false)
-  views       Int      @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  material_id   Int       @id @default(autoincrement())
+  title         String
+  description   String?
+  file_url      String
+  file_type     MaterialType?
+  file_name     String?
+  file_size     String?
+  subject_id    Int?
+  course_id     Int?
+  is_published  Boolean   @default(false)
+  views         Int       @default(0)
+  created_at    DateTime  @default(now())
+  updated_at    DateTime  @updatedAt
+
+  subject       Subject?  @relation(fields: [subject_id], references: [subject_id], onDelete: Cascade)
+  course        Course?   @relation(fields: [course_id], references: [course_id], onDelete: Cascade)
+  progress      UserMaterialProgress[]
 
   @@map("study_materials")
 }
 
+model UserMaterialProgress {
+  progress_id   Int       @id @default(autoincrement())
+  user_id       Int
+  material_id   Int
+  is_completed  Boolean   @default(false)
+  last_accessed DateTime?
+
+  user          User      @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+  material      StudyMaterial @relation(fields: [material_id], references: [material_id], onDelete: Cascade)
+
+  @@map("user_material_progress")
+}
 
 // =================================================================
-//
 //                      QUIZ & ASSESSMENT MODELS
-//
 // =================================================================
 
 model Quiz {
-  id          Int        @id @default(autoincrement())
-  title       String
-  description String?
-  subject     String
-  type        QuizType   @default(PRACTICE)
-  duration    Int        // in minutes
-  totalMarks  Int
-  passingMarks Int
-  negativeMarking Boolean @default(false)
-  negativeMarks Float?
-  courseId    Int
-  course      Course     @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  isPublished Boolean    @default(false)
-  scheduledAt DateTime?
-  expiresAt   DateTime?
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+  quiz_id             Int       @id @default(autoincrement())
+  course_id           Int
+  subject_id          Int?
+  batch_id            Int?
+  title               String
+  description         String?
+  type                QuizType  @default(PRACTICE)
+  time_limit_minutes  Int?
+  total_marks         Int?
+  passing_marks       Int?
+  has_negative_marking Boolean   @default(false)
+  negative_marks      Float?
+  is_published        Boolean   @default(false)
+  scheduled_at        DateTime?
+  expires_at          DateTime?
+  start_time          DateTime?
+  end_time            DateTime?
+  is_active           Boolean   @default(true)
+  created_at          DateTime  @default(now())
+  updated_at          DateTime  @updatedAt
 
-  questions QuizQuestion[]
-  attempts  QuizAttempt[]
+  course              Course?   @relation(fields: [course_id], references: [course_id], onDelete: Cascade)
+  subject             Subject?  @relation(fields: [subject_id], references: [subject_id], onDelete: Cascade)
+  batch               Batch?    @relation(fields: [batch_id], references: [batch_id], onDelete: Cascade)
+  questions           QuizQuestion[]
+  attempts            QuizAttempt[]
 
   @@map("quizzes")
 }
 
 model Question {
-  id          Int          @id @default(autoincrement())
-  question    String
-  type        QuestionType
-  subject     String
-  topic       String
-  difficulty  Difficulty   @default(MEDIUM)
-  options     Json?        // For MCQ, store as JSON array
-  correctAnswer String
-  explanation String?
-  marks       Int          @default(1)
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+  question_id      Int            @id @default(autoincrement())
+  question_text    String
+  type             QuestionType
+  subject_id       Int
+  topic            String?
+  difficulty       DifficultyLevel @default(MEDIUM)
+  options          Json?
+  correct_answer   String
+  explanation      String?
+  marks            Int       @default(1)
+  left_side        String?
+  right_side       String?
+  created_at       DateTime  @default(now())
+  updated_at       DateTime  @updatedAt
 
-  quizQuestions QuizQuestion[]
+  subject          Subject   @relation(fields: [subject_id], references: [subject_id], onDelete: Cascade)
+  quiz_questions   QuizQuestion[]
+  user_answers     UserAnswer[]
 
   @@map("questions")
 }
 
 model QuizQuestion {
-  id         Int      @id @default(autoincrement())
-  quizId     Int
-  quiz       Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
-  questionId Int
-  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
-  order      Int
+  quiz_question_id Int       @id @default(autoincrement())
+  quiz_id          Int
+  question_id      Int
+  order            Int?
 
-  @@unique([quizId, questionId])
+  quiz             Quiz      @relation(fields: [quiz_id], references: [quiz_id], onDelete: Cascade)
+  question         Question  @relation(fields: [question_id], references: [question_id], onDelete: Cascade)
+
+  @@unique([quiz_id, question_id])
   @@map("quiz_questions")
 }
 
 model QuizAttempt {
-  id          Int      @id @default(autoincrement())
-  userId      Int
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  quizId      Int
-  quiz        Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
-  answers     Json     // Store answers as JSON
-  score       Int
-  totalQuestions Int
-  correctAnswers Int
-  wrongAnswers   Int
-  timeTaken      Int    // in seconds
-  isCompleted    Boolean @default(false)
-  startedAt      DateTime @default(now())
-  completedAt    DateTime?
+  attempt_id        Int       @id @default(autoincrement())
+  user_id           Int
+  quiz_id           Int
+  answers           Json?
+  score             Int?
+  total_questions   Int?
+  correct_answers   Int?
+  wrong_answers     Int?
+  unattempted       Int?
+  accuracy          Float?
+  rank              Int?
+  time_taken        Int?
+  is_completed      Boolean   @default(false)
+  start_time        DateTime  @default(now())
+  submit_time       DateTime?
+  created_at        DateTime  @default(now())
+  updated_at        DateTime  @updatedAt
+
+  user              User      @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+  quiz              Quiz      @relation(fields: [quiz_id], references: [quiz_id], onDelete: Cascade)
+
+  useranswers           UserAnswer[]
 
   @@map("quiz_attempts")
 }
 
+model UserAnswer {
+  answer_id        Int       @id @default(autoincrement())
+  attempt_id       Int
+  question_id      Int
+  answer_text      String
+  is_correct       Boolean
+  marks_obtained   Float?
+
+  attempt          QuizAttempt @relation(fields: [attempt_id], references: [attempt_id], onDelete: Cascade)
+  question         Question    @relation(fields: [question_id], references: [question_id], onDelete: Cascade)
+
+  @@map("user_answers")
+}
 
 // =================================================================
-//
 //                         UTILITY MODELS
-//
 // =================================================================
 
 model Notification {
-  id        Int              @id @default(autoincrement())
-  userId    Int?
-  user      User?            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  title     String
-  message   String
-  type      NotificationType @default(GENERAL)
-  isRead    Boolean          @default(false)
-  data      Json?            // Additional data as JSON
-  createdAt DateTime         @default(now())
+  notification_id Int              @id @default(autoincrement())
+  user_id         Int?
+  title           String
+  message         String
+  type            NotificationType @default(GENERAL)
+  is_read         Boolean          @default(false)
+  data            Json?
+  created_at      DateTime         @default(now())
+
+  user            User?            @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
 
   @@map("notifications")
 }
 
 model Leaderboard {
-  id        Int      @id @default(autoincrement())
-  userId    Int
-  userName  String
-  userAvatar String?
-  score     Int
-  rank      Int
-  subject   String?
-  type      LeaderboardType @default(OVERALL)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  leaderboard_id Int       @id @default(autoincrement())
+  user_id       Int
+  user_name     String
+  user_avatar   String?
+  score         Int
+  rank          Int
+  subject       String?
+  type          LeaderboardType @default(OVERALL)
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
 
-  @@unique([userId, type, subject])
+  user          User     @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+
+  @@unique([user_id, type, subject])
   @@map("leaderboards")
 }
 
-
 // =================================================================
-//
 //                              ENUMS
-//
 // =================================================================
 
 enum Role {
@@ -302,17 +475,18 @@ enum QuizType {
   DAILY
   SUBJECT_WISE
   CUSTOM
+  FINAL
 }
 
 enum QuestionType {
   MCQ
-  FILL_BLANKS
+  FILL_IN_THE_BLANK
   TRUE_FALSE
   MATCH
   CHOICE_BASED
 }
 
-enum Difficulty {
+enum DifficultyLevel {
   EASY
   MEDIUM
   HARD
