@@ -24,8 +24,8 @@ export const createStudent = async (req: AuthRequest, res: Response) => {
         role: 'STUDENT',
         studentProfile: {
           create: {
-            batchId,
-            courseId,
+            batchId: batchId ? parseInt(batchId, 10) : undefined, // Convert to integer
+            courseId: courseId ? parseInt(courseId, 10) : undefined, // Convert to integer
             address,
             emergencyContact
           }
@@ -211,7 +211,7 @@ export const createCourse = async (req: AuthRequest, res: Response) => {
   }
 };
 
-export const getCourses = async ( res: Response) => {
+export const getCourses = async ( req: AuthRequest,res: Response) => {
   try {
     const courses = await prisma.course.findMany({
       include: {
@@ -228,8 +228,8 @@ export const getCourses = async ( res: Response) => {
       },
       orderBy: { createdAt: 'desc' }
     });
-
-    res.json({
+    console.log(req)
+    res.status(200).json({
       success: true,
       data: courses
     });

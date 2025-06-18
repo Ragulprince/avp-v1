@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -51,10 +50,10 @@ const StudentManagement = () => {
     }
 
     try {
-      const studentData = {
+      const studentData: CreateStudentData = {
         ...newStudent,
-        batchId: newStudent.batchId ? parseInt(newStudent.batchId) : undefined,
-        courseId: newStudent.courseId ? parseInt(newStudent.courseId) : undefined
+        batchId: newStudent.batchId || undefined, // Keep as string or undefined
+        courseId: newStudent.courseId || undefined // Keep as string or undefined
       };
       
       await createStudentMutation.mutateAsync(studentData);
@@ -270,7 +269,6 @@ const StudentManagement = () => {
                 <SelectValue placeholder="All courses" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All courses</SelectItem>
                 {courses.map((course) => (
                   <SelectItem key={course.id} value={course.id.toString()}>
                     {course.name}
@@ -283,7 +281,6 @@ const StudentManagement = () => {
                 <SelectValue placeholder="All batches" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All batches</SelectItem>
                 {batches.map((batch) => (
                   <SelectItem key={batch.id} value={batch.id.toString()}>
                     {batch.name}
