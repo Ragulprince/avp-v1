@@ -21,7 +21,12 @@ export const getQuizzes = async (req: AuthRequest, res: Response) => {
     };
 
     if (subject && subject !== 'all') {
-      where.subject_id = subject;
+      const subjectIdInt = parseInt(subject as string);
+      if (!isNaN(subjectIdInt)) {
+        where.subject_id = subjectIdInt;
+      } else {
+        where.subject_id = null;
+      }
     }
 
     if (type) {

@@ -19,6 +19,11 @@ import AdminSettings from "@/containers/admin/AdminSettings";
 import TestReports from "@/containers/admin/TestReports";
 import ProfileSection from "@/components/common/ProfileSection";
 import AdminProfile from "@/components/common/AdminProfile";
+import StudentDashboard from "./pages/student/StudentDashboard";
+import QuizCenter from "./pages/student/QuizCenter";
+import VideoLearning from "./pages/student/VideoLearning";
+import Profile from "./pages/student/Profile";
+import Settings from "./pages/student/Settings";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -52,8 +57,15 @@ const App = () => (
             <Route path="profile" element={<AdminProfile />} />
             <Route path="analytics" element={<Analytics />} />
           </Route>
+          <Route path="/student" element={<Index />} />
+          <Route path="/student/home" element={<StudentDashboard activeTab="home" onTabChange={() => {}} />} />
+          <Route path="/student/practice" element={<QuizCenter activeTab="practice" onTabChange={() => {}} />} />
+          <Route path="/student/hub" element={<VideoLearning activeTab="hub" onTabChange={() => {}} />} />
+          <Route path="/student/profile" element={<Profile activeTab="profile" onTabChange={() => {}} />} />
+          <Route path="/student/settings" element={<Settings activeTab="settings" onTabChange={() => {}} />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
+        
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>

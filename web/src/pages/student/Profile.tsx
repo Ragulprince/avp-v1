@@ -23,6 +23,7 @@ import {
 import BottomNavigation from '@/components/common/BottomNavigation';
 import { useStudentProfile, useStudentVideos } from '@/hooks/api/useStudent';
 import { useProfile } from '@/hooks/api/useAuth';
+import StudentHeader from '@/containers/student/StudentHeader';
 
 // Define TypeScript interfaces for type safety
 interface User {
@@ -124,6 +125,7 @@ const Profile: React.FC<ProfileProps> = ({ activeTab, onTabChange }) => {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-24">
+      <StudentHeader />
       <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-4 md:p-6">
         <div className="max-w-4xl mx-auto">
           <h1 className="text-2xl md:text-3xl font-bold mb-2">My Profile</h1>

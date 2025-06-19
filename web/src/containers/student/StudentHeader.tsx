@@ -1,18 +1,30 @@
-
 import React, { useState } from 'react';
-import { Bell, Search } from 'lucide-react';
+import { Bell, Search, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { useLogout } from '@/hooks/api/useAuth';
+import { useNavigate } from 'react-router-dom';
 
 const StudentHeader = () => {
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
+  const logoutMutation = useLogout();
+  const navigate = useNavigate();
 
   const notifications = [
     { id: 1, title: 'New Physics lecture uploaded', time: '2 hours ago', type: 'info' },
     { id: 2, title: 'Mock test scheduled for tomorrow', time: '4 hours ago', type: 'warning' },
     { id: 3, title: 'Assignment deadline approaching', time: '1 day ago', type: 'urgent' }
   ];
+
+  const handleLogout = async () => {
+    try {
+      await logoutMutation.mutateAsync();
+      navigate('/');
+    } catch (error) {
+      console.error('Logout failed:', error);
+    }
+  };
 
   return (
     <div className="bg-white border-b border-gray-200 p-4 sticky top-0 z-40">
@@ -50,6 +62,9 @@ const StudentHeader = () => {
           
           <Button variant="outline" size="sm">
             <Search className="w-4 h-4" />
+          </Button>
+          <Button variant="outline" size="sm" onClick={handleLogout} title="Logout">
+            <LogOut className="w-4 h-4" />
           </Button>
         </div>
       </div>

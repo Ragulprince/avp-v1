@@ -1,13 +1,20 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useProfile } from '@/hooks/api/useAuth';
 import { Navigate } from 'react-router-dom';
 import Login from './auth/Login';
+import StudentDashboard from './student/StudentDashboard';
+import QuizCenter from './student/QuizCenter';
+import VideoLearning from './student/VideoLearning';
+import Profile from './student/Profile';
+import Settings from './student/Settings';
 
 const Index = () => {
   const { data: profileData, isLoading, error } = useProfile();
 
   const isAuthenticated = !!profileData?.data;
   const userRole = profileData?.data?.role;
+
+  const [activeTab, setActiveTab] = useState('home');
 
   if (isLoading) {
     return (
@@ -29,7 +36,21 @@ const Index = () => {
     return <Navigate to="/admin" replace />;
   }
 
-  return <Navigate to="/student" replace />;
+  // Student main tab switch
+  switch (activeTab) {
+    case 'home':
+      return <StudentDashboard activeTab={activeTab} onTabChange={setActiveTab} />;
+    case 'practice':
+      return <QuizCenter activeTab={activeTab} onTabChange={setActiveTab} />;
+    case 'hub':
+      return <VideoLearning activeTab={activeTab} onTabChange={setActiveTab} />;
+    case 'profile':
+      return <Profile activeTab={activeTab} onTabChange={setActiveTab} />;
+    case 'settings':
+      return <Settings activeTab={activeTab} onTabChange={setActiveTab} />;
+    default:
+      return <StudentDashboard activeTab={activeTab} onTabChange={setActiveTab} />;
+  }
 };
 
 export default Index;
