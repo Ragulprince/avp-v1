@@ -56,9 +56,9 @@ export interface Course {
   description?: string;
   duration: number;
   fees: number;
-  subjects: string[];
   status: string;
   createdAt: string;
+  subjects?: { subject_id: number; name: string; description: string }[];
 }
 
 export interface CreateCourseData {
@@ -90,6 +90,7 @@ export interface CreateCourseData {
   completion_rate: number;
   tags: string[];
   metadata: Record<string, any>;
+  subject_ids: number[];
 }
 
 export interface Batch {
@@ -111,9 +112,9 @@ export interface CreateBatchData {
 
 export interface StaffMember {
   id: string;
-  name: string;
+  full_name: string;
   email: string;
-  phone?: string;
+  phone_number?: string;
   role: string;
   isActive: boolean;
   createdAt: string;
@@ -121,8 +122,8 @@ export interface StaffMember {
 
 export interface CreateStaffData {
   email: string;
-  name: string;
-  phone: string;
+  full_name: string;
+  phone_number: string;
   role: 'ADMIN' | 'TEACHER';
   department?: string;
   designation?: string;

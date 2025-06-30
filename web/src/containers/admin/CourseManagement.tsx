@@ -13,12 +13,23 @@ import { CreateCourseData, adminService } from '@/services/admin';
 import { useToast } from '@/hooks/use-toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useSubjects } from '@/hooks/api/useSubjects';
 
 const CourseManagement = () => {
   const { data: coursesResponse, isLoading } = useCourses();
   const createCourseMutation = useCreateCourse();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { data: subjectsResponse } = useSubjects();
+  
+  // Debugging output
+  console.log('subjectsResponse:', subjectsResponse);
+  let subjects = Array.isArray(subjectsResponse?.data)
+    ? subjectsResponse.data
+    : Array.isArray(subjectsResponse)
+      ? subjectsResponse
+      : [];
+  console.log('subjects:', subjects);
   
   const courses = coursesResponse?.data || [];
   
@@ -56,7 +67,8 @@ const CourseManagement = () => {
     enrollment_count: 0,
     completion_rate: 0,
     tags: [],
-    metadata: {}
+    metadata: {},
+    subject_ids: [],
   });
 
   const editCourseMutation = useMutation({
@@ -132,7 +144,8 @@ const CourseManagement = () => {
         enrollment_count: 0,
         completion_rate: 0,
         tags: [],
-        metadata: {}
+        metadata: {},
+        subject_ids: [],
       });
       setIsAddDialogOpen(false);
     } catch (error) {
@@ -170,7 +183,8 @@ const CourseManagement = () => {
       enrollment_count: course.enrollment_count || 0,
       completion_rate: course.completion_rate || 0,
       tags: course.tags || [],
-      metadata: course.metadata || {}
+      metadata: course.metadata || {},
+      subject_ids: course.subjects ? course.subjects.map((s: any) => s.subject_id) : (course.subject_ids || []),
     });
     setIsEditDialogOpen(true);
   };
@@ -387,6 +401,27 @@ const CourseManagement = () => {
                   />
                   <Label htmlFor="is_active">Active Course</Label>
                 </div>
+                <div className="col-span-2">
+                  <Label htmlFor="subject_ids">Subjects</Label>
+                  <div className="flex flex-wrap gap-2">
+                    {subjects.map((subject: any) => (
+                      <label key={subject.subject_id} className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={newCourse.subject_ids.includes(subject.subject_id)}
+                          onChange={e => {
+                            if (e.target.checked) {
+                              setNewCourse({ ...newCourse, subject_ids: [...newCourse.subject_ids, subject.subject_id] });
+                            } else {
+                              setNewCourse({ ...newCourse, subject_ids: newCourse.subject_ids.filter((id: number) => id !== subject.subject_id) });
+                            }
+                          }}
+                        />
+                        {subject.name}
+                      </label>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
             <div className="flex justify-end space-x-2 mt-6">
@@ -518,6 +553,13 @@ const CourseManagement = () => {
                   <span className="text-gray-600">Start Date:</span>
                   <span className="font-medium">{new Date(course.start_date).toLocaleDateString()}</span>
                 </div>
+              </div>
+              <div className="flex flex-wrap gap-1 mt-2">
+                {course.subject_ids && course.subject_ids.map((subject_id: number) => (
+                  <Badge key={subject_id} className="bg-blue-100 text-blue-800">
+                    {subjects.find(subject => subject.subject_id === subject_id)?.name}
+                  </Badge>
+                ))}
               </div>
             </CardContent>
           </Card>
@@ -698,6 +740,27 @@ const CourseManagement = () => {
                     onChange={(e) => setNewCourse({...newCourse, is_active: e.target.checked})}
                   />
                   <Label htmlFor="edit-is-active">Active Course</Label>
+                </div>
+                <div className="col-span-2">
+                  <Label htmlFor="edit-subject-ids">Subjects</Label>
+                  <div className="flex flex-wrap gap-2">
+                    {subjects.map((subject: any) => (
+                      <label key={subject.subject_id} className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={newCourse.subject_ids.includes(subject.subject_id)}
+                          onChange={e => {
+                            if (e.target.checked) {
+                              setNewCourse({ ...newCourse, subject_ids: [...newCourse.subject_ids, subject.subject_id] });
+                            } else {
+                              setNewCourse({ ...newCourse, subject_ids: newCourse.subject_ids.filter((id: number) => id !== subject.subject_id) });
+                            }
+                          }}
+                        />
+                        {subject.name}
+                      </label>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>

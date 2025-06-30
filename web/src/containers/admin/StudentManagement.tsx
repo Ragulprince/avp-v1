@@ -97,7 +97,7 @@ const StudentManagement = () => {
     },
   });
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   const openEditDialog = (student: any) => {
     setSelectedStudent(student);
     setEditStudent({

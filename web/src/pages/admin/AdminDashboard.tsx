@@ -1,3 +1,5 @@
+// Debug: Log AdminDashboard mount
+console.debug('[AdminDashboard] Component mounted');
 import React, { useState } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import AdminSidebar from '@/containers/admin/AdminSidebar';
@@ -44,39 +46,6 @@ const AdminDashboard = () => {
     handleTabChange('profile');
   };
 
-  const renderContent = () => {
-    console.log('AdminDashboard: Rendering content for tab:', location.pathname.split('/').pop());
-    
-    switch (location.pathname.split('/').pop()) {
-      case 'dashboard':
-        return <DashboardOverview />;
-      case 'students':
-        return <StudentManagement />;
-      case 'staff':
-        return <StaffManagement />;
-      case 'courses':
-        return <CourseManagement />;
-      case 'content':
-        return <ContentManagement />;
-      case 'tests':
-        return <TestManagement />;
-      case 'questions':
-        return <QuestionBank />;
-      case 'reports':
-        return <TestReports />;
-      case 'notifications':
-        return <NotificationCenter />;
-      case 'settings':
-        return <AdminSettings />;
-      case 'profile':
-        return <ProfileSection user={adminUser} showStats={true} />;
-      case 'analytics':
-        return <Analytics />;
-      default:
-        console.warn('AdminDashboard: Unknown tab:', location.pathname.split('/').pop());
-        return <DashboardOverview />;
-    }
-  };
 
   return (
     <div className="min-h-screen bg-gray-50 flex">

@@ -15,8 +15,16 @@ import {
   getStaff,
   updateStaff,
   deleteStaff,
-  getAdminSettings
+  getAdminSettings,
+  getCourse
 } from '../controllers/adminController';
+import {
+  getSubjects,
+  getSubject,
+  createSubject,
+  updateSubject,
+  deleteSubject
+} from '../controllers/subjectController';
 
 const router = Router();
 
@@ -33,6 +41,7 @@ router.delete('/students/:id', deleteStudent);
 // Course Management
 router.post('/courses', createCourse);
 router.get('/courses', getCourses);
+router.get('/courses/:id', getCourse);
 router.put('/courses/:id', updateCourse);
 router.delete('/courses/:id', deleteCourse);
 
@@ -48,5 +57,12 @@ router.delete('/staff/:id', deleteStaff);
 
 // Settings
 router.get('/settings', getAdminSettings);
+
+// Subject Management
+router.get('/subjects', getSubjects);
+router.get('/subjects/:id', getSubject);
+router.post('/subjects', createSubject);
+router.put('/subjects/:id', updateSubject);
+router.delete('/subjects/:id', deleteSubject);
 
 export default router;

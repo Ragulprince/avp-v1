@@ -1,4 +1,3 @@
-
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
@@ -19,6 +18,7 @@ import testRoutes from './routes/tests';
 import questionBankRoutes from './routes/questionBank';
 import contentRoutes from './routes/content';
 import notificationRoutes from './routes/notifications';
+import subjectRoutes from './routes/subject';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -92,6 +92,7 @@ app.use('/api/tests', testRoutes);
 app.use('/api/question-bank', questionBankRoutes);
 app.use('/api/content', contentRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/subjects', subjectRoutes);
 
 // Error handling middleware
 app.use((err: any, _req: any, res: express.Response, _next: express.NextFunction): void => {

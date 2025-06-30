@@ -9,7 +9,7 @@ async function main() {
   // Hash password for all users
   const hashedPassword = await bcrypt.hash('password123', 10);
 
-  // Clear existing data (optional - uncomment if needed)
+ // Clear existing data (optional - uncomment if needed)
   // await prisma.userAnswer.deleteMany();
   // await prisma.quizAttempt.deleteMany();
   // await prisma.quizQuestion.deleteMany();
@@ -169,6 +169,35 @@ async function main() {
 
   // Create Courses
   console.log('📚 Creating courses...');
+
+  const fswdSubjectNames = ['HTML/CSS', 'JavaScript', 'React', 'Node.js', 'Database'];
+  const dsSubjectNames = ['Statistics', 'Python', 'Machine Learning', 'Data Visualization'];
+  const madSubjectNames = ['React Native', 'Flutter', 'UI/UX Design'];
+
+  const fswdSubjects = await Promise.all(
+    fswdSubjectNames.map(name => prisma.subject.upsert({
+      where: { name },
+      update: {},
+      create: { name, description: '' },
+    }))
+  );
+
+  const dsSubjects = await Promise.all(
+    dsSubjectNames.map(name => prisma.subject.upsert({
+      where: { name },
+      update: {},
+      create: { name, description: '' },
+    }))
+  );
+
+  const madSubjects = await Promise.all(
+    madSubjectNames.map(name => prisma.subject.upsert({
+      where: { name },
+      update: {},
+      create: { name, description: '' },
+    }))
+  );
+
   const courses = await Promise.all([
     prisma.course.create({
       data: {
@@ -177,7 +206,9 @@ async function main() {
         duration: '6 months',
         fees: 50000,
         status: 'ACTIVE',
-        subjects: ['HTML/CSS', 'JavaScript', 'React', 'Node.js', 'Database'],
+        subjects: {
+          connect: fswdSubjects.map(s => ({ subject_id: s.subject_id })),
+        },
       },
     }),
     prisma.course.create({
@@ -187,7 +218,9 @@ async function main() {
         duration: '8 months',
         fees: 75000,
         status: 'ACTIVE',
-        subjects: ['Statistics', 'Python', 'Machine Learning', 'Data Visualization'],
+        subjects: {
+          connect: dsSubjects.map(s => ({ subject_id: s.subject_id })),
+        },
       },
     }),
     prisma.course.create({
@@ -197,7 +230,9 @@ async function main() {
         duration: '4 months',
         fees: 40000,
         status: 'DRAFT',
-        subjects: ['React Native', 'Flutter', 'UI/UX Design'],
+        subjects: {
+          connect: madSubjects.map(s => ({ subject_id: s.subject_id })),
+        },
       },
     }),
   ]);

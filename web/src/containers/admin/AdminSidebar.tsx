@@ -28,6 +28,7 @@ const menuItems = [
   { id: 'students', label: 'Students', icon: Users },
   { id: 'staff', label: 'Staff', icon: UserCheck },
   { id: 'courses', label: 'Courses', icon: GraduationCap },
+  { id: 'subjects', label: 'Subjects', icon: BookOpen },
   { id: 'content', label: 'Content', icon: Video },
   { id: 'tests', label: 'Tests', icon: ClipboardList },
   { id: 'questions', label: 'Question Bank', icon: HelpCircle },

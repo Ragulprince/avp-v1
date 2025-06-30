@@ -187,7 +187,7 @@ export const deleteStudent = async (req: AuthRequest, res: Response) => {
 // Course Management
 export const createCourse = async (req: AuthRequest, res: Response) => {
   try {
-    const { name, description, duration, fees, subjects } = req.body;
+    const { name, description, duration, fees, subject_ids } = req.body;
 
     const course = await prisma.course.create({
       data: {
@@ -195,7 +195,9 @@ export const createCourse = async (req: AuthRequest, res: Response) => {
         description,
         duration,
         fees,
-        subjects,
+        subjects: subject_ids && subject_ids.length > 0 ? {
+          connect: subject_ids.map((id: number) => ({ subject_id: id }))
+        } : undefined,
         status: 'DRAFT'
       }
     });
@@ -217,6 +219,7 @@ export const getCourses = async (_: AuthRequest, res: Response) => {
       include: {
         batches: true,
         students: true,
+        subjects: true,
         _count: {
           select: {
             students: true,
@@ -252,7 +255,7 @@ export const updateCourse = async (req: AuthRequest, res: Response) => {
       return;
     }
 
-    const { name, description, duration, fees, subjects, status } = req.body;
+    const { name, description, duration, fees, subject_ids, status } = req.body;
 
     const course = await prisma.course.update({
       where: { course_id: courseId },
@@ -261,7 +264,9 @@ export const updateCourse = async (req: AuthRequest, res: Response) => {
         description,
         duration,
         fees: fees ? parseInt(fees) : null,
-        subjects: subjects || [],
+        subjects: subject_ids && subject_ids.length > 0 ? {
+          set: subject_ids.map((id: number) => ({ subject_id: id }))
+        } : undefined,
         status
       }
     });
@@ -301,6 +306,27 @@ export const deleteCourse = async (req: AuthRequest, res: Response) => {
   } catch (error) {
     logger.error('Delete course error:', error);
     res.status(500).json({ success: false, message: 'Failed to delete course' });
+  }
+};
+
+export const getCourse = async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const courseId = parseInt(id);
+    if (isNaN(courseId)) {
+      return res.status(400).json({ success: false, message: 'Invalid course ID' });
+    }
+    const course = await prisma.course.findUnique({
+      where: { course_id: courseId },
+      include: { subjects: true }
+    });
+    if (!course) {
+      return res.status(404).json({ success: false, message: 'Course not found' });
+    }
+    return res.json({ success: true, data: course });
+  } catch (error) {
+    logger.error('Get course error:', error);
+    return res.status(500).json({ success: false, message: 'Failed to fetch course' });
   }
 };
 

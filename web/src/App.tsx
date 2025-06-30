@@ -24,6 +24,7 @@ import QuizCenter from "./pages/student/QuizCenter";
 import VideoLearning from "./pages/student/VideoLearning";
 import Profile from "./pages/student/Profile";
 import Settings from "./pages/student/Settings";
+import SubjectManagement from '@/containers/admin/SubjectManagement';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -48,6 +49,7 @@ const App = () => (
             <Route path="students" element={<StudentManagement />} />
             <Route path="staff" element={<StaffManagement />} />
             <Route path="courses" element={<CourseManagement />} />
+            <Route path="subjects" element={<SubjectManagement />} />
             <Route path="content" element={<ContentManagement />} />
             <Route path="tests" element={<TestManagement />} />
             <Route path="questions" element={<QuestionBank />} />

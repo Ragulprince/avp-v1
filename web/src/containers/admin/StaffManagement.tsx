@@ -30,8 +30,8 @@ const StaffManagement = () => {
   
   const [newStaff, setNewStaff] = useState<CreateStaffData>({
     email: '',
-    name: '',
-    phone: '',
+    full_name: '',
+    phone_number: '',
     role: 'TEACHER',
     department: '',
     designation: '',
@@ -84,12 +84,12 @@ const StaffManagement = () => {
   });
 
   const filteredStaff = staff.filter(staff => {
-    return (staff.name?.toLowerCase().includes(searchTerm.toLowerCase()) || false) ||
+    return (staff.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) || false) ||
            (staff.email?.toLowerCase().includes(searchTerm.toLowerCase()) || false);
   });
 
   const handleAddStaff = async () => {
-    if (!newStaff.email || !newStaff.name) {
+    if (!newStaff.email || !newStaff.full_name) {
       toast({
         title: 'Error',
         description: 'Email and name are required',
@@ -102,8 +102,8 @@ const StaffManagement = () => {
       await createStaffMutation.mutateAsync(newStaff);
       setNewStaff({
         email: '',
-        name: '',
-        phone: '',
+        full_name: '',
+        phone_number: '',
         role: 'TEACHER',
         department: '',
         designation: '',
@@ -136,8 +136,8 @@ const StaffManagement = () => {
     setSelectedStaff(staff);
     setNewStaff({
       email: staff.email || '',
-      name: staff.full_name || '',
-      phone: staff.phone_number || '',
+      full_name: staff.full_name || '',
+      phone_number: staff.phone_number || '',
       role: staff.role || 'TEACHER',
       department: staff.staff?.department || '',
       designation: staff.staff?.designation || '',
@@ -166,8 +166,8 @@ const StaffManagement = () => {
   const handleEditStaff = async () => {
     if (!selectedStaff) return;
     const staffData = {
-      full_name: newStaff.name,
-      phone_number: newStaff.phone,
+      full_name: newStaff.full_name,
+      phone_number: newStaff.phone_number,
       role: newStaff.role,
       staff: {
         department: newStaff.department,
@@ -244,8 +244,8 @@ const StaffManagement = () => {
                   <Label htmlFor="name">Full Name *</Label>
                   <Input
                     id="name"
-                    value={newStaff.name}
-                    onChange={(e) => setNewStaff({...newStaff, name: e.target.value})}
+                    value={newStaff.full_name}
+                    onChange={(e) => setNewStaff({...newStaff, full_name: e.target.value})}
                     placeholder="Staff name"
                   />
                 </div>
@@ -260,12 +260,12 @@ const StaffManagement = () => {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="phone">Phone *</Label>
+                  <Label htmlFor="phone">Phone Number</Label>
                   <Input
                     id="phone"
-                    value={newStaff.phone}
-                    onChange={(e) => setNewStaff({...newStaff, phone: e.target.value})}
-                    placeholder="+91 9876543210"
+                    value={newStaff.phone_number}
+                    onChange={(e) => setNewStaff({...newStaff, phone_number: e.target.value})}
+                    placeholder="Staff phone number"
                   />
                 </div>
                 <div>
@@ -562,7 +562,7 @@ const StaffManagement = () => {
                 <p className="text-sm font-medium text-gray-600">Teaching Staff</p>
                 <p className="text-2xl font-bold">{staff.filter(s => s.is_teaching).length}</p>
               </div>
-              <GraduationCap className="w-8 h-8 text-purple-500" />
+              <GraduationCap className="w-8 h-8 text-purple-600" />
             </div>
           </CardContent>
         </Card>
@@ -588,11 +588,11 @@ const StaffManagement = () => {
                 <div className="flex items-center space-x-4">
                   <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
                     <span className="text-white font-semibold text-lg">
-                      {staff.name?.split(' ').map(n => n[0]).join('')}
+                      {staff.full_name?.split(' ').map(n => n[0]).join('')}
                     </span>
                   </div>
                   <div>
-                    <h3 className="font-semibold text-gray-900">{staff.name}</h3>
+                    <h3 className="font-semibold text-gray-900">{staff.full_name}</h3>
                     <Badge variant={staff.is_active ? "default" : "secondary"}>
                       {staff.is_active ? 'Active' : 'Inactive'}
                     </Badge>
@@ -623,10 +623,10 @@ const StaffManagement = () => {
                   <Mail className="w-4 h-4" />
                   <span>{staff.email}</span>
                 </div>
-                {staff.phone && (
+                {staff.phone_number && (
                   <div className="flex items-center space-x-2 text-sm text-gray-600">
                     <Phone className="w-4 h-4" />
-                    <span>{staff.phone}</span>
+                    <span>{staff.phone_number}</span>
                   </div>
                 )}
                 {staff.department && (
@@ -667,18 +667,18 @@ const StaffManagement = () => {
               <div className="grid grid-cols-2 gap-4 py-4">
                 {/* Basic Information */}
                 <div>
-                  <Label htmlFor="edit-name">Full Name *</Label>
+                  <Label htmlFor="name">Full Name *</Label>
                   <Input
-                    id="edit-name"
-                    value={newStaff.name}
-                    onChange={(e) => setNewStaff({...newStaff, name: e.target.value})}
+                    id="name"
+                    value={newStaff.full_name}
+                    onChange={(e) => setNewStaff({...newStaff, full_name: e.target.value})}
                     placeholder="Staff name"
                   />
                 </div>
                 <div>
-                  <Label htmlFor="edit-email">Email *</Label>
+                  <Label htmlFor="email">Email *</Label>
                   <Input
-                    id="edit-email"
+                    id="email"
                     type="email"
                     value={newStaff.email}
                     onChange={(e) => setNewStaff({...newStaff, email: e.target.value})}
@@ -686,16 +686,16 @@ const StaffManagement = () => {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="edit-phone">Phone *</Label>
+                  <Label htmlFor="phone">Phone Number</Label>
                   <Input
-                    id="edit-phone"
-                    value={newStaff.phone}
-                    onChange={(e) => setNewStaff({...newStaff, phone: e.target.value})}
-                    placeholder="+91 9876543210"
+                    id="phone"
+                    value={newStaff.phone_number}
+                    onChange={(e) => setNewStaff({...newStaff, phone_number: e.target.value})}
+                    placeholder="Staff phone number"
                   />
                 </div>
                 <div>
-                  <Label htmlFor="edit-role">Role *</Label>
+                  <Label htmlFor="role">Role *</Label>
                   <Select value={newStaff.role} onValueChange={(value) => setNewStaff({...newStaff, role: value as 'ADMIN' | 'TEACHER'})}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select role" />
@@ -709,54 +709,54 @@ const StaffManagement = () => {
 
                 {/* Professional Information */}
                 <div>
-                  <Label htmlFor="edit-department">Department</Label>
+                  <Label htmlFor="department">Department</Label>
                   <Input
-                    id="edit-department"
+                    id="department"
                     value={newStaff.department}
                     onChange={(e) => setNewStaff({...newStaff, department: e.target.value})}
                     placeholder="Department"
                   />
                 </div>
                 <div>
-                  <Label htmlFor="edit-designation">Designation</Label>
+                  <Label htmlFor="designation">Designation</Label>
                   <Input
-                    id="edit-designation"
+                    id="designation"
                     value={newStaff.designation}
                     onChange={(e) => setNewStaff({...newStaff, designation: e.target.value})}
                     placeholder="Designation"
                   />
                 </div>
                 <div>
-                  <Label htmlFor="edit-qualifications">Qualifications</Label>
+                  <Label htmlFor="qualifications">Qualifications</Label>
                   <Input
-                    id="edit-qualifications"
+                    id="qualifications"
                     value={newStaff.qualifications?.join(', ')}
                     onChange={(e) => setNewStaff({...newStaff, qualifications: e.target.value.split(',').map(q => q.trim())})}
                     placeholder="Enter qualifications (comma-separated)"
                   />
                 </div>
                 <div>
-                  <Label htmlFor="edit-specialization">Specialization</Label>
+                  <Label htmlFor="specialization">Specialization</Label>
                   <Input
-                    id="edit-specialization"
+                    id="specialization"
                     value={newStaff.specialization?.join(', ')}
                     onChange={(e) => setNewStaff({...newStaff, specialization: e.target.value.split(',').map(s => s.trim())})}
                     placeholder="Enter specializations (comma-separated)"
                   />
                 </div>
                 <div>
-                  <Label htmlFor="edit-subjects">Subjects</Label>
+                  <Label htmlFor="subjects">Subjects</Label>
                   <Input
-                    id="edit-subjects"
+                    id="subjects"
                     value={newStaff.subjects?.join(', ')}
                     onChange={(e) => setNewStaff({...newStaff, subjects: e.target.value.split(',').map(s => s.trim())})}
                     placeholder="Enter subjects (comma-separated)"
                   />
                 </div>
                 <div>
-                  <Label htmlFor="edit-years-of-experience">Years of Experience</Label>
+                  <Label htmlFor="years_of_experience">Years of Experience</Label>
                   <Input
-                    id="edit-years-of-experience"
+                    id="years_of_experience"
                     type="number"
                     value={newStaff.years_of_experience}
                     onChange={(e) => setNewStaff({...newStaff, years_of_experience: parseInt(e.target.value)})}
@@ -764,9 +764,9 @@ const StaffManagement = () => {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="edit-salary">Salary</Label>
+                  <Label htmlFor="salary">Salary</Label>
                   <Input
-                    id="edit-salary"
+                    id="salary"
                     type="number"
                     value={newStaff.salary}
                     onChange={(e) => setNewStaff({...newStaff, salary: parseFloat(e.target.value)})}
@@ -774,9 +774,9 @@ const StaffManagement = () => {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="edit-performance-rating">Performance Rating</Label>
+                  <Label htmlFor="performance_rating">Performance Rating</Label>
                   <Input
-                    id="edit-performance-rating"
+                    id="performance_rating"
                     type="number"
                     min="0"
                     max="5"
@@ -789,18 +789,18 @@ const StaffManagement = () => {
 
                 {/* Location and Hours */}
                 <div>
-                  <Label htmlFor="edit-office-location">Office Location</Label>
+                  <Label htmlFor="office_location">Office Location</Label>
                   <Input
-                    id="edit-office-location"
+                    id="office_location"
                     value={newStaff.office_location}
                     onChange={(e) => setNewStaff({...newStaff, office_location: e.target.value})}
                     placeholder="Office Location"
                   />
                 </div>
                 <div>
-                  <Label htmlFor="edit-working-hours">Working Hours</Label>
+                  <Label htmlFor="working_hours">Working Hours</Label>
                   <Input
-                    id="edit-working-hours"
+                    id="working_hours"
                     value={JSON.stringify(newStaff.working_hours)}
                     onChange={(e) => {
                       try {
@@ -816,9 +816,9 @@ const StaffManagement = () => {
 
                 {/* Leave Management */}
                 <div>
-                  <Label htmlFor="edit-leaves-taken">Leaves Taken</Label>
+                  <Label htmlFor="leaves_taken">Leaves Taken</Label>
                   <Input
-                    id="edit-leaves-taken"
+                    id="leaves_taken"
                     type="number"
                     value={newStaff.leaves_taken}
                     onChange={(e) => setNewStaff({...newStaff, leaves_taken: parseInt(e.target.value)})}
@@ -826,9 +826,9 @@ const StaffManagement = () => {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="edit-leaves-remaining">Leaves Remaining</Label>
+                  <Label htmlFor="leaves_remaining">Leaves Remaining</Label>
                   <Input
-                    id="edit-leaves-remaining"
+                    id="leaves_remaining"
                     type="number"
                     value={newStaff.leaves_remaining}
                     onChange={(e) => setNewStaff({...newStaff, leaves_remaining: parseInt(e.target.value)})}
@@ -838,16 +838,16 @@ const StaffManagement = () => {
 
                 {/* Personal Information */}
                 <div>
-                  <Label htmlFor="edit-emergency-contact">Emergency Contact</Label>
+                  <Label htmlFor="emergency_contact">Emergency Contact</Label>
                   <Input
-                    id="edit-emergency-contact"
+                    id="emergency_contact"
                     value={newStaff.emergency_contact}
                     onChange={(e) => setNewStaff({...newStaff, emergency_contact: e.target.value})}
                     placeholder="Emergency Contact"
                   />
                 </div>
                 <div>
-                  <Label htmlFor="edit-blood-group">Blood Group</Label>
+                  <Label htmlFor="blood_group">Blood Group</Label>
                   <Select value={newStaff.blood_group} onValueChange={(value) => setNewStaff({...newStaff, blood_group: value})}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select blood group" />
@@ -865,9 +865,9 @@ const StaffManagement = () => {
                   </Select>
                 </div>
                 <div className="col-span-2">
-                  <Label htmlFor="edit-medical-conditions">Medical Conditions</Label>
+                  <Label htmlFor="medical_conditions">Medical Conditions</Label>
                   <Textarea
-                    id="edit-medical-conditions"
+                    id="medical_conditions"
                     value={newStaff.medical_conditions}
                     onChange={(e) => setNewStaff({...newStaff, medical_conditions: e.target.value})}
                     placeholder="Medical Conditions"
@@ -878,27 +878,27 @@ const StaffManagement = () => {
                 <div className="flex items-center space-x-2">
                   <input
                     type="checkbox"
-                    id="edit-is-teaching"
+                    id="is_teaching"
                     checked={newStaff.is_teaching}
                     onChange={(e) => setNewStaff({...newStaff, is_teaching: e.target.checked})}
                   />
-                  <Label htmlFor="edit-is-teaching">Teaching Staff</Label>
+                  <Label htmlFor="is_teaching">Teaching Staff</Label>
                 </div>
                 <div className="flex items-center space-x-2">
                   <input
                     type="checkbox"
-                    id="edit-is-administrative"
+                    id="is_administrative"
                     checked={newStaff.is_administrative}
                     onChange={(e) => setNewStaff({...newStaff, is_administrative: e.target.checked})}
                   />
-                  <Label htmlFor="edit-is-administrative">Administrative Staff</Label>
+                  <Label htmlFor="is_administrative">Administrative Staff</Label>
                 </div>
 
                 {/* Additional Information */}
                 <div className="col-span-2">
-                  <Label htmlFor="edit-bank-details">Bank Details</Label>
+                  <Label htmlFor="bank_details">Bank Details</Label>
                   <Textarea
-                    id="edit-bank-details"
+                    id="bank_details"
                     value={JSON.stringify(newStaff.bank_details, null, 2)}
                     onChange={(e) => {
                       try {
@@ -912,9 +912,9 @@ const StaffManagement = () => {
                   />
                 </div>
                 <div className="col-span-2">
-                  <Label htmlFor="edit-documents">Documents</Label>
+                  <Label htmlFor="documents">Documents</Label>
                   <Textarea
-                    id="edit-documents"
+                    id="documents"
                     value={JSON.stringify(newStaff.documents, null, 2)}
                     onChange={(e) => {
                       try {
@@ -928,9 +928,9 @@ const StaffManagement = () => {
                   />
                 </div>
                 <div className="col-span-2">
-                  <Label htmlFor="edit-achievements">Achievements</Label>
+                  <Label htmlFor="achievements">Achievements</Label>
                   <Textarea
-                    id="edit-achievements"
+                    id="achievements"
                     value={JSON.stringify(newStaff.achievements, null, 2)}
                     onChange={(e) => {
                       try {
@@ -966,8 +966,7 @@ const StaffManagement = () => {
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the staff member's account
-              and remove their data from our servers.
+              This action cannot be undone. This will permanently delete the staff member: {selectedStaff?.full_name}.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
