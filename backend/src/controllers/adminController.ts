@@ -262,7 +262,7 @@ export const updateCourse = async (req: AuthRequest, res: Response) => {
         duration,
         fees: fees ? parseInt(fees) : null,
         subjects: subjects || [],
-        status
+        status: status ? 'ACTIVE' : 'INACTIVE'
       }
     });
 

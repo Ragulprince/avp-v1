@@ -73,7 +73,7 @@ export interface CreateCourseData {
   max_students: number;
   start_date: string;
   end_date: string;
-  is_active: boolean;
+  status: boolean;
   instructor_id: string;
   materials: string[];
   assessments: string[];
@@ -191,7 +191,7 @@ export const adminService = {
     return await apiClient.post('/admin/courses', data);
   },
 
-  updateCourse: async (id: string, data: Partial<CreateCourseData & { status: string }>) => {
+  updateCourse: async (id: string, data: Partial<CreateCourseData>) => {
     return await apiClient.put(`/admin/courses/${id}`, data);
   },
 

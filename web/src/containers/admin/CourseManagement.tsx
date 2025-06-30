@@ -40,7 +40,7 @@ const CourseManagement = () => {
     max_students: 0,
     start_date: new Date().toISOString(),
     end_date: new Date().toISOString(),
-    is_active: true,
+    status: true,
     instructor_id: '',
     materials: [],
     assessments: [],
@@ -116,7 +116,7 @@ const CourseManagement = () => {
         max_students: 0,
         start_date: new Date().toISOString(),
         end_date: new Date().toISOString(),
-        is_active: true,
+        status: true,
         instructor_id: '',
         materials: [],
         assessments: [],
@@ -154,7 +154,7 @@ const CourseManagement = () => {
       max_students: course.max_students || 0,
       start_date: course.start_date || new Date().toISOString(),
       end_date: course.end_date || new Date().toISOString(),
-      is_active: course.is_active || true,
+      status: course.status === 'ACTIVE' ? true : false,
       instructor_id: course.instructor_id || '',
       materials: course.materials || [],
       assessments: course.assessments || [],
@@ -177,12 +177,12 @@ const CourseManagement = () => {
 
   const handleEditCourse = async () => {
     if (!selectedCourse) return;
-    await editCourseMutation.mutateAsync({ id: selectedCourse.id.toString(), values: newCourse });
+    await editCourseMutation.mutateAsync({ id: selectedCourse.course_id.toString(), values: newCourse });
   };
 
   const handleDeleteCourse = async () => {
     if (!selectedCourse) return;
-    await deleteCourseMutation.mutateAsync(selectedCourse.id.toString());
+    await deleteCourseMutation.mutateAsync(selectedCourse.course_id.toString());
   };
 
   if (isLoading) {
@@ -381,11 +381,11 @@ const CourseManagement = () => {
                 <div className="flex items-center space-x-2">
                   <input
                     type="checkbox"
-                    id="is_active"
-                    checked={newCourse.is_active}
-                    onChange={(e) => setNewCourse({...newCourse, is_active: e.target.checked})}
+                    id="status"
+                    checked={newCourse.status}
+                    onChange={(e) => setNewCourse({...newCourse, status: e.target.checked})}
                   />
-                  <Label htmlFor="is_active">Active Course</Label>
+                  <Label htmlFor="status">Active Course</Label>
                 </div>
               </div>
             </div>
@@ -422,7 +422,7 @@ const CourseManagement = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Active Courses</p>
-                <p className="text-2xl font-bold">{courses.filter(c => c.is_active).length}</p>
+                <p className="text-2xl font-bold">{courses.filter(c => c.status).length}</p>
               </div>
               <GraduationCap className="w-8 h-8 text-green-500" />
             </div>
@@ -470,8 +470,8 @@ const CourseManagement = () => {
                   </div>
                   <div>
                     <h3 className="font-semibold text-gray-900">{course.name}</h3>
-                    <Badge variant={course.is_active ? "default" : "secondary"}>
-                      {course.is_active ? 'Active' : 'Inactive'}
+                    <Badge variant={course.status ? "default" : "secondary"}>
+                      {course.status}
                     </Badge>
                   </div>
                 </div>
@@ -694,8 +694,8 @@ const CourseManagement = () => {
                   <input
                     type="checkbox"
                     id="edit-is-active"
-                    checked={newCourse.is_active}
-                    onChange={(e) => setNewCourse({...newCourse, is_active: e.target.checked})}
+                    checked={newCourse.status}
+                    onChange={(e) => setNewCourse({...newCourse, status: e.target.checked})}
                   />
                   <Label htmlFor="edit-is-active">Active Course</Label>
                 </div>
