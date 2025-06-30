@@ -560,13 +560,18 @@ const ContentManagement = () => {
             <DialogTitle>{selectedMaterial?.title}</DialogTitle>
           </DialogHeader>
           <div className="flex-1 overflow-auto">
-            {selectedMaterial?.type === 'PDF' && contentUrl && (
-              <iframe
-                src={contentUrl}
-                className="w-full h-full"
-                title={selectedMaterial.title}
-              />
-            )}
+          {selectedMaterial && contentUrl && (
+  <div className="flex flex-col items-center justify-center h-full space-y-4">
+    <p className="text-gray-600">Click the button below to open the file in a new tab.</p>
+    <Button
+      onClick={() => window.open(contentUrl, '_blank')}
+      className="bg-blue-600 hover:bg-blue-700"
+    >
+      View File
+    </Button>
+  </div>
+)}
+
             {selectedMaterial?.type === 'IMAGE' && contentUrl && (
               <img
                 src={contentUrl}
