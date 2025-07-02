@@ -4,7 +4,7 @@ import { apiClient } from '../api';
 export interface Question {
   id: string;
   question: string;
-  type: 'MCQ' | 'FILL_BLANKS' | 'TRUE_FALSE' | 'MATCH' | 'CHOICE_BASED';
+  type: 'MCQ' | 'FILL_IN_THE_BLANK' | 'TRUE_FALSE' | 'MATCH' | 'CHOICE_BASED';
   subject: string;
   topic: string;
   difficulty: 'EASY' | 'MEDIUM' | 'HARD';
@@ -16,15 +16,17 @@ export interface Question {
 }
 
 export interface CreateQuestionData {
-  question: string;
-  type: 'MCQ' | 'FILL_BLANKS' | 'TRUE_FALSE' | 'MATCH' | 'CHOICE_BASED';
-  subject: string;
+  question_text: string;
+  type: 'MCQ' | 'FILL_IN_THE_BLANK' | 'TRUE_FALSE' | 'MATCH' | 'CHOICE_BASED';
+  subject_id: string;
   topic: string;
   difficulty: 'EASY' | 'MEDIUM' | 'HARD';
   options?: string[];
-  correctAnswer: string;
+  correct_answer: string;
   explanation?: string;
   marks?: number;
+  left_side?: string;
+  right_side?: string;
 }
 
 export interface QuestionQuery {
