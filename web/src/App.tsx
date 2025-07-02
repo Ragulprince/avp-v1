@@ -25,6 +25,7 @@ import VideoLearning from "./pages/student/VideoLearning";
 import Profile from "./pages/student/Profile";
 import Settings from "./pages/student/Settings";
 import SubjectManagement from '@/containers/admin/SubjectManagement';
+import ContentViewer from "./pages/admin/ContentViewer";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -65,6 +66,7 @@ const App = () => (
           <Route path="/student/hub" element={<VideoLearning activeTab="hub" onTabChange={() => {}} />} />
           <Route path="/student/profile" element={<Profile activeTab="profile" onTabChange={() => {}} />} />
           <Route path="/student/settings" element={<Settings activeTab="settings" onTabChange={() => {}} />} />
+          <Route path="/admin/content-viewer/:id" element={<ContentViewer />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
         

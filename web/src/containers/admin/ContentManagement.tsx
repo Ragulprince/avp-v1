@@ -14,6 +14,7 @@ import { useCourses } from '@/hooks/api/useAdmin';
 import { useToast } from '@/hooks/use-toast';
 import { MaterialType, MaterialStatus } from '@/types/content';
 import { compressImage, compressPDF, compressDocument } from '@/utils/compression';
+import { useNavigate } from 'react-router-dom';
 
 // Update UploadData interface for type safety
 interface UploadData {
@@ -30,6 +31,7 @@ const ContentManagement = () => {
   const { toast } = useToast();
   const { data: materialsResponse, isLoading: materialsLoading } = useContent();
   const { data: coursesResponse } = useCourses();
+  const navigate = useNavigate();
   
   const materials = materialsResponse?.data || [];
   const courses = coursesResponse?.data || [];
@@ -38,11 +40,8 @@ const ContentManagement = () => {
   const [selectedSubject, setSelectedSubject] = useState('');
   const [selectedType, setSelectedType] = useState('');
   const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
-  const [isViewerOpen, setIsViewerOpen] = useState(false);
-  const [selectedMaterial, setSelectedMaterial] = useState<any>(null);
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [isCompressing, setIsCompressing] = useState(false);
-  const [contentUrl, setContentUrl] = useState<string>('');
   const [uploadData, setUploadData] = useState<UploadData>({
     title: '',
     description: '',
@@ -174,35 +173,6 @@ const ContentManagement = () => {
       toast({
         title: 'Error',
         description: error.message || 'Failed to upload material',
-        variant: 'destructive',
-      });
-    }
-  };
-
-  const handleViewMaterial = async (material: any) => {
-    try {
-      // Fetch the content with authentication
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/content/view/${material.id}`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to load content');
-      }
-
-      // Create a blob URL for the content
-      const blob = await response.blob();
-      const url = URL.createObjectURL(blob);
-      setContentUrl(url);
-      setSelectedMaterial(material);
-      setIsViewerOpen(true);
-    } catch (error) {
-      console.error('Error loading content:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to load content. Please check your authentication.',
         variant: 'destructive',
       });
     }
@@ -503,7 +473,7 @@ const ContentManagement = () => {
                   <Button 
                     variant="ghost" 
                     size="sm"
-                    onClick={() => handleViewMaterial(material)}
+                    onClick={() => navigate(`/admin/content-viewer/${material.id}`)}
                   >
                     <Eye className="w-4 h-4" />
                   </Button>
@@ -542,62 +512,6 @@ const ContentManagement = () => {
           </Card>
         ))}
       </div>
-
-      {/* Material Viewer Dialog */}
-      <Dialog open={isViewerOpen} onOpenChange={(open) => {
-        setIsViewerOpen(open);
-        if (!open) {
-          // Clean up blob URL when dialog closes
-          if (contentUrl) {
-            URL.revokeObjectURL(contentUrl);
-            setContentUrl('');
-          }
-          setSelectedMaterial(null);
-        }
-      }}>
-        <DialogContent className="max-w-4xl h-[80vh]">
-          <DialogHeader>
-            <DialogTitle>{selectedMaterial?.title}</DialogTitle>
-          </DialogHeader>
-          <div className="flex-1 overflow-auto">
-          {selectedMaterial && contentUrl && (
-  <div className="flex flex-col items-center justify-center h-full space-y-4">
-    <p className="text-gray-600">Click the button below to open the file in a new tab.</p>
-    <Button
-      onClick={() => window.open(contentUrl, '_blank')}
-      className="bg-blue-600 hover:bg-blue-700"
-    >
-      View File
-    </Button>
-  </div>
-)}
-
-            {selectedMaterial?.type === 'IMAGE' && contentUrl && (
-              <img
-                src={contentUrl}
-                alt={selectedMaterial.title}
-                className="max-w-full h-auto"
-              />
-            )}
-            {selectedMaterial?.type === 'VIDEO' && contentUrl && (
-              <video
-                src={contentUrl}
-                controls
-                className="w-full"
-              />
-            )}
-            {!contentUrl && selectedMaterial && (
-              <div className="flex items-center justify-center h-64">
-                <div className="text-center">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                  <p className="text-gray-600">Loading content...</p>
-                </div>
-              </div>
-            )}
-            {/* Add other content type viewers as needed */}
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };
