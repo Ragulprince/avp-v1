@@ -267,7 +267,7 @@ export const updateCourse = async (req: AuthRequest, res: Response) => {
         subjects: subject_ids && subject_ids.length > 0 ? {
           set: subject_ids.map((id: number) => ({ subject_id: id }))
         } : undefined,
-        status
+        status : status ? 'ACTIVE' : 'INACTIVE'
       }
     });
 
